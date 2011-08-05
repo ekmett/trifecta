@@ -6,7 +6,7 @@ cabal-version: >= 1.6
 license-file:  LICENSE
 author:        Edward A. Kmett
 maintainer:    Edward A. Kmett <ekmett@gmail.com>
-stability:     provisional
+stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 copyright:     Copyright (C) 2011 Edward A. Kmett
 synopsis:      Parser combinators with slicing and diagnostic support
@@ -16,11 +16,6 @@ build-type:    Simple
 source-repository head
   type: git
   location: git://github.com/ekmett/trifecta.git
-
-flag DeriveDataTypeable
-  description: DeriveDataTypeable available
-  default: True
-  manual: False
 
 library
   build-depends: 
@@ -41,10 +36,6 @@ library
     parallel         >= 3.1.0.1  && < 3.2
 
   ghc-options: -Wall
-  extensions: CPP
-  if flag(DeriveDataTypeable)
-    extensions: DeriveDataTypeable
-    cpp-options: -DLANGUAGE_DeriveDataTypeable
 
   exposed-modules:
     Text.Trifecta.Path
