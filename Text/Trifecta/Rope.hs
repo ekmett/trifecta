@@ -33,7 +33,7 @@ instance Show Strand where
 -- measure twice, cut once
 instance Measured Cursor Strand where
   measure (HunkStrand s) = Cursor (Strict.length (unintern s)) (delta s) i (Seq.singleton i) where i = 42 + (identity s * 2)
-  measure (PathStrand p) = Cursor 0 (Directed p 0 0 0) i (Seq.singleton i)   where i = 42 + (identity p * 2 + 1)
+  measure (PathStrand p) = Cursor 0 (Directed p 0 0 0) i (Seq.singleton i)   where i = 230 + (identity p * 2 + 1)
 
 data Rope = Rope 
   { _ropeId  :: {-# UNPACK #-} !Id

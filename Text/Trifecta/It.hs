@@ -1,20 +1,30 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
 module Text.Trifecta.It 
   ( It(..)
   , getRope
   , getMeasure
   , getEof
+  , getWord8
+  , sliceIt
+  , slice
+  , sliced
   ) where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Class
 import Data.Semigroup
 import Data.Monoid
 import Data.Word
+import Data.Interned
+import Data.Foldable (toList)
 import Data.FingerTree as FingerTree
+import Data.ByteString as Strict
+import Data.ByteString.Lazy as Lazy
 import Data.Functor.Bind
 import Data.Functor.Plus
 import Text.Trifecta.Cursor
+import Text.Trifecta.Hunk
 import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Parsec.Prim hiding ((<|>))
@@ -84,7 +94,7 @@ instance Stream Cursor It Char where
   uncons (Cursor b d _ _) = (getWord8 b >>= go) <|> return Nothing where
     go c | c <= 0x7f = do
         Cursor _ _ i t <- getMeasure
-        return $ Just (toEnum (fromEnum c), Cursor (b + 1) (d <> delta c) i t)
+        return $ Just (toEnum (fromEnum c), Cursor (b + 1) (d <> delta c) i t) -- TODO: add in PathHunks
          | otherwise = error "TODO"
     -- TODO: finish these
 
@@ -93,4 +103,39 @@ getWord8 n = Cont go where
   go h eof 
     | n < Rope.lastNewline h eof = Done h eof $ indexByte n h
     | eof                        = Fail h True "Unexpected EOF"
-    | otherwise                  = Cont $ \h' -> go (h <> h')
+    | otherwise                  = Cont $ \h' -> go (h <> h') -- h' <> h
+
+sliceIt :: Int -> Int -> It Strict.ByteString
+sliceIt !i !j = Cont go where
+  go :: Rope -> Bool -> It Strict.ByteString
+  go t@(Rope _ h) eof
+    | j <= cursorBytes (measure h) || eof = Done t eof (sliceStrands h)
+    | otherwise = Cont $ \t' eof' -> go (t <> t') eof'
+  sliceStrands :: FingerTree Cursor Strand -> Strict.ByteString
+  sliceStrands !t
+    | req <= rmn = Strict.take req first -- yay! sharing
+    | otherwise = Strict.concat 
+                $ Lazy.toChunks 
+                $ Lazy.take (fromIntegral req) 
+                $ Lazy.fromChunks 
+                $ first : Prelude.foldr iter [] (toList r')
+    where iter (HunkStrand h) b = unintern h : b
+          iter (PathStrand _) b = b
+          (l,r) = FingerTree.split (\m -> cursorBytes m > i) t
+          HunkStrand (Hunk _ _ a) :< r' = FingerTree.viewl r
+          first = Strict.drop (i - cursorBytes (measure l)) a
+          req = j - i
+          rmn = Strict.length first
+
+slice :: Cursor -> Cursor -> ParsecT Cursor u It Strict.ByteString
+slice mark release = lift $ sliceIt (cursorBytes mark) (cursorBytes release)
+
+sliced :: ParsecT Cursor u It a -> ParsecT Cursor u It Strict.ByteString
+sliced p = do
+  mark <- getInput
+  _ <- p
+  release <- getInput
+  slice mark release
+
+-- sliceDelta :: Int -> Int -> It Delta
+
