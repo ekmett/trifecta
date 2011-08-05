@@ -13,6 +13,7 @@ import Data.Text.ICU.Convert
 import GHC.IO
 import Text.Trifecta.Delta
 import Text.PrettyPrint.Leijen.Extras
+--import Control.Exception
 
 data Hunk = Hunk {-# UNPACK #-} !Id !Delta {-# UNPACK #-} !ByteString
 
@@ -45,6 +46,7 @@ instance Interned Hunk where
   describe = Describe
   identify i bs = Hunk i (delta bs) bs
   identity (Hunk i _ _) = i
+-- modifyAdvice = bracket_ (Prelude.putStrLn "entering hunk") (Prelude.putStrLn "exiting hunk")
   cache = hunkCache
 
 instance Uninternable Hunk where

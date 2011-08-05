@@ -20,6 +20,7 @@ import Text.Trifecta.Hunk
 import Text.Trifecta.Path
 import Text.Trifecta.Cursor
 import Text.Trifecta.Delta
+-- import Control.Exception
 
 data Strand
   = HunkStrand !Hunk
@@ -75,6 +76,7 @@ instance Interned Rope where
   describe t = DR h i where Cursor _ _ h i = measure t
   identify = Rope
   identity (Rope i _) = i
+-- modifyAdvice = bracket_ (Prelude.putStrLn "entering rope") (Prelude.putStrLn "exiting rope")
   cache = ropeCache
 
 instance Hashable (Description Rope) where

@@ -29,7 +29,7 @@ instance Show a => Show (It a) where
     showString "Done " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 a
   showsPrec d (Fail r b s) = showParen (d > 10) $
     showString "Fail " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 s
-  showsPrec d (Cont k) = showParen (d > 10) $ showString "Cont ..."
+  showsPrec d (Cont _) = showParen (d > 10) $ showString "Cont ..."
 
 instance Functor It where
   fmap f (Done r b a) = Done r b (f a)

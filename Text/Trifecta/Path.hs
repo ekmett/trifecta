@@ -12,6 +12,7 @@ module Text.Trifecta.Path
 import Data.Hashable
 import Data.Interned
 import Data.Interned.String
+--import Control.Exception
 import Data.Semigroup
 import Text.PrettyPrint.Leijen.Extras
 
@@ -78,6 +79,7 @@ instance Interned Path where
         JustFileName f -> Just (identity f)
         NothingFileName -> Nothing
                      
+--  modifyAdvice = bracket_ (putStrLn "entering path") (putStrLn "exiting path")
   identify i (UPath h mf l flags) = Path i h mf l flags
   identity (Path i _ _ _ _) = i
   cache = pathCache
