@@ -45,6 +45,9 @@ size = cursorBytes . measure
 instance Measured Cursor Rope where
   measure (Rope _ t) = measure t
 
+instance Show Rope where
+  showsPrec d (Rope _ r) = showsPrec d (toList r)
+
 lastNewline :: Rope -> Bool -> Int
 lastNewline t True  = size t
 lastNewline t False = case d of

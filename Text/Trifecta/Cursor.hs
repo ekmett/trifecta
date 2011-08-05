@@ -16,7 +16,8 @@ data Cursor = Cursor
   , cursorDelta   :: !Delta
   , cursorSeqHash :: {-# UNPACK #-} !Int
   , cursorSeq     :: !(Seq Id)
-  }
+  } deriving Show
+
 
 instance Eq Cursor where
   Cursor _ _ h k == Cursor _ _ h' k' = h == h' && k == k'

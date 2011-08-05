@@ -19,12 +19,17 @@ import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Parsec.Prim hiding ((<|>))
 
--- type Iteratee = Codensity It
-
 data It a 
   = Done !Rope !Bool a
   | Fail !Rope !Bool String
   | Cont (Rope -> Bool -> It a)
+  
+instance Show a => Show (It a) where
+  showsPrec d (Done r b a) = showParen (d > 10) $ 
+    showString "Done " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 a
+  showsPrec d (Fail r b s) = showParen (d > 10) $
+    showString "Fail " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 s
+  showsPrec d (Cont k) = showParen (d > 10) $ showString "Cont ..."
 
 instance Functor It where
   fmap f (Done r b a) = Done r b (f a)
@@ -83,12 +88,9 @@ instance Stream Cursor It Char where
          | otherwise = error "TODO"
     -- TODO: finish these
 
--- instance Stream Cursor (Codensity It) Char where uncons = lift . uncons
-    
 getWord8 :: Int -> It Word8
 getWord8 n = Cont go where
   go h eof 
     | n < Rope.lastNewline h eof = Done h eof $ indexByte n h
     | eof                        = Fail h True "Unexpected EOF"
     | otherwise                  = Cont $ \h' -> go (h <> h')
-

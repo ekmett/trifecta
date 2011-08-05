@@ -25,6 +25,7 @@ data Delta
               {-# UNPACK #-} !Int  -- ^ the number of bytes in this range
   | Columns   {-# UNPACK #-} !Int  -- ^ the number of characters
               {-# UNPACK #-} !Int  -- ^ the number of bytes
+  deriving Show
 
 instance Hashable Delta where
   hash (Columns c a)      = 0 `hashWithSalt` c `hashWithSalt` a
