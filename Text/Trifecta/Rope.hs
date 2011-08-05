@@ -2,18 +2,24 @@
 module Text.Trifecta.Rope
   ( Strand(..)
   , Rope(..)
+  , indexByte
+  , size
+  , lastNewline
   ) where
 
-import Data.FingerTree
 import Data.Sequence as Seq
 import Data.Interned
 import Data.Hashable
+import Data.Monoid
+import Data.Semigroup
+import Data.ByteString as Strict
+import Data.FingerTree as FingerTree
+import Data.Word
 import Data.Foldable (toList)
 import Text.Trifecta.Hunk
 import Text.Trifecta.Path
 import Text.Trifecta.Cursor
 import Text.Trifecta.Delta
-import Data.ByteString as Strict
 
 data Strand
   = HunkStrand !Hunk
@@ -30,8 +36,35 @@ instance Measured Cursor Strand where
 
 data Rope = Rope 
   { _ropeId  :: {-# UNPACK #-} !Id
-  , ropeTree :: FingerTree Cursor Strand
+  , ropeTree :: !(FingerTree Cursor Strand)
   }
+
+size :: Rope -> Int
+size = cursorBytes . measure
+
+instance Measured Cursor Rope where
+  measure (Rope _ t) = measure t
+
+lastNewline :: Rope -> Bool -> Int
+lastNewline t True  = size t
+lastNewline t False = case d of
+	Columns _ _       -> 0
+        Tab _ _ _         -> 0
+        Lines _ _ b'      -> b - b'
+        Directed _ _ _ b' -> b - b'
+  where Cursor b d _ _ = measure t
+
+indexByte :: Int -> Rope -> Word8
+indexByte i (Rope _ t) = Strict.index a $ i - cursorBytes (measure l) where
+   (l, r) = FingerTree.split (\b -> cursorBytes b > i) t
+   HunkStrand (Hunk _ _ a) FingerTree.:< _ = FingerTree.viewl r
+
+instance Monoid Rope where
+  mempty = intern mempty
+  mappend x y = intern (unintern x `mappend` unintern y)
+
+instance Semigroup Rope where
+  x <> y = intern (unintern x `mappend` unintern y)
 
 instance Interned Rope where
   type Uninterned Rope = FingerTree Cursor Strand
