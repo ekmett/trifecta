@@ -42,23 +42,24 @@ supplyEOF (Cont k)     = k mempty True
 supplyEOF (Done r _ a) = Done r True a
 supplyEOF (Fail r _ a) = Fail r True a
 
-supplyRope :: Rope -> It a -> It a
-supplyRope new (Done old _ a) = Done (old <> new) False a
-supplyRope new (Fail old _ a) = Fail (old <> new) False a
-supplyRope new (Cont k) = k new False
+supplyDefault :: Reducer t Rope => t -> It a -> It a
+supplyDefault new (Done old _ a) = Done (snoc old new) False a
+supplyDefault new (Fail old _ a) = Fail (snoc old new) False a
+supplyDefault new (Cont k)       = k new False
 
 supplyStrand :: Strand -> It a -> It a 
-supplyStrand = supplyRope . intern . FingerTree.singleton
+supplyStrand = supplyDefault
 
 supplyHunk :: Hunk -> It a -> It a
-supplyHunk = supplyStrand . HunkStrand
+supplyHunk = supplyDefault
 
 supplyPath :: Path -> It a -> It a
-supplyPath = supplyStrand . PathStrand
+supplyPath = supplyDefault
 
 supplyByteString :: ByteString -> It a -> It a 
-supplyByteString bs = supplyHunk (intern bs)
+supplyByteString bs = supplyDefault
 
+-- DO NOT WANT
 instance Supply Word8 where
   supply = supplyByteString . Strict.singleton
   supplyList = supplyByteString . Strict.pack

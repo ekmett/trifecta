@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing
-version:       0.2
+version:       0.3
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -29,7 +29,7 @@ library
     wl-pprint-extras >= 1.2      && < 1.3,
     semigroups       >= 0.7.1    && < 0.8, 
     fingertree       >= 0.0.1    && < 0.1,
-    reducers         >= 0.1      && < 0.2,
+    reducers         >= 0.1.2    && < 0.2,
     parsec           >= 3.1.1    && < 3.2,
     utf8-string      >= 0.3.6    && < 0.4,
     semigroupoids    >= 1.2.4    && < 1.3,
@@ -40,11 +40,13 @@ library
 
   exposed-modules:
     Text.Trifecta
+    Text.Trifecta.It
     Text.Trifecta.Path
-    Text.Trifecta.Delta
-    Text.Trifecta.Cursor
     Text.Trifecta.Rope
     Text.Trifecta.Hunk
-    Text.Trifecta.It
+    Text.Trifecta.Delta
+    Text.Trifecta.Tally
+    Text.Trifecta.Cursor
+    Text.Trifecta.Strand
     Text.Trifecta.Supply
 

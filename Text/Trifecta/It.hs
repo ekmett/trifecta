@@ -91,19 +91,23 @@ getEof :: It Bool
 getEof = Cont $ \ r e -> Done r e e 
 
 instance Stream Cursor It Char where
-  uncons (Cursor b d _ _) = (getWord8 b >>= go) <|> return Nothing where
-    go c | c <= 0x7f = do
-        Cursor _ _ i t <- getMeasure
-        return $ Just (toEnum (fromEnum c), Cursor (b + 1) (d <> delta c) i t) -- TODO: add in PathHunks
-         | otherwise = error "TODO"
+  uncons cur = (getStrand cur >>= go) 
+           <|> return Nothing 
+    where
+      go (Cursor b d i,bs,t) 
+        | c <= 0x7f = do
+           return $ Just (toEnum (fromEnum c), Cursor (b + 1) (d <> delta c) i) -- TODO: add in PathHunks
+      | otherwise = error "TODO"
+      where c = head bs
     -- TODO: finish these
 
-getWord8 :: Int -> It Word8
-getWord8 n = Cont go where
+getStrand :: Int -> It (Cursor, Strict.ByteString, FingerTree Cursor Strand)
+getStrand n = Cont go where
   go h eof 
-    | n < Rope.lastNewline h eof = Done h eof $ indexByte n h
-    | eof                        = Fail h True "Unexpected EOF"
-    | otherwise                  = Cont $ \h' -> go (h <> h') -- h' <> h
+    | n < lastNewline h eof = dropRope n h (\c bs t -> Done h eof (c, bs, t)) 
+                                           (Fail h eof "getStrand: dropRope failed")
+    | eof                   = Fail h True "Unexpected EOF"
+    | otherwise             = Cont $ \h' -> go (h <> h') -- h' <> h
 
 sliceIt :: Int -> Int -> It Strict.ByteString
 sliceIt !i !j = Cont go where

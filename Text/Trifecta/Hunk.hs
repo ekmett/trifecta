@@ -1,10 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeFamilies, FlexibleInstances #-}
 module Text.Trifecta.Hunk 
   ( Hunk(..)
+  , hunk
   ) where
 
 import Data.ByteString
-import Data.FingerTree
+import Data.FingerTree as FingerTree
 import Data.Function (on)
 import Data.Hashable
 import Data.Interned
@@ -12,10 +13,19 @@ import Data.Text as Text
 import Data.Text.ICU.Convert
 import GHC.IO
 import Text.Trifecta.Delta
+import Text.Trifecta.Sid
 import Text.PrettyPrint.Leijen.Extras
---import Control.Exception
 
 data Hunk = Hunk {-# UNPACK #-} !Id !Delta {-# UNPACK #-} !ByteString
+
+instance HasSid Hunk where
+  sid (Hunk h _ _) = 42 + h * 2
+
+instance HasSids Hunk where
+  sids s = FingerTree.singleton $! sid s
+
+hunk :: ByteString -> Hunk
+hunk = intern 
 
 -- assuming utf8 encoding
 prettyByteString :: ByteString -> Doc e
@@ -26,7 +36,6 @@ instance Pretty Hunk where
 
 instance Show Hunk where
   showsPrec _ h = displayS (renderPretty 0.9 80 (pretty h))
-
 
 instance Eq Hunk where
   (==) = (==) `on` identity
@@ -46,7 +55,6 @@ instance Interned Hunk where
   describe = Describe
   identify i bs = Hunk i (delta bs) bs
   identity (Hunk i _ _) = i
--- modifyAdvice = bracket_ (Prelude.putStrLn "entering hunk") (Prelude.putStrLn "exiting hunk")
   cache = hunkCache
 
 instance Uninternable Hunk where

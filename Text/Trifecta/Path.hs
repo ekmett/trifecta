@@ -12,13 +12,20 @@ module Text.Trifecta.Path
 import Data.Hashable
 import Data.Interned
 import Data.Interned.String
---import Control.Exception
 import Data.Semigroup
+import Data.FingerTree as FingerTree
+import Text.Trifecta.Path
 import Text.PrettyPrint.Leijen.Extras
 
 type FileName = InternedString
 
 data Path = Path {-# UNPACK #-} !Id !History !MaybeFileName {-# UNPACK #-} !Int [Int]
+
+instance HasSid Path where
+  sid (Path i _ _ _ _) = 231 + i * 2
+
+instance HasSids Path where
+  sids s = FingerTree.singleton $! sid s
 
 prettyPathWith :: (Doc e -> Doc e) -> Path -> Int -> Doc e 
 prettyPathWith wrapDir = go where
