@@ -38,7 +38,7 @@ instance HasDelta (Rendering e) where
   delta = rDelta
 
 rendering :: (Doc e -> Doc e) -> Delta -> ByteString -> Rendering e
-rendering bold d bs = Rendering d (expand bs) 1 (IM.fromList [(0,id),(1,bold)]) IM.empty IM.empty where
+rendering bold d bs = Rendering d (expand bs) 2 (IM.fromList [(0,id),(1,bold)]) IM.empty IM.empty where
   expand :: ByteString -> String
   expand = go 0 . UTF8.toString where
     go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
@@ -76,14 +76,14 @@ addSymbol n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
 addFixit n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
 
 render :: Rendering e -> Doc e
-render r = columns go where
-  go cols = dots $ align $ vsep img
-    where (dots, rdots, lh@(lo, hi)) = window (cols - 5) r
+render r = nesting $ \k -> columns $ \n -> go (n - k) where
+  go cols = (dots $ align $ vsep img) <> linebreak
+    where (dots, rdots, lo, hi) = window (cols - 7) r
           -- line1, line2, line3 :: Doc e
           line1 = rdots $ string $ P.take (hi - lo + 1) $ P.drop lo $ rLine r
           line2 = cluster rSymbols
           line3 = cluster rFixits
-          hasFixits = P.any (inRange lh) $ IM.keys (rFixits r)
+          hasFixits = P.any (inRange (lo, hi)) $ IM.keys (rFixits r)
           img | hasFixits = [line1, line2, line3] 
               | otherwise = [line1, line2]
           cluster m = hcat 
@@ -91,17 +91,20 @@ render r = columns go where
                     . groupBy ((==) `on` fst)
                     $ P.map (\i -> findWithDefault (0,' ') i (m r)) [lo .. hi]
 
-window :: Int -> Rendering e -> (Doc e -> Doc e, Doc e -> Doc e, (Int, Int))
+window :: Int -> Rendering e -> (Doc e -> Doc e, Doc e -> Doc e, Int, Int)
 window w r 
-  | fcs <= w2 = (id ,                       id, (0,  hi))
-  | otherwise = ((bold (text ("...")) <>), (<> bold (text ("..."))), (mn, hi))
+  | clamp_lo  && clamp_hi = (id,        id,        0,    w     )
+  | clamp_lo              = (id,        (<> dots), 0,    w     )
+  |              clamp_hi = ((dots <>), id       , l-w,  l     )
+  | otherwise             = ((dots <>), (<> dots), c-w2, c + w2)
   where 
-    fcs = column r
-    mn = fcs - w2
-    mx = max (fcs + w2) w
-    hi = min mx w
-    w2 = div w 2
     bold = rEffects r IM.! 1
+    dots = bold $ text "..."
+    l = P.length $ rLine r
+    w2 = div w 2
+    c = column r
+    clamp_lo = c <= w2
+    clamp_hi = c + w2 > l
 
 interval :: Int -> EffectId -> String -> IntMap (EffectId, Char) -> IntMap (EffectId, Char)
 interval _ _   []     = id
