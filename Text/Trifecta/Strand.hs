@@ -11,19 +11,15 @@ import Text.Trifecta.Hunk
 import Text.Trifecta.Path
 import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
-import Text.PrettyPrint.Leijen.Extras
 
 data Strand
   = HunkStrand !Hunk
   | PathStrand !Path
+  deriving Show
 
-instance Show Strand where
-  showsPrec d (HunkStrand h) = showsPrec d h
-  showsPrec d (PathStrand p) = showsPrec d p
-
-instance Pretty Strand where
-  pretty (HunkStrand h) = pretty h
-  pretty (PathStrand p) = pretty p
+--instance Show Strand where
+--  showsPrec d (HunkStrand h) = showsPrec d h
+--  showsPrec d (PathStrand p) = showsPrec d p
 
 instance Measured Delta Strand where
   measure (HunkStrand s) = delta s

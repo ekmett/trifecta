@@ -20,7 +20,9 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
 import Text.Trifecta.Strand
 
-data Rope = Rope !Delta !(FingerTree Delta Strand)
+import Debug.Trace
+
+data Rope = Rope !Delta !(FingerTree Delta Strand) deriving Show
 
 rope :: FingerTree Delta Strand -> Rope
 rope r = Rope (measure r) r
@@ -60,8 +62,8 @@ instance Reducer Strict.ByteString Rope where
   cons = cons . hunk 
   snoc r = snoc r . hunk
 
-instance Show Rope where
-  showsPrec d (Rope _ r) = showsPrec d (toList r)
+--instance Show Rope where
+--  showsPrec d (Rope _ r) = showsPrec d (toList r)
 
 -- | obtain the byte location of the last newline in a rope, or the end of the rope if at EOF
 lastNewline :: Rope -> Bool -> Delta
@@ -71,11 +73,22 @@ lastNewline t False = rewind (delta t)
 -- | grab a lazy bytestring starting from some point. This bytestring does not cross path nodes
 --   if the index is to the start of a bytestring fragment, we update it to deal with any 
 --   intervening path fragments
+grab :: Delta -> Rope -> (Delta ->  Lazy.ByteString -> r) -> r -> r
+grab i t ks kf = trace ("{- delta: " ++ show i ++ " rope: " ++ show t ++" l: " ++ show l ++ "r:" ++ show r ++ "-}") trim (toList r) (delta l) (bytes i - bytes l) where
+  trim (PathStrand p : xs)            j k = trace "path"  $ trim xs (j <> delta p) k
+  trim (HunkStrand (Hunk _ _ h) : xs) j 0 = trace "hunk0" $ go j h xs
+  trim (HunkStrand (Hunk _ _ h) : xs) _ k = trace "hunkn" $ go i (Strict.drop k h) xs
+  trim [] _ _                             = trace "nutn" kf
+  go j h s = ks j $ Lazy.fromChunks $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
+  (l, r) = FingerTree.split (\b -> bytes b > bytes i) (strands t)
+
+{-
 grab :: Delta -> Rope -> (Delta -> Lazy.ByteString -> r) -> r -> r
 grab i t ks kf = case FingerTree.viewl r of
+  PathStrand p :< r' -> ks (
   HunkStrand (Hunk _ _ a) :< r' -> case bi - bl of 
-    0  -> ks (measure l) (Lazy.fromChunks $ a : chunks r')
-    db -> ks i           (Lazy.fromChunks $ (Strict.drop db a) : chunks r')
+    0  -> trace "**0**"       $ ks (measure l) (Lazy.fromChunks $ a : chunks r')
+    db -> trace ("**"++show db++"**") $ ks i   (Lazy.fromChunks $ (Strict.drop db a) : chunks r')
   _ -> kf
   where 
     bi = bytes i
@@ -84,6 +97,7 @@ grab i t ks kf = case FingerTree.viewl r of
     chunks s = case viewl s of 
       HunkStrand (Hunk _ _ a) :< s' -> a : chunks s'
       _ -> []
+-}
 
 {-
 indexByte :: Int -> Rope -> Word8

@@ -2,11 +2,10 @@
 module Text.Trifecta.Path
   ( FileName
   , Path(..), History(..)
-  , startPath
+  , file
   , snocPath
   , path
   , appendPath
-  , prettyPathWith
   ) where
 
 import Data.Hashable
@@ -14,29 +13,11 @@ import Data.Interned
 import Data.Interned.String
 import Data.Function (on)
 import Data.Semigroup
-import Text.PrettyPrint.Leijen.Extras
 
 type FileName = InternedString
 
 data Path = Path {-# UNPACK #-} !Id !History !MaybeFileName {-# UNPACK #-} !Int [Int]
   deriving Show
-
--- Todo: Make a prettier path
-prettyPathWith :: (Doc e -> Doc e) -> Path -> Int -> Doc e 
-prettyPathWith wrapDir = go where
-  go (Path _ h mf l flags) delta 
-     = addHistory 
-     $ wrapDir $ hsep $ text "#" : pretty (l + delta) : addFile (map pretty flags) where
-    addHistory = case h of
-      Continue p d -> above (prettyPathWith wrapDir p d)
-      Complete -> id
-    addFile = case mf of
-      JustFileName f -> (:) (dquotes (pretty (unintern f)))
-      NothingFileName -> id
-
-instance Pretty Path where
-  pretty p = prettyPathWith id p 0
-
 
 instance Eq Path where
   (==) = (==) `on` identity
@@ -51,8 +32,8 @@ data History = Continue !Path {-# UNPACK #-} !Int | Complete deriving (Eq, Show)
 
 data MaybeFileName = JustFileName !FileName | NothingFileName deriving (Eq, Show)
 
-startPath :: FileName -> Path 
-startPath !n = path Complete (JustFileName n) 0 []
+file :: String -> Path 
+file !n = path Complete (JustFileName (intern n)) 0 []
 
 snocPath :: Path -> Int -> MaybeFileName -> Int -> [Int] -> Path
 snocPath d l jf l' flags = path (Continue d l) jf l' flags
@@ -101,3 +82,25 @@ instance Hashable (Description Path) where
 pathCache :: Cache Path
 pathCache = mkCache
 {-# NOINLINE pathCache #-}
+
+{-
+
+instance Pretty Path where
+  pretty p = prettyPathWith id p 0
+
+prettyPathWith :: (Doc e -> Doc e) -> Path -> Int -> Doc e 
+prettyPathWith wrapDir = go where
+  go (Path _ h mf l flags) delta 
+     = addHistory 
+     $ wrapDir $ hsep $ text "#" : pretty (l + delta) : addFile (map pretty flags) where
+    addHistory = case h of
+      Continue p d -> above (prettyPathWith wrapDir p d)
+      Complete -> id
+    addFile = case mf of
+      JustFileName f -> (:) (dquotes (pretty (unintern f)))
+      NothingFileName -> id
+
+instance Show Path where
+  showsPrec d (Path _ _ (JustFileName f) l _) = showString (unintern f) . showChar ':' . showsPrec 10 l
+  showsPrec d (Path _ _ NothingFileName l _) = showString "-:" . showsPrec 10 l
+-}

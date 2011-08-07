@@ -5,30 +5,24 @@ module Text.Trifecta.Hunk
   ) where
 
 import Data.ByteString
+import qualified Data.ByteString.UTF8 as UTF8
 import Data.FingerTree as FingerTree
 import Data.Function (on)
 import Data.Hashable
 import Data.Interned
-import Data.Text as Text
-import Data.Text.ICU.Convert
-import GHC.IO
+import Data.String
 import Text.Trifecta.Delta
-import Text.PrettyPrint.Leijen.Extras
 
 data Hunk = Hunk {-# UNPACK #-} !Id !Delta {-# UNPACK #-} !ByteString
+  deriving Show
 
 hunk :: ByteString -> Hunk
 hunk = intern 
 
--- assuming utf8 encoding
-prettyByteString :: ByteString -> Doc e
-prettyByteString bs = string (Text.unpack (toUnicode (unsafeDupablePerformIO (open "UTF8" Nothing)) bs))
+-- instance Show Hunk where showsPrec d (Hunk _ _ b) = showsPrec d b
 
-instance Pretty Hunk where
-  pretty (Hunk _ _ bs) = prettyByteString bs
-
-instance Show Hunk where
-  showsPrec _ h = displayS (renderPretty 0.9 80 (pretty h))
+instance IsString Hunk where
+  fromString = hunk . UTF8.fromString
 
 instance Eq Hunk where
   (==) = (==) `on` identity

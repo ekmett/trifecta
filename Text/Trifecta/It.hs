@@ -16,6 +16,7 @@ import Data.Functor.Bind
 import Data.Functor.Plus
 import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
+import Text.Trifecta.Bytes
 import Text.Parsec.Prim hiding ((<|>))
 
 data It a 
@@ -74,7 +75,7 @@ input :: It Rope
 input = Cont $ \r e -> Done r e r
 
 instance Stream Delta It Char where
-  uncons d = k <$> peekIt d <|> return Nothing where 
+  uncons d = (k <$> peekIt d) <|> return Nothing where 
     k (d', bs) = case LazyUTF8.uncons bs of
       Just (c, _) -> Just (c, d' <> delta c)
       Nothing     -> Nothing
@@ -82,7 +83,7 @@ instance Stream Delta It Char where
 peekIt :: Delta -> It (Delta, Lazy.ByteString)
 peekIt n = Cont go where
   go h eof 
-    | n < lastNewline h eof = grab n h (\c lbs -> Done h eof (c, lbs)) 
-                                       (Fail h eof "peek: failed to grab rope")
+    | bytes n < bytes (lastNewline h eof) = grab n h (\c lbs -> Done h eof (c, lbs)) 
+                                            (Fail h eof "peek: failed to grab rope")
     | eof                   = Fail h True "Unexpected EOF"
     | otherwise             = Cont $ \h' -> go (h <> h') -- h' <> h
