@@ -2,6 +2,7 @@
 module Text.Trifecta.Rope
   ( Rope(..)
   , rope
+  , strands
   , grab
   , lastNewline
   ) where

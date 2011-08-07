@@ -44,9 +44,9 @@ library
     Text.Trifecta.Path
     Text.Trifecta.Rope
     Text.Trifecta.Hunk
-    Text.Trifecta.Delta
     Text.Trifecta.Bytes
+    Text.Trifecta.Caret
+    Text.Trifecta.Delta
     Text.Trifecta.Strand
     Text.Trifecta.Supply
-    Text.Trifecta.Caret
-
+    Text.Trifecta.Parser

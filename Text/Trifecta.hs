@@ -8,6 +8,7 @@ module Text.Trifecta
   , module Text.Trifecta.Delta
   , module Text.Trifecta.Strand
   , module Text.Trifecta.Supply
+  , module Text.Trifecta.Parser
   ) where
 
 import Text.Trifecta.It
@@ -19,5 +20,4 @@ import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
 import Text.Trifecta.Strand
 import Text.Trifecta.Supply
-
-
+import Text.Trifecta.Parser
