@@ -53,23 +53,23 @@ effect f = do
    put s { rFresh = eff + 1, rEffects = IM.insert eff f (rEffects s) }
    return eff
 
-drawCaret :: EffectId -> Caret -> State (Rendering e) ()
-drawCaret eff (Caret p _)  = modify img where
-  img r | near p r  = addSymbol (column p) eff "^" r
-        | otherwise = r
+drawCaret :: EffectId -> Caret -> Rendering e -> Rendering e
+drawCaret eff (Caret p _) r 
+  | near p r  = addSymbol (column p) eff "^" r
+  | otherwise = r
 
-drawCover :: EffectId -> Cover -> State (Rendering e) ()
-drawCover eff (Cover (Caret s _) e) = modify img where
-  img r | nl && nh  = addSymbol (column l) eff (P.replicate (column h - column l + 1) '~') r
-        | nl        = addSymbol (column l) eff (P.replicate (cols     - column l) '~' ++ ">") r
-        | nh        = addSymbol 0 eff ('<' : P.replicate (column l) '~') r
-        | otherwise = r
-    where 
-      l = argmin bytes s e 
-      h = argmax bytes s e
-      nl = near l r
-      nh = near h r
-      cols = P.length (rLine r)
+drawCover :: EffectId -> Cover -> Rendering e -> Rendering e
+drawCover eff (Cover (Caret s _) e) r
+  | nl && nh  = addSymbol (column l) eff (P.replicate (column h - column l + 1) '~') r
+  | nl        = addSymbol (column l) eff (P.replicate (cols     - column l) '~' ++ ">") r
+  | nh        = addSymbol 0 eff ('<' : P.replicate (column l) '~') r
+  | otherwise = r
+  where 
+    l = argmin bytes s e 
+    h = argmax bytes s e
+    nl = near l r
+    nh = near h r
+    cols = P.length (rLine r)
 
 addSymbol, addFixit :: Int -> EffectId -> String -> Rendering e -> Rendering e
 addSymbol n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
@@ -78,33 +78,27 @@ addFixit n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
 render :: Rendering e -> Doc e
 render r = columns go where
   go cols = dots $ align $ vsep img
-    where (dots, lh@(lo, hi)) = window (cols - 10) r
+    where (dots, rdots, lh@(lo, hi)) = window (cols - 5) r
           -- line1, line2, line3 :: Doc e
-          line1 = string $ P.take (hi - lo) $ P.drop lo (rLine r)
-          line2 = cluster (rEffects r) $ scan (rSymbols r)
-          line3 = cluster (rEffects r) $ scan (rFixits r)
+          line1 = rdots $ string $ P.take (hi - lo + 1) $ P.drop lo $ rLine r
+          line2 = cluster rSymbols
+          line3 = cluster rFixits
           hasFixits = P.any (inRange lh) $ IM.keys (rFixits r)
           img | hasFixits = [line1, line2, line3] 
               | otherwise = [line1, line2]
+          cluster m = hcat 
+                    . P.map (\g -> findWithDefault id (fst (P.head g)) (rEffects r) $ string (P.map snd g))
+                    . groupBy ((==) `on` fst)
+                    $ P.map (\i -> findWithDefault (0,' ') i (m r)) [lo .. hi]
 
-          scan :: IntMap (EffectId, Char) -> [(EffectId, Char)]
-          scan m =   findWithDefault (0,'<') lo m :
-                   [ findWithDefault (0,' ') i m | i <- [lo + 1 .. hi - 1]] ++
-                   [ findWithDefault (0,'>') hi m ]
-
-          -- cluster :: IntMap (Doc e -> Doc e) -> [(EffectId, Char)] -> Doc e
-          cluster m xs = hcat [ findWithDefault id (fst (P.head g)) m $ string (P.map snd g) 
-                              | g <- groupBy ((==) `on` fst) xs 
-                              ]
-
-window :: Int -> Rendering e -> (Doc e -> Doc e, (Int, Int))
+window :: Int -> Rendering e -> (Doc e -> Doc e, Doc e -> Doc e, (Int, Int))
 window w r 
-  | fcs <= w2 = (id ,                       (0,  hi))
-  | otherwise = ((bold (text ("...")) <+>), (mn, hi))
+  | fcs <= w2 = (id ,                       id, (0,  hi))
+  | otherwise = ((bold (text ("...")) <>), (<> bold (text ("..."))), (mn, hi))
   where 
     fcs = column r
     mn = fcs - w2
-    mx = fcs + w2
+    mx = max (fcs + w2) w
     hi = min mx w
     w2 = div w 2
     bold = rEffects r IM.! 1
