@@ -9,6 +9,7 @@ module Text.Trifecta
   , module Text.Trifecta.Strand
   , module Text.Trifecta.Supply
   , module Text.Trifecta.Parser
+  , module Text.Trifecta.Render
   ) where
 
 import Text.Trifecta.It
@@ -21,3 +22,4 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Strand
 import Text.Trifecta.Supply
 import Text.Trifecta.Parser
+import Text.Trifecta.Render

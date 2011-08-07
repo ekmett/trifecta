@@ -4,6 +4,7 @@ module Text.Trifecta.Delta
   , nextTab
   , rewind
   , near
+  , column
   ) where
 
 import Data.Monoid
@@ -32,6 +33,13 @@ data Delta
               {-# UNPACK #-} !Int  -- ^ number of bytes
               {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
   deriving (Eq, Ord, Show)
+
+column :: HasDelta t => t -> Int
+column t = case delta t of 
+  Columns c _ -> c
+  Tab b a _ -> nextTab b + a
+  Lines _ c _ _ -> c
+  Directed _ _ c _ _ -> c
 
 instance HasBytes Delta where
   bytes (Columns _ b) = b
@@ -75,10 +83,11 @@ rewind (Lines n _ b d)      = Lines n 0 (b - d) 0
 rewind (Directed p n _ b d) = Directed p n 0 (b - d) 0
 rewind _                    = Columns 0 0 
 
-near :: Delta -> Delta -> Bool
-near (Directed p l _ _ _) (Directed p' l' _ _ _) = p == p' && l == l'
-near (Lines l _ _ _) (Lines l' _ _ _) = l == l'
-near _ _ = True
+near :: (HasDelta s, HasDelta t) => s -> t -> Bool
+near s t = case (delta s, delta t) of
+  (Directed p l _ _ _, Directed p' l' _ _ _) ->  p == p' && l == l'
+  (Lines l _ _ _, Lines l' _ _ _) ->             l == l'
+  _ -> True
 
 class HasDelta t where
   delta :: t -> Delta
