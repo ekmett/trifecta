@@ -1,29 +1,32 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Text.Trifecta.Supply 
   ( Supply(..)
-  , EOF(..)
+  , EOF(EOF)
   , supplyEOF
-  , supplyRope
+  -- * type restricted versions of supply
+  , supplyDefault
   , supplyStrand
   , supplyHunk
   , supplyPath
   , supplyByteString
   ) where
 
-import Text.Trifecta.Path
-import Text.Trifecta.Rope
-import Text.Trifecta.Hunk
-import Text.Trifecta.It
-import Data.Interned
+import Control.Parallel.Strategies hiding (Done)
 import Data.Monoid
-import Data.Semigroup
+import Data.Semigroup.Reducer
 import Data.Foldable
 import Data.Word
 import Data.Semigroup.Foldable
 import Data.List.NonEmpty
 import Data.FingerTree as FingerTree
-import Data.ByteString as Strict
+import qualified Data.ByteString as Strict
+import qualified Data.ByteString.Lazy as Lazy
 import Data.ByteString.UTF8 as UTF8
-import Control.Parallel.Strategies hiding (Done)
+import Text.Trifecta.Path
+import Text.Trifecta.Rope
+import Text.Trifecta.Hunk
+import Text.Trifecta.Strand
+import Text.Trifecta.It
 
 -- enumerators for our iteratee
 
@@ -45,7 +48,7 @@ supplyEOF (Fail r _ a) = Fail r True a
 supplyDefault :: Reducer t Rope => t -> It a -> It a
 supplyDefault new (Done old _ a) = Done (snoc old new) False a
 supplyDefault new (Fail old _ a) = Fail (snoc old new) False a
-supplyDefault new (Cont k)       = k new False
+supplyDefault new (Cont k)       = k (unit new) False
 
 supplyStrand :: Strand -> It a -> It a 
 supplyStrand = supplyDefault
@@ -57,7 +60,7 @@ supplyPath :: Path -> It a -> It a
 supplyPath = supplyDefault
 
 supplyByteString :: ByteString -> It a -> It a 
-supplyByteString bs = supplyDefault
+supplyByteString = supplyDefault
 
 -- DO NOT WANT
 instance Supply Word8 where
@@ -65,17 +68,18 @@ instance Supply Word8 where
   supplyList = supplyByteString . Strict.pack
 
 instance Supply Char where
-  supply c | fromEnum c <= 0x7f = supplyByteString $ Strict.singleton $ toEnum $ fromEnum c
-           | otherwise = error "TODO"
-        -- TODO: more
+  supply c = supplyByteString (UTF8.fromString [c])
   supplyList = supplyByteString . UTF8.fromString
 
 instance Supply a => Supply [a] where
   supply = supplyList
 
-instance Supply ByteString where
+instance Supply Strict.ByteString where
   supply = supplyByteString
-  supplyList = supplyList . Prelude.map (HunkStrand . intern)
+  supplyList = supplyList . Prelude.map (HunkStrand . hunk)
+
+instance Supply Lazy.ByteString where
+  supply = supplyList . Lazy.toChunks 
 
 instance Supply Hunk where
   supply = supplyHunk
@@ -84,13 +88,13 @@ instance Supply Hunk where
 instance Supply Path where
   supply = supplyPath
   supplyList [] = id
-  supplyList (x:xs) = supplyPath $ fold1 (x:|xs)
+  supplyList (x:xs) = supplyPath $ fold1 (x :| xs)
 
 instance Supply Strand where
   supply = supplyStrand
-  supplyList xs = supplyRope (intern (FingerTree.fromList xs')) where
+  supplyList xs = supply (rope (FingerTree.fromList xs')) where
      !xs' = withStrategy (evalList rseq) xs
 
 instance Supply Rope where
-  supply = supplyRope
-  supplyList = supplyRope . fold
+  supply = supplyDefault
+  supplyList = supplyDefault . fold

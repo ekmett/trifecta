@@ -45,8 +45,8 @@ library
     Text.Trifecta.Rope
     Text.Trifecta.Hunk
     Text.Trifecta.Delta
-    Text.Trifecta.Tally
-    Text.Trifecta.Cursor
+    Text.Trifecta.Bytes
     Text.Trifecta.Strand
     Text.Trifecta.Supply
+    Text.Trifecta.Caret
 

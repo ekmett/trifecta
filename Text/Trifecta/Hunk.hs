@@ -13,16 +13,9 @@ import Data.Text as Text
 import Data.Text.ICU.Convert
 import GHC.IO
 import Text.Trifecta.Delta
-import Text.Trifecta.Sid
 import Text.PrettyPrint.Leijen.Extras
 
 data Hunk = Hunk {-# UNPACK #-} !Id !Delta {-# UNPACK #-} !ByteString
-
-instance HasSid Hunk where
-  sid (Hunk h _ _) = 42 + h * 2
-
-instance HasSids Hunk where
-  sids s = FingerTree.singleton $! sid s
 
 hunk :: ByteString -> Hunk
 hunk = intern 

@@ -1,9 +1,9 @@
 module Text.Trifecta.Delta 
   ( Delta(..) 
   , HasDelta(..)
-  , HasBytes(..)
   , nextTab
   , rewind
+  , near
   ) where
 
 import Data.Monoid
@@ -11,25 +11,33 @@ import Data.Semigroup
 import Data.Hashable
 import Data.Word
 import Data.Foldable
+import Data.FingerTree
 import Data.ByteString
 import Text.Trifecta.Path
+import Text.Trifecta.Bytes
 
 data Delta
-  = Directed                 !Path -- ^ the sequence of #line directives since the start of the file
-              {-# UNPACK #-} !Int  -- ^ the number of lines since the last line directive
-              {-# UNPACK #-} !Int  -- ^ the number of characters since the last newline
-              {-# UNPACK #-} !Int  -- ^ number of bytes
-              {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
+  = Columns   {-# UNPACK #-} !Int  -- ^ the number of characters
+              {-# UNPACK #-} !Int  -- ^ the number of bytes
+  | Tab       {-# UNPACK #-} !Int  -- ^ the number of characters before the tab
+              {-# UNPACK #-} !Int  -- ^ the number of characters after the tab
+              {-# UNPACK #-} !Int  -- ^ the number of bytes
   | Lines     {-# UNPACK #-} !Int  -- ^ the number of newlines contained
               {-# UNPACK #-} !Int  -- ^ the number of characters since the last newline
               {-# UNPACK #-} !Int  -- ^ number of bytes
               {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
-  | Tab       {-# UNPACK #-} !Int  -- ^ the number of characters before the tab
-              {-# UNPACK #-} !Int  -- ^ the number of characters after the tab
-              {-# UNPACK #-} !Int  -- ^ the number of bytes
-  | Columns   {-# UNPACK #-} !Int  -- ^ the number of characters
-              {-# UNPACK #-} !Int  -- ^ the number of bytes
-  deriving Show
+  | Directed                 !Path -- ^ the sequence of #line directives since the start of the file
+              {-# UNPACK #-} !Int  -- ^ the number of lines since the last line directive
+              {-# UNPACK #-} !Int  -- ^ the number of characters since the last newline
+              {-# UNPACK #-} !Int  -- ^ number of bytes
+              {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
+  deriving (Eq, Ord, Show)
+
+instance HasBytes Delta where
+  bytes (Columns _ b) = b
+  bytes (Tab _ _ b) = b
+  bytes (Lines _ _ b _) = b
+  bytes (Directed _ _ _ b _) = b
 
 instance Hashable Delta where
   hash (Columns c a)        = 0 `hashWithSalt` c `hashWithSalt` a
@@ -63,20 +71,29 @@ nextTab :: Int -> Int
 nextTab x = x + (8 - mod x 8)
 
 rewind :: Delta -> Delta
-rewind (Lines n c b d)      = Lines n 0 (b - d) 0
-rewind (Directed p n c b d) = Directed p n 0 (b - d) 0
+rewind (Lines n _ b d)      = Lines n 0 (b - d) 0
+rewind (Directed p n _ b d) = Directed p n 0 (b - d) 0
 rewind _                    = Columns 0 0 
+
+near :: Delta -> Delta -> Bool
+near (Directed p l _ _ _) (Directed p' l' _ _ _) = p == p' && l == l'
+near (Lines l _ _ _) (Lines l' _ _ _) = l == l'
+near _ _ = True
 
 class HasDelta t where
   delta :: t -> Delta
 
+instance HasDelta Delta where
+  delta = id
+
 instance HasDelta Char where
   delta '\t' = Tab 0 0 1
   delta '\n' = Lines 1 0 1 0
-  delta c | c <= 0x7f   = Columns 1 1
-          | c <= 0x7ff  = Columns 1 2
-          | c <= 0xffff = Columns 1 3
+  delta c | o <= 0x7f   = Columns 1 1
+          | o <= 0x7ff  = Columns 1 2
+          | o <= 0xffff = Columns 1 3
           | otherwise   = Columns 1 4
+    where o = fromEnum c
 
 instance HasDelta Word8 where
   delta 9  = Tab 0 0 1
@@ -93,23 +110,3 @@ instance HasDelta Path where
 
 instance (Measured v a, HasDelta v) => HasDelta (FingerTree v a) where
   delta = delta . measure
-
-
-
-
-class HasBytes t where
-  bytes :: t -> Int
-
-instance HasBytes ByteString where
-  bytes = Strict.length
-
-instance (Measured v a, HasBytes v) => HasBytes (FingerTree v a) where
-  bytes = bytes . measure
-
-instance HasBytes Delta where
-  bytes (Columns _ b) = b
-  bytes (Tab _ _ b) = b
-  bytes (Lines _ _ b _) = b
-  bytes (Directed _ _ _ b _) = b
-
-

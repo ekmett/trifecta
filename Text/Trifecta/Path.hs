@@ -12,21 +12,16 @@ module Text.Trifecta.Path
 import Data.Hashable
 import Data.Interned
 import Data.Interned.String
+import Data.Function (on)
 import Data.Semigroup
-import Data.FingerTree as FingerTree
-import Text.Trifecta.Path
 import Text.PrettyPrint.Leijen.Extras
 
 type FileName = InternedString
 
 data Path = Path {-# UNPACK #-} !Id !History !MaybeFileName {-# UNPACK #-} !Int [Int]
+  deriving Show
 
-instance HasSid Path where
-  sid (Path i _ _ _ _) = 231 + i * 2
-
-instance HasSids Path where
-  sids s = FingerTree.singleton $! sid s
-
+-- Todo: Make a prettier path
 prettyPathWith :: (Doc e -> Doc e) -> Path -> Int -> Doc e 
 prettyPathWith wrapDir = go where
   go (Path _ h mf l flags) delta 
@@ -42,11 +37,19 @@ prettyPathWith wrapDir = go where
 instance Pretty Path where
   pretty p = prettyPathWith id p 0
 
-instance Show Path where
-  showsPrec _ p = displayS (renderPretty 0.9 80 (pretty p))
 
-data History = Continue !Path {-# UNPACK #-} !Int | Complete
-data MaybeFileName = JustFileName !FileName | NothingFileName deriving Eq
+instance Eq Path where
+  (==) = (==) `on` identity
+
+-- NB: this is subtle in that it also lets us say 
+-- if one might be a prefix of the other due to
+-- the way we construct the hash cons table
+instance Ord Path where
+  compare = compare `on` identity
+
+data History = Continue !Path {-# UNPACK #-} !Int | Complete deriving (Eq, Show)
+
+data MaybeFileName = JustFileName !FileName | NothingFileName deriving (Eq, Show)
 
 startPath :: FileName -> Path 
 startPath !n = path Complete (JustFileName n) 0 []
@@ -54,7 +57,6 @@ startPath !n = path Complete (JustFileName n) 0 []
 snocPath :: Path -> Int -> MaybeFileName -> Int -> [Int] -> Path
 snocPath d l jf l' flags = path (Continue d l) jf l' flags
 
--- does case analysis to ensure the Maybe carries a fully evaluated argument
 path :: History -> MaybeFileName -> Int -> [Int] -> Path
 path !h !mf l flags = intern (UPath h mf l flags)
 
@@ -86,7 +88,6 @@ instance Interned Path where
         JustFileName f -> Just (identity f)
         NothingFileName -> Nothing
                      
---  modifyAdvice = bracket_ (putStrLn "entering path") (putStrLn "exiting path")
   identify i (UPath h mf l flags) = Path i h mf l flags
   identity (Path i _ _ _ _) = i
   cache = pathCache
