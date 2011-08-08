@@ -87,7 +87,11 @@ near :: (HasDelta s, HasDelta t) => s -> t -> Bool
 near s t = case (delta s, delta t) of
   (Directed p l _ _ _, Directed p' l' _ _ _) ->  p == p' && l == l'
   (Lines l _ _ _, Lines l' _ _ _) ->             l == l'
-  _ -> True
+  (Columns _ _, Columns _ _) -> True
+  (Columns _ _, Tab _ _ _) -> True
+  (Tab _ _ _, Columns _ _) -> True
+  (Tab _ _ _, Tab _ _ _) -> True
+  _ -> False
 
 class HasDelta t where
   delta :: t -> Delta

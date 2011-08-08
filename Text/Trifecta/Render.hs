@@ -71,9 +71,11 @@ instance HasDelta Rendering where
 class Renderable t where
   rendering :: t -> Rendering 
 
+instance Renderable Rendering where
+  rendering = id
+
 class Source t where
   source :: t -> (Int, Line -> Line)
-
 
 instance Source String where
   source s = (P.length s', draw [] 0 s') where s' = expand s
@@ -100,9 +102,9 @@ addCaret p r
 
 addSpan :: Delta -> Delta -> Rendering -> Rendering 
 addSpan s e r
-  | nl && nh = addSym r $ draw spanEffects (column l) $ P.replicate (max (column h   - column l + 1) 0) '~' 
-  | nl       = addSym r $ draw spanEffects (column l) $ P.replicate (max (rLineLen r - column l) 0) '~' ++ ">"
-  |       nh = addSym r $ draw spanEffects (-1)       $ '<' : P.replicate (column l) '~'
+  | nl && nh  = addSym r $ draw spanEffects (column l) $ P.replicate (max (column h   - column l + 1) 0) '~' 
+  | nl        = addSym r $ draw spanEffects (column l) $ P.replicate (max (rLineLen r - column l + 2) 0) '~'
+  |       nh  = addSym r $ draw spanEffects (-1)       $ P.replicate (max (column h + 1) 0) '~'
   | otherwise = r
   where 
     l = argmin bytes s e 
@@ -142,7 +144,7 @@ blankLine lo hi = listArray (lo,hi) (repeat ([],' '))
 
 window :: Int -> Int -> Int -> (Int, Int)
 window c l w 
-  | c <= w2     = (0, w)
+  | c <= w2     = (0, min w l)
   | c + w2 >= l = if l > w then (l-w, l) else (0, w)
   | otherwise   = (c-w2,c + w2)
   where w2 = div w 2
