@@ -7,15 +7,19 @@ module Text.Trifecta.Delta
   , column
   ) where
 
+import Control.Applicative
 import Data.Monoid
 import Data.Semigroup
 import Data.Hashable
 import Data.Word
+import Data.Interned
 import Data.Foldable
-import Data.FingerTree
-import Data.ByteString
+import Data.FingerTree hiding (empty)
+import Data.ByteString hiding (empty)
 import Text.Trifecta.Path
 import Text.Trifecta.Bytes
+import Text.PrettyPrint.Free hiding (column)
+import System.Console.Terminfo.PrettyPrint
 
 data Delta
   = Columns   {-# UNPACK #-} !Int  -- the number of characters
@@ -33,6 +37,22 @@ data Delta
               {-# UNPACK #-} !Int  -- number of bytes
               {-# UNPACK #-} !Int  -- the number of bytes since the last newline
   deriving (Eq, Ord, Show)
+
+instance Pretty Delta where
+  pretty p = prettyTerm p *> empty
+
+instance PrettyTerm Delta where
+  prettyTerm d = case d of
+    Columns c _ -> k "-" 1 c
+    Tab x y _ -> k "-" 1 (nextTab x + y)
+    Lines l c _ _ -> k "-" l c
+    Directed (Path _ _ _ fn _ _) l c _ _ -> k (maybeFileName "-" unintern fn) l c  -- TODO: add include path
+    where 
+      k fn ln cn = bold (string fn)           
+                <> char ':' 
+                <> bold (int ln)         
+                <> char ':' 
+                <> bold (int (cn + 1))
 
 column :: HasDelta t => t -> Int
 column t = case delta t of 

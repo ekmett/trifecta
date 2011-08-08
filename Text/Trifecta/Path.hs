@@ -7,6 +7,9 @@ module Text.Trifecta.Path
   , path
   , appendPath
   , comparablePath
+  -- * Internals
+  , MaybeFileName(..)
+  , maybeFileName
   ) where
 
 import Data.Hashable
@@ -37,6 +40,10 @@ instance Ord Path where
 data History = Continue !Path {-# UNPACK #-} !Int | Complete deriving (Eq, Show)
 
 data MaybeFileName = JustFileName !FileName | NothingFileName deriving (Eq, Show)
+
+maybeFileName :: r -> (FileName -> r) -> MaybeFileName -> r
+maybeFileName n _ NothingFileName  = n
+maybeFileName _ f (JustFileName a) = f a
 
 file :: String -> Path 
 file !n = path Complete (JustFileName (intern n)) 0 []

@@ -13,6 +13,7 @@ module Text.Trifecta
   , module Text.Trifecta.Supply
   , module Text.Trifecta.Render
   , module Text.Trifecta.Rendered
+  , module Text.Trifecta.Diagnostic
   ) where
 
 import Text.Trifecta.It
@@ -29,3 +30,4 @@ import Text.Trifecta.Strand
 import Text.Trifecta.Supply
 import Text.Trifecta.Render
 import Text.Trifecta.Rendered
+import Text.Trifecta.Diagnostic

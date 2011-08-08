@@ -19,7 +19,7 @@ import Data.Function (on)
 import Text.Trifecta.Delta
 import Data.Semigroup
 import Data.Array
-import Text.PrettyPrint.Leijen.Extras hiding (column)
+import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
 import Control.Monad.State
 import Prelude as P
