@@ -5,7 +5,7 @@ module Text.Trifecta.Parser
   , slice
   , sliced
   , careted
-  , covered
+  , spanned
   ) where
 
 import Control.Applicative
@@ -64,13 +64,13 @@ sliced pa = do
   release <- getInput
   slice mark release
 
-covered :: P u a -> P u (Covered a)
-covered p = do
+spanned :: P u a -> P u (Spanned a)
+spanned p = do
   m <- getInput
   l <- line m
   a <- p
   r <- getInput
-  return $ a :~ Cover (Caret m l) r
+  return $ a :~ Span m r l
 
 careted :: P u a -> P u (Careted a)
 careted p = do

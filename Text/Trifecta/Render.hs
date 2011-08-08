@@ -1,120 +1,158 @@
-module Text.Trifecta.Render
+{-# LANGUAGE TypeSynonymInstances #-}
+-- | Diagnostics rendering
+module Text.Trifecta.Render 
   ( Rendering(..)
-  , rendering
-  , render
-  , addSymbol
+  , Renderable(..)
+  , Source(..)
+  , surface
+  , draw
+  , addSym
+  , addFix
+  , addCaret
+  , addSpan
   , addFixit
-  , effect
-  , drawCover
-  , drawCaret
+  -- * Internals
+  , withEffects
+  , caretEffects, fixitEffects, spanEffects, outOfRangeEffects
+  , blankLine
   ) where
 
-import Data.Ix (inRange)
-import Data.ByteString hiding (groupBy)
+import Control.Applicative hiding (empty)
+import Data.ByteString hiding (groupBy, empty, any)
 import qualified Data.ByteString.UTF8 as UTF8 
 import Data.List (groupBy)
 import Data.Function (on)
-import Data.IntMap as IM
 import Text.Trifecta.Delta
+import Data.Foldable (toList)
+import Data.Array
 import Text.Trifecta.Bytes
-import Text.Trifecta.Caret
 import Text.PrettyPrint.Leijen.Extras hiding (column)
+import System.Console.Terminfo.Color
+import System.Console.Terminfo.PrettyPrint
 import Control.Monad.State
 import Prelude as P
 
-type Effect e = Doc e -> Doc e
-type EffectId = Int
+withEffects :: TermDoc -> [ScopedEffect] -> TermDoc
+withEffects = P.foldr with
 
-data Rendering e = Rendering 
-  { rDelta   :: !Delta
-  , rLine    :: String
-  , rFresh   :: !EffectId
-  , rEffects :: !(IntMap (Effect e))
-  , rSymbols :: !(IntMap (EffectId, Char))
-  , rFixits  :: !(IntMap (EffectId, Char))
+caretEffects, fixitEffects, spanEffects :: [ScopedEffect]
+caretEffects = [soft (Foreground Green), soft Bold]
+fixitEffects = [soft (Foreground Blue)]
+spanEffects = [soft (Foreground Green)]
+
+outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
+outOfRangeEffects xs = soft Bold : xs
+
+type Line = Array Int ([ScopedEffect], Char)
+
+blankLine :: Int -> Int -> Line
+blankLine lo hi = listArray (lo,hi) (repeat ([],' '))
+
+draw :: [ScopedEffect] -> Int -> String -> Line -> Line
+draw e n xs a = lt $ gt $ a // P.filter (inRange bds . fst) out
+    where bds@(lo,hi) = bounds a
+          out = P.zipWith (\i c -> (i,(e,c))) [n..] xs
+          lt | any (\el -> fst el < lo) out = (// [(lo,(outOfRangeEffects e,'<'))])
+             | otherwise = id
+          gt | any (\el -> fst el > hi) out = (// [(hi,(outOfRangeEffects e,'>'))])
+             | otherwise = id
+
+data Rendering = Rendering 
+  { rDelta   :: !Delta                -- focus, the rendering will keep this visible
+  , rLineLen :: {-# UNPACK #-} !Int   -- actual line length
+  , rLine    :: Line -> Line          -- source contents
+  , rSymbols :: Line -> Line          -- annotations about the line
+  , rFixits  :: Maybe (Line -> Line)  -- fixits providing alternate text
   }
 
-instance HasDelta (Rendering e) where
+addSym, addFix :: Rendering -> (Line -> Line) -> Rendering
+addSym r f = r { rSymbols = f . rSymbols r }
+addFix r f = r { rFixits = fmap (f .) (rFixits r) <|> Just f } 
+
+instance HasDelta Rendering where
   delta = rDelta
 
-rendering :: (Doc e -> Doc e) -> Delta -> ByteString -> Rendering e
-rendering bold d bs = Rendering d (expand bs) 2 (IM.fromList [(0,id),(1,bold)]) IM.empty IM.empty where
-  expand :: ByteString -> String
-  expand = go 0 . UTF8.toString where
-    go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
-    go _ ('\n':_)  = []
-    go n (x:xs)    = x : go (n + 1) xs
-    go _ []        = []
+class Renderable t where
+  rendering :: t -> Rendering 
 
-effect :: Effect e -> State (Rendering e) EffectId
-effect f = do
-   s <- get
-   let eff = rFresh s
-   put s { rFresh = eff + 1, rEffects = IM.insert eff f (rEffects s) }
-   return eff
+class Source t where
+  source :: t -> (Int, Line -> Line)
 
-drawCaret :: EffectId -> Caret -> Rendering e -> Rendering e
-drawCaret eff (Caret p _) r 
-  | near p r  = addSymbol (column p) eff "^" r
+instance Source String where
+  source s = let s' = expand s in (P.length s', (// P.zipWith (\i c -> (i,([],c))) [0..] s'))
+
+instance Source ByteString where
+  source = source . UTF8.toString
+
+-- | create a drawing surface
+surface :: Source s => Delta -> s -> Rendering
+surface d s = case source s of 
+  (ls, doc) -> Rendering d ls doc id Nothing
+
+expand :: String -> String
+expand = go 0 where
+  go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
+  go _ ('\n':_)  = []
+  go n (x:xs)    = x : go (n + 1) xs
+  go _ []        = []
+
+addCaret :: Delta -> Rendering -> Rendering 
+addCaret p r 
+  | near p r  = addSym r $ draw caretEffects (column p) "^"
   | otherwise = r
 
-drawCover :: EffectId -> Cover -> Rendering e -> Rendering e
-drawCover eff (Cover (Caret s _) e) r
-  | nl && nh  = addSymbol (column l) eff (P.replicate (column h - column l + 1) '~') r
-  | nl        = addSymbol (column l) eff (P.replicate (cols     - column l) '~' ++ ">") r
-  | nh        = addSymbol 0 eff ('<' : P.replicate (column l) '~') r
+addSpan :: Delta -> Delta -> Rendering -> Rendering 
+addSpan s e r
+  | nl && nh = addSym r $ draw spanEffects (column l) $ P.replicate (max (column h   - column l + 1) 0) '~' 
+  | nl       = addSym r $ draw spanEffects (column l) $ P.replicate (max (rLineLen r - column l) 0) '~' ++ ">"
+  |       nh = addSym r $ draw spanEffects (-1)       $ '<' : P.replicate (column l) '~'
   | otherwise = r
   where 
     l = argmin bytes s e 
     h = argmax bytes s e
     nl = near l r
     nh = near h r
-    cols = P.length (rLine r)
 
-addSymbol, addFixit :: Int -> EffectId -> String -> Rendering e -> Rendering e
-addSymbol n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
-addFixit n eff xs0 r = r { rSymbols = interval n eff xs0 (rSymbols r) }
-
-render :: Rendering e -> Doc e
-render r = nesting $ \k -> columns $ \n -> go (n - k) where
-  go cols = (dots $ align $ vsep img) <> linebreak
-    where (dots, rdots, lo, hi) = window (cols - 7) r
-          -- line1, line2, line3 :: Doc e
-          line1 = rdots $ string $ P.take (hi - lo + 1) $ P.drop lo $ rLine r
-          line2 = cluster rSymbols
-          line3 = cluster rFixits
-          hasFixits = P.any (inRange (lo, hi)) $ IM.keys (rFixits r)
-          img | hasFixits = [line1, line2, line3] 
-              | otherwise = [line1, line2]
-          cluster m = hcat 
-                    . P.map (\g -> findWithDefault id (fst (P.head g)) (rEffects r) $ string (P.map snd g))
-                    . groupBy ((==) `on` fst)
-                    $ P.map (\i -> findWithDefault (0,' ') i (m r)) [lo .. hi]
-
-window :: Int -> Rendering e -> (Doc e -> Doc e, Doc e -> Doc e, Int, Int)
-window w r 
-  | clamp_lo  && clamp_hi = (id,        id,        0,    w     )
-  | clamp_lo              = (id,        (<> dots), 0,    w     )
-  |              clamp_hi = ((dots <>), id       , l-w,  l     )
-  | otherwise             = ((dots <>), (<> dots), c-w2, c + w2)
+addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
+addFixit s e rpl r
+  | near l r = addFix r' $ draw fixitEffects (column l) rpl
+  | otherwise = r'
   where 
-    bold = rEffects r IM.! 1
-    dots = bold $ text "..."
-    l = P.length $ rLine r
-    w2 = div w 2
-    c = column r
-    clamp_lo = c <= w2
-    clamp_hi = c + w2 > l
+    l = argmin bytes s e
+    r' = addSpan s e r
 
-interval :: Int -> EffectId -> String -> IntMap (EffectId, Char) -> IntMap (EffectId, Char)
-interval _ _   []     = id
-interval k eff (x:xs) = interval (k + 1) eff xs . insert k (eff,x)
+instance Pretty Rendering where
+  pretty r = prettyTerm r >>= const empty
+
+instance PrettyTerm Rendering where
+  prettyTerm r = nesting $ \k -> columns $ \n -> go (n - k) where
+    go cols = align (vsep img) <> linebreak where 
+      (lo, hi) = window (column r) (rLineLen r) cols
+      line1 = cluster $ rLine r
+      line2 = cluster $ rSymbols r 
+      img = case cluster <$> rFixits r of 
+        Just line3 -> [line1, line2, line3] 
+        Nothing    -> [line1, line2]
+      cluster :: (Line -> Line) -> TermDoc
+      cluster m = hcat 
+                . P.map (\g -> withEffects (string (P.map snd g)) (fst (P.head g)))
+                . groupBy ((==) `on` fst)
+                . toList 
+                $ m (blankLine lo hi)
+
+window :: Int -> Int -> Int -> (Int, Int)
+window c l w 
+  | c <= w2    = (0, w)
+  | c + w2 > l = (l-w, l)
+  | otherwise  = (c-w2,c + w2)
+  where w2 = div w 2
 
 argmin :: Ord b => (a -> b) -> a -> a -> a
-argmin f a b | f a <= f b = a
-             | otherwise  = b
+argmin f a b 
+  | f a <= f b = a
+  | otherwise = b
 
 argmax :: Ord b => (a -> b) -> a -> a -> a
-argmax f a b | f a > f b = a
-             | otherwise = b
-
+argmax f a b 
+  | f a > f b = a
+  | otherwise = b

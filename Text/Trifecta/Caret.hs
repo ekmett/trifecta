@@ -3,16 +3,18 @@ module Text.Trifecta.Caret
   ( Caret(..)
   , HasCaret(..)
   , Careted(..)
-  , Cover(..)
-  , HasCover(..)
-  , Covered(..)
+  , Span(..)
+  , HasSpan(..)
+  , Spanned(..)
   , Fixit(..)
-  , Diagnostic(..)
   ) where
 
 import Data.Hashable
-import Data.ByteString as Strict
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.UTF8 as UTF8
 import Text.Trifecta.Delta
+import Text.Trifecta.Render
+import Prelude hiding (span)
 
 -- |
 -- > In file included from baz.c:9
@@ -31,7 +33,13 @@ class HasCaret t where
 instance HasCaret Caret where
   caret = id
 
+instance Renderable Caret where
+  rendering (Caret d bs) = addCaret d $ surface d bs
+
 data Careted a = a :^ Caret deriving (Eq,Ord,Show)
+
+instance Renderable (Careted a) where
+  rendering = rendering . caret
 
 instance HasCaret (Careted a) where
   caret (_ :^ c) = c
@@ -43,29 +51,36 @@ instance Hashable a => Hashable (Careted a) where
 -- > foo.c:8:36: note
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^~~
-data Cover = Cover {-# UNPACK #-} !Caret !Delta deriving (Eq,Ord,Show)
+data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
 
-instance HasCaret Cover where
-  caret (Cover c _) = c
+instance HasCaret Span where
+  caret (Span s _ b) = Caret s b
 
-class HasCover t where
-  cover :: t -> Cover
+instance Renderable Span where
+  rendering (Span s e bs) = addSpan s e $ surface s bs
 
-instance HasCover Cover where
-  cover = id
+class HasSpan t where
+  span :: t -> Span
 
-data Covered a = a :~ Cover deriving (Eq,Ord,Show)
+instance HasSpan Span where
+  span = id
 
-instance HasCover (Covered a) where
-  cover (_ :~ c) = c
+data Spanned a = a :~ Span deriving (Eq,Ord,Show)
 
-instance HasCaret (Covered a) where
-  caret = caret . cover
 
-instance Hashable Cover where
-  hash (Cover c bs) = hash c `hashWithSalt` bs
+instance HasSpan (Spanned a) where
+  span (_ :~ c) = c
 
-instance Hashable a => Hashable (Covered a) where
+instance Renderable (Spanned a) where
+  rendering = rendering . span
+
+instance HasCaret (Spanned a) where
+  caret = caret . span
+
+instance Hashable Span where
+  hash (Span s e bs) = hash s `hashWithSalt` e `hashWithSalt` bs
+
+instance Hashable a => Hashable (Spanned a) where
   hash (a :~ s) = hash a `hashWithSalt` s
 
 -- |
@@ -75,28 +90,18 @@ instance Hashable a => Hashable (Covered a) where
 -- >                  ^
 -- >                  ,
 data Fixit = Fixit 
-  { fixitCover        :: {-# UNPACK #-} !Cover
+  { fixitSpan        :: {-# UNPACK #-} !Span
   , fixitReplacement  :: {-# UNPACK #-} !ByteString 
   } deriving (Eq,Ord,Show)
 
-instance HasCover Fixit where
-  cover (Fixit s _) = s
+instance HasSpan Fixit where
+  span (Fixit s _) = s
 
 instance HasCaret Fixit where
-  caret = caret . cover
+  caret = caret . span
 
 instance Hashable Fixit where
   hash (Fixit s b) = hash s `hashWithSalt` b
 
--- |
--- > In file included from bar.h:12
--- > baz.h:12:17: note
--- > foo + bar
--- > ~~~ ^ ~~~
-data Diagnostic = Diagnostic !Caret [Cover] [Fixit]
-
-instance HasCaret Diagnostic where
-  caret (Diagnostic c _ _) = c
-
-instance Hashable Diagnostic where
-  hash (Diagnostic c ss fs) = hash c `hashWithSalt` ss `hashWithSalt` fs
+instance Renderable Fixit where
+  rendering (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ surface s bs
