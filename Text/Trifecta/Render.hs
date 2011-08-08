@@ -12,7 +12,6 @@ module Text.Trifecta.Render
   , addSpan
   , addFixit
   -- * Internals
-  , withEffects
   , caretEffects, fixitEffects, spanEffects, outOfRangeEffects
   , blankLine
   ) where
@@ -32,25 +31,22 @@ import System.Console.Terminfo.PrettyPrint
 import Control.Monad.State
 import Prelude as P
 
-withEffects :: TermDoc -> [ScopedEffect] -> TermDoc
-withEffects = P.foldr with
-
 caretEffects, fixitEffects, spanEffects :: [ScopedEffect]
 caretEffects = [soft (Foreground Green), soft Bold]
 fixitEffects = [soft (Foreground Blue)]
-spanEffects = [soft (Foreground Green)]
+spanEffects  = [soft (Foreground Green)]
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
 outOfRangeEffects xs = soft Bold : xs
 
 type Line = Array Int ([ScopedEffect], Char)
 
-blankLine :: Int -> Int -> Line
-blankLine lo hi = listArray (lo,hi) (repeat ([],' '))
+(///) :: Ix i => Array i e -> [(i, e)] -> Array i e
+a /// xs = a // P.filter (inRange (bounds a) . fst) xs
 
 draw :: [ScopedEffect] -> Int -> String -> Line -> Line
-draw e n xs a = lt $ gt $ a // P.filter (inRange bds . fst) out
-    where bds@(lo,hi) = bounds a
+draw e n xs a = lt $ gt $ a /// out
+    where (lo,hi) = bounds a
           out = P.zipWith (\i c -> (i,(e,c))) [n..] xs
           lt | any (\el -> fst el < lo) out = (// [(lo,(outOfRangeEffects e,'<'))])
              | otherwise = id
@@ -78,8 +74,12 @@ class Renderable t where
 class Source t where
   source :: t -> (Int, Line -> Line)
 
+
 instance Source String where
-  source s = let s' = expand s in (P.length s', (// P.zipWith (\i c -> (i,([],c))) [0..] s'))
+  source s = (P.length s', go) where 
+    s' = expand s
+    zs = P.zipWith (\i c -> (i,([],c))) [0..] s'
+    go a = a /// zs
 
 instance Source ByteString where
   source = source . UTF8.toString
@@ -135,10 +135,13 @@ instance PrettyTerm Rendering where
         Nothing    -> [line1, line2]
       cluster :: (Line -> Line) -> TermDoc
       cluster m = hcat 
-                . P.map (\g -> withEffects (string (P.map snd g)) (fst (P.head g)))
+                . P.map (\g -> P.foldr with (string (P.map snd g)) (fst (P.head g)))
                 . groupBy ((==) `on` fst)
                 . toList 
                 $ m (blankLine lo hi)
+
+blankLine :: Int -> Int -> Line
+blankLine lo hi = listArray (lo,hi) (repeat ([],' '))
 
 window :: Int -> Int -> Int -> (Int, Int)
 window c l w 
