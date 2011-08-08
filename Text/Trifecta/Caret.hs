@@ -2,6 +2,11 @@ module Text.Trifecta.Caret
   ( Caret(..)
   , HasCaret(..)
   , Careted(..)
+  , careted
+  -- * Internals
+  , drawCaret
+  , addCaret
+  , caretEffects
   ) where
 
 import Control.Applicative
@@ -17,6 +22,10 @@ import Data.ByteString (ByteString)
 import Text.Trifecta.Delta
 import Text.Trifecta.Render
 import Text.Trifecta.Bytes
+import Text.Trifecta.It
+import Text.Parsec.Prim
+import System.Console.Terminfo.Color
+import System.Console.Terminfo.PrettyPrint
 import Prelude hiding (span)
 
 -- |
@@ -29,6 +38,15 @@ data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
 
 instance Hashable Caret where
   hash (Caret d bs) = hash d `hashWithSalt` bs
+
+caretEffects :: [ScopedEffect]
+caretEffects = [soft (Foreground Green), soft Bold]
+
+drawCaret :: Delta -> Delta -> Lines -> Lines
+drawCaret p = ifNear p $ draw caretEffects 1 (column p) "^"
+
+addCaret :: Delta -> Render -> Render
+addCaret p r = drawCaret p .# r
 
 class HasCaret t where
   caret :: t -> Caret
@@ -79,4 +97,9 @@ instance HasCaret (Careted a) where
 
 instance Hashable a => Hashable (Careted a) where
   
-
+careted :: P u a -> P u (Careted a)
+careted p = do
+  m <- getInput
+  l <- line m
+  a <- p
+  return $ a :^ Caret m l

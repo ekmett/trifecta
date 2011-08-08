@@ -1,15 +1,19 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
 module Text.Trifecta.It 
-  ( It(..)
+  ( P
+  , It(..)
   , input
+  , line
   , peekIt
   ) where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Class
 import Data.Semigroup
 import Data.Monoid
 import Data.FingerTree as FingerTree
+import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
 import Data.ByteString.Lazy.UTF8 as LazyUTF8
 import Data.Functor.Bind
@@ -18,6 +22,15 @@ import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
 import Text.Parsec.Prim hiding ((<|>))
+
+type P u = ParsecT Delta u It
+
+-- grab the contents of the line that contains delta
+line :: Delta -> P u Strict.ByteString
+line d = lift $ Strict.concat
+              . Lazy.toChunks
+              . Lazy.takeWhile (/= 10)
+              . snd <$> peekIt (rewind d)
 
 data It a 
   = Done !Rope !Bool a

@@ -2,6 +2,11 @@ module Text.Trifecta.Span
   ( Span(..)
   , HasSpan(..)
   , Spanned(..)
+  , spanned
+  -- * Internals
+  , spanEffects
+  , drawSpan
+  , addSpan
   ) where
 
 import Control.Applicative
@@ -14,16 +19,40 @@ import Data.Traversable
 import Control.Comonad
 import Data.Functor.Bind
 import Data.ByteString (ByteString)
-import Text.Trifecta.Delta
+import Text.Trifecta.Bytes
 import Text.Trifecta.Caret
+import Text.Trifecta.Delta
 import Text.Trifecta.Render
-import Prelude hiding (span)
+import Text.Trifecta.It
+import Text.Trifecta.Util
+import Text.Parsec.Prim
+import Data.Array
+import System.Console.Terminfo.Color
+import System.Console.Terminfo.PrettyPrint
+import Prelude as P hiding (span)
+
+spanEffects :: [ScopedEffect]
+spanEffects  = [soft (Foreground Green)]
+
+drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
+drawSpan s e d a
+  | nl && nh  = go (column l) (P.replicate (max (column h   - column l + 1) 0) '~') a
+  | nl        = go (column l) (P.replicate (max (snd (snd (bounds a)) - column l + 2) 0) '~') a
+  |       nh  = go (-1)       (P.replicate (max (column h + 1) 0) '~') a
+  | otherwise = a
+  where
+    go = draw spanEffects 1
+    l = argmin bytes s e
+    h = argmax bytes s e
+    nl = near l d
+    nh = near h d
 
 -- |
--- > In file included from bar.c:9
--- > foo.c:8:36: note
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^~~
+addSpan :: Delta -> Delta -> Render -> Render
+addSpan s e r = drawSpan s e .# r
+
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
 
 instance HasCaret Span where
@@ -87,4 +116,10 @@ instance Hashable Span where
 instance Hashable a => Hashable (Spanned a) where
   hash (a :~ s) = hash a `hashWithSalt` s
 
-
+spanned :: P u a -> P u (Spanned a)
+spanned p = do
+  m <- getInput
+  l <- line m
+  a <- p
+  r <- getInput
+  return $ a :~ Span m r l

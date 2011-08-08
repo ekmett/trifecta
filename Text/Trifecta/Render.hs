@@ -5,18 +5,11 @@ module Text.Trifecta.Render
   , Renderable(..)
   , Source(..)
   , surface
-  , addCaret
-  , addSpan
-  , addFixit
   -- * Lower level drawing primitives
+  , Lines
   , draw
   , ifNear
   , (.#)
-  , drawCaret
-  , drawFixit
-  , drawSpan
-  -- * Internals
-  , caretEffects, fixitEffects, spanEffects, outOfRangeEffects
   ) where
 
 import Data.ByteString hiding (groupBy, empty, any)
@@ -26,18 +19,10 @@ import Data.Function (on)
 import Text.Trifecta.Delta
 import Data.Semigroup
 import Data.Array
-import Text.Trifecta.Bytes
 import Text.PrettyPrint.Leijen.Extras hiding (column)
-import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Control.Monad.State
 import Prelude as P
-
-caretEffects, fixitEffects, spanEffects, sourceEffects :: [ScopedEffect]
-caretEffects = [soft (Foreground Green), soft Bold]
-fixitEffects = [soft (Foreground Blue)]
-spanEffects  = [soft (Foreground Green)]
-sourceEffects = []
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
 outOfRangeEffects xs = soft Bold : xs
@@ -91,7 +76,7 @@ class Source t where
   source :: t -> (Int, Lines -> Lines)
 
 instance Source String where
-  source s = (P.length s', draw sourceEffects 0 0 s') where 
+  source s = (P.length s', draw [] 0 0 s') where 
     s' = go 0 s
     go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
     go _ ('\n':_)  = []
@@ -106,36 +91,8 @@ surface :: Source s => Delta -> s -> Render
 surface del s = case source s of 
   (len, doc) -> Render del len doc (\_ l -> l)
 
-drawCaret :: Delta -> Delta -> Lines -> Lines
-drawCaret p = ifNear p $ draw caretEffects 1 (column p) "^"
-
 (.#) :: (Delta -> Lines -> Lines) -> Render -> Render
 f .# Render d ll s g = Render d ll s $ \e l -> f e $ g e l 
-
-addCaret :: Delta -> Render -> Render
-addCaret p r = drawCaret p .# r
-
-drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
-drawSpan s e d a
-  | nl && nh  = draw spanEffects 1 (column l) (P.replicate (max (column h   - column l + 1) 0) '~') a
-  | nl        = draw spanEffects 1 (column l) (P.replicate (max (snd (snd (bounds a)) - column l + 2) 0) '~') a
-  |       nh  = draw spanEffects 1 (-1)       (P.replicate (max (column h + 1) 0) '~') a
-  | otherwise = a
-  where 
-    l = argmin bytes s e 
-    h = argmax bytes s e
-    nl = near l d
-    nh = near h d
-
-addSpan :: Delta -> Delta -> Render -> Render
-addSpan s e r = drawSpan s e .# r
-
-drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
-drawFixit s e rpl d a = ifNear l (draw fixitEffects 2 (column l) rpl) d $ drawSpan s e d a
-  where l = argmin bytes s e
-
-addFixit :: Delta -> Delta -> String -> Render -> Render
-addFixit s e rpl r = drawFixit s e rpl .# r
 
 instance Pretty Render where
   pretty r = prettyTerm r >>= const empty
@@ -160,13 +117,3 @@ window c l w
   | c + w2 >= l = if l > w then (l-w, l) else (0, w)
   | otherwise   = (c-w2,c + w2)
   where w2 = div w 2
-
-argmin :: Ord b => (a -> b) -> a -> a -> a
-argmin f a b 
-  | f a <= f b = a
-  | otherwise = b
-
-argmax :: Ord b => (a -> b) -> a -> a -> a
-argmax f a b 
-  | f a > f b = a
-  | otherwise = b
