@@ -18,20 +18,20 @@ import Text.Trifecta.Path
 import Text.Trifecta.Bytes
 
 data Delta
-  = Columns   {-# UNPACK #-} !Int  -- ^ the number of characters
-              {-# UNPACK #-} !Int  -- ^ the number of bytes
-  | Tab       {-# UNPACK #-} !Int  -- ^ the number of characters before the tab
-              {-# UNPACK #-} !Int  -- ^ the number of characters after the tab
-              {-# UNPACK #-} !Int  -- ^ the number of bytes
-  | Lines     {-# UNPACK #-} !Int  -- ^ the number of newlines contained
-              {-# UNPACK #-} !Int  -- ^ the number of characters since the last newline
-              {-# UNPACK #-} !Int  -- ^ number of bytes
-              {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
-  | Directed                 !Path -- ^ the sequence of #line directives since the start of the file
-              {-# UNPACK #-} !Int  -- ^ the number of lines since the last line directive
-              {-# UNPACK #-} !Int  -- ^ the number of characters since the last newline
-              {-# UNPACK #-} !Int  -- ^ number of bytes
-              {-# UNPACK #-} !Int  -- ^ the number of bytes since the last newline
+  = Columns   {-# UNPACK #-} !Int  -- the number of characters
+              {-# UNPACK #-} !Int  -- the number of bytes
+  | Tab       {-# UNPACK #-} !Int  -- the number of characters before the tab
+              {-# UNPACK #-} !Int  -- the number of characters after the tab
+              {-# UNPACK #-} !Int  -- the number of bytes
+  | Lines     {-# UNPACK #-} !Int  -- the number of newlines contained
+              {-# UNPACK #-} !Int  -- the number of characters since the last newline
+              {-# UNPACK #-} !Int  -- number of bytes
+              {-# UNPACK #-} !Int  -- the number of bytes since the last newline
+  | Directed                 !Path -- the sequence of #line directives since the start of the file
+              {-# UNPACK #-} !Int  -- the number of lines since the last line directive
+              {-# UNPACK #-} !Int  -- the number of characters since the last newline
+              {-# UNPACK #-} !Int  -- number of bytes
+              {-# UNPACK #-} !Int  -- the number of bytes since the last newline
   deriving (Eq, Ord, Show)
 
 column :: HasDelta t => t -> Int
