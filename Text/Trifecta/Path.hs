@@ -6,6 +6,7 @@ module Text.Trifecta.Path
   , snocPath
   , path
   , appendPath
+  , comparablePath
   ) where
 
 import Data.Hashable
@@ -13,18 +14,23 @@ import Data.Interned
 import Data.Interned.String
 import Data.Function (on)
 import Data.Semigroup
+import Data.IntSet as IntSet
 
 type FileName = InternedString
 
-data Path = Path {-# UNPACK #-} !Id !History !MaybeFileName {-# UNPACK #-} !Int [Int]
+data Path = Path {-# UNPACK #-} !Id !IntSet !History !MaybeFileName {-# UNPACK #-} !Int [Int]
   deriving Show
+
+pathIds :: Path -> IntSet
+pathIds (Path _ is _ _ _ _) = is
+
+comparablePath :: Path -> Path -> Bool
+comparablePath x y = identity x `IntSet.member` pathIds y
+                  || identity y `IntSet.member` pathIds x
 
 instance Eq Path where
   (==) = (==) `on` identity
 
--- NB: this is subtle in that it also lets us say 
--- if one might be a prefix of the other due to
--- the way we construct the hash cons table
 instance Ord Path where
   compare = compare `on` identity
 
@@ -42,8 +48,8 @@ path :: History -> MaybeFileName -> Int -> [Int] -> Path
 path !h !mf l flags = intern (UPath h mf l flags)
 
 appendPath :: Path -> Int -> Path -> Path
-appendPath p dl (Path _ Complete          mf l flags) = snocPath p dl mf l flags
-appendPath p dl (Path _ (Continue p' dl') mf l flags) = snocPath (appendPath p dl p') dl' mf l flags
+appendPath p dl (Path _ _ Complete          mf l flags) = snocPath p dl mf l flags
+appendPath p dl (Path _ _ (Continue p' dl') mf l flags) = snocPath (appendPath p dl p') dl' mf l flags
 
 instance Semigroup Path where
   p <> p' = appendPath p 0 p'
@@ -69,12 +75,17 @@ instance Interned Path where
         JustFileName f -> Just (identity f)
         NothingFileName -> Nothing
                      
-  identify i (UPath h mf l flags) = Path i h mf l flags
-  identity (Path i _ _ _ _) = i
+  identify i (UPath h mf l flags) = Path i m h mf l flags 
+    where 
+      m = case h of 
+        Complete -> IntSet.singleton i
+        Continue (Path _ m' _ _ _ _) _ -> IntSet.insert i m'
+                 
+  identity (Path i _ _ _ _ _) = i
   cache = pathCache
 
 instance Uninternable Path where
-  unintern (Path _ h mf l flags) = UPath h mf l flags
+  unintern (Path _ _ h mf l flags) = UPath h mf l flags
 
 instance Hashable (Description Path) where
   hash (DPath mi l flags dh) = l `hashWithSalt` mi `hashWithSalt` flags `hashWithSalt` dh
@@ -84,7 +95,6 @@ pathCache = mkCache
 {-# NOINLINE pathCache #-}
 
 {-
-
 instance Pretty Path where
   pretty p = prettyPathWith id p 0
 
