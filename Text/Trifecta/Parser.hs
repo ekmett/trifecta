@@ -6,6 +6,7 @@ module Text.Trifecta.Parser
   , sliced
   , careted
   , spanned
+  , fixit
   ) where
 
 import Control.Applicative
@@ -22,6 +23,8 @@ import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Strand
 import Text.Trifecta.Caret
+import Text.Trifecta.Span
+import Text.Trifecta.Fixit
 import Text.Trifecta.It
 import Text.Parsec.Prim hiding ((<|>))
 
@@ -78,3 +81,6 @@ careted p = do
   l <- line m
   a <- p 
   return $ a :^ Caret m l
+
+fixit :: P u Strict.ByteString -> P u Fixit
+fixit p = (\(rep :~ s) -> Fixit s rep) <$> spanned p
