@@ -57,20 +57,19 @@ instance Comonad (Diagnostic l) where
   extract (Diagnostic _ _ m _) = m
 
 instance (Pretty l, Pretty m) => Pretty (Diagnostic l m) where
-  pretty (Diagnostic r l m xs) = vsep 
-    [ pretty (delta r) <> char ':' <+> pretty l <> char ':' <+> pretty m 
-    , pretty r
-    , nest 2 (prettyList xs)
-    ]
-  prettyList = vsep . fmap pretty
+  pretty (Diagnostic r l m xs) = 
+    pretty (delta r) <> char ':' <+> pretty l <> char ':' <+> pretty m <> linebreak <>
+    pretty r <> 
+    indent 2 (prettyList xs)
+  prettyList = Prelude.foldr ((<>) . pretty) empty
 
 instance (PrettyTerm l, PrettyTerm m) => PrettyTerm (Diagnostic l m) where
-  prettyTerm (Diagnostic r l m xs) = vsep
-    [ prettyTerm (delta r) <> char ':' <+> prettyTerm l <> char ':' <+> prettyTerm m 
-    , prettyTerm r
-    , nest 2 (prettyTermList xs)
-    ]
-  prettyTermList = vsep . fmap prettyTerm
+  prettyTerm (Diagnostic r l m xs) = 
+    prettyTerm (delta r) <> char ':' <+> prettyTerm l <> char ':' <+> prettyTerm m <> linebreak <>
+    prettyTerm r <> 
+    indent 2 (prettyTermList xs)
+  prettyTermList = Prelude.foldr ((<>) . prettyTerm) empty
+
 
 instance (Pretty l, Pretty m) => Show (Diagnostic l m) where
   showsPrec d = showsPrec d . pretty
