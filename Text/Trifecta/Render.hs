@@ -102,9 +102,9 @@ instance Show Render where
 
 instance PrettyTerm Render where
   prettyTerm (Render d ll l f) = nesting $ \k -> columns $ \n -> go (n - k) where
-    go cols = align (vsep (P.map ln [t..b])) <> linebreak where 
+    go cols = align (vsep (P.map ln [t..b])) where 
       (lo, hi) = window (column d) ll (cols - 2)
-      a = f d $ l $ array ((0,lo),(-1,hi)) [] -- blankLine lo hi
+      a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
       ln y = hcat 
            $ P.map (\g -> P.foldr with (string (P.map snd g)) (fst (P.head g)))
