@@ -45,7 +45,7 @@ type Line = Array Int ([ScopedEffect], Char)
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
 
 draw :: [ScopedEffect] -> Int -> String -> Line -> Line
-draw e n xs a = lt $ gt $ a /// out
+draw e n xs a = gt $ lt $ a /// out
     where (lo,hi) = bounds a
           out = P.zipWith (\i c -> (i,(e,c))) [n..] xs
           lt | any (\el -> fst el < lo) out = (// [(lo,(outOfRangeEffects e,'<'))])
@@ -76,10 +76,7 @@ class Source t where
 
 
 instance Source String where
-  source s = (P.length s', go) where 
-    s' = expand s
-    zs = P.zipWith (\i c -> (i,([],c))) [0..] s'
-    go a = a /// zs
+  source s = (P.length s', draw [] 0 s') where s' = expand s
 
 instance Source ByteString where
   source = source . UTF8.toString
@@ -127,7 +124,7 @@ instance Pretty Rendering where
 instance PrettyTerm Rendering where
   prettyTerm r = nesting $ \k -> columns $ \n -> go (n - k) where
     go cols = align (vsep img) <> linebreak where 
-      (lo, hi) = window (column r) (rLineLen r) cols
+      (lo, hi) = window (column r) (rLineLen r) (cols - 2)
       line1 = cluster $ rLine r
       line2 = cluster $ rSymbols r 
       img = case cluster <$> rFixits r of 
@@ -145,9 +142,9 @@ blankLine lo hi = listArray (lo,hi) (repeat ([],' '))
 
 window :: Int -> Int -> Int -> (Int, Int)
 window c l w 
-  | c <= w2    = (0, w)
-  | c + w2 > l = (l-w, l)
-  | otherwise  = (c-w2,c + w2)
+  | c <= w2     = (0, w)
+  | c + w2 >= l = if l > w then (l-w, l) else (0, w)
+  | otherwise   = (c-w2,c + w2)
   where w2 = div w 2
 
 argmin :: Ord b => (a -> b) -> a -> a -> a
