@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing
-version:       0.7.2
+version:       0.7.3
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE

@@ -10,6 +10,7 @@ module Text.Trifecta.Caret
   ) where
 
 import Data.Hashable
+import Data.Semigroup
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.UTF8 as UTF8
 import Text.Trifecta.Delta
@@ -65,8 +66,10 @@ class HasSpan t where
 instance HasSpan Span where
   span = id
 
-data Spanned a = a :~ Span deriving (Eq,Ord,Show)
+instance Semigroup Span where
+  Span s _ b <> Span _ e _ = Span s e b
 
+data Spanned a = a :~ Span deriving (Eq,Ord,Show)
 
 instance HasSpan (Spanned a) where
   span (_ :~ c) = c
