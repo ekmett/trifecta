@@ -2,7 +2,8 @@
 module Text.Trifecta.Parser.Prim 
   ( Parser(..)
   , why
--- , stepParser
+  , stepParser
+  , parseTest
   ) where
 
 import Control.Applicative
@@ -11,25 +12,25 @@ import Control.Monad.Writer.Class
 import Control.Monad
 import Data.Functor.Plus
 import Data.Semigroup
--- import Data.Monoid
+import Data.Foldable
+import Data.Monoid
 import Data.Functor.Bind
-import Data.Set as Set hiding (empty)
+import Data.Set as Set hiding (empty, toList)
 import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
 import Data.ByteString.UTF8 as UTF8
 import Data.Bifunctor
 import Text.PrettyPrint.Free
-import Text.Trifecta.It
 import Text.Trifecta.Delta
 import Text.Trifecta.Diagnostic
 import Text.Trifecta.Render.Prim
 import Text.Trifecta.Parser.Class
+import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Err
 import Text.Trifecta.Parser.Err.State
---import Text.Trifecta.Parser.Step
---import Text.Trifecta.Parser.Result
+import Text.Trifecta.Parser.Step
+import Text.Trifecta.Parser.Result
 import Text.Trifecta.Util.MaybePair
---import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
 
 data Parser e a = Parser 
@@ -144,10 +145,9 @@ instance Bifunctor St where
   bimap f g (JuSt a e d bs) = JuSt (g a) (fmap f e) d bs
   bimap f _ (NoSt e d bs) = NoSt (fmap f e) d bs
 
-{-
 stepParser :: (Diagnostic e -> Diagnostic t) -> 
               (ErrState e -> Delta -> ByteString -> Diagnostic t) ->
-              Parser e a -> ErrState e -> Delta -> ByteString -> Step e a
+              Parser e a -> ErrState e -> Delta -> ByteString -> Step t a
 stepParser yl y (Parser p) e0 d0 bs0 = 
   go mempty $ p ju no ju no e0 d0 bs0
   where
@@ -159,11 +159,18 @@ stepParser yl y (Parser p) e0 d0 bs0 =
                                    JuSt a e _ _ -> Success (yl <$> errLog e) a
                                    NoSt e d bs  -> Failure (yl <$> errLog e) (y e d bs)) 
                                 (go <*> k)
--}
 
-why :: PrettyTerm e => ErrState e -> Delta -> ByteString -> Diagnostic TermDoc
-why (ErrState ss m _) d bs 
-  | Set.null ss = diagnose prettyTerm (surface d bs) m
-  | otherwise   = expected <$> diagnose prettyTerm (surface d bs) m 
+why :: (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
+why pp (ErrState ss m _) d bs 
+  | Set.null ss = diagnose pp (surface d bs) m
+  | otherwise   = expected <$> diagnose pp (surface d bs) m 
   where
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
+
+parseTest :: (PrettyTerm e, Show a) => Parser e a -> ByteString -> IO ()
+parseTest p bs = case eof (feed st bs) of
+  Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
+  Success xs a -> do 
+    displayLn $ prettyTerm $ toList xs
+    print a
+  where st = stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty mempty mempty

@@ -10,11 +10,11 @@ import Control.Applicative
 import Control.Monad (MonadPlus(..))
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Lazy
-import Text.Trifecta.It
-import Text.Trifecta.Delta
-import Data.Semigroup
 import Data.ByteString as Strict
+import Data.Semigroup
 import Data.Set as Set
+import Text.Trifecta.Delta
+import Text.Trifecta.Parser.It
 
 class ( Alternative m, MonadPlus m) => MonadParser m where
   satisfy :: (Char -> Bool) -> m Char

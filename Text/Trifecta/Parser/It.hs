@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns, MagicHash, UnboxedTuples #-}
-module Text.Trifecta.It 
+module Text.Trifecta.Parser.It 
   ( It(Pure, It, result)
   , needIt
   , wantIt

@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing
-version:       0.12
+version:       0.13
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -49,7 +49,7 @@ library
     Text.Trifecta.Diagnostic
     Text.Trifecta.Diagnostic.Level
     Text.Trifecta.Hunk
-    Text.Trifecta.It
+    Text.Trifecta.Parser.It
     Text.Trifecta.Parser.Char
     Text.Trifecta.Parser.Class
     Text.Trifecta.Parser.Err

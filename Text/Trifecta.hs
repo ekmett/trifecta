@@ -4,7 +4,7 @@ module Text.Trifecta
   , module Text.Trifecta.Diagnostic
   , module Text.Trifecta.Diagnostic.Level
   , module Text.Trifecta.Hunk
-  , module Text.Trifecta.It
+  , module Text.Trifecta.Parser.It
   , module Text.Trifecta.Parser.Char
   , module Text.Trifecta.Parser.Class
   , module Text.Trifecta.Parser.Err
@@ -26,7 +26,7 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Diagnostic
 import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Hunk
-import Text.Trifecta.It
+import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Err
