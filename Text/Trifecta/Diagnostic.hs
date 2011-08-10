@@ -1,27 +1,35 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Text.Trifecta.Diagnostic 
   ( Diagnostic(..)
+  , tellDiagnostic
   ) where
 
 import Control.Applicative
 import Control.Comonad
+import Control.Monad (guard)
+import Control.Monad.Writer.Class
 import Data.Functor.Apply
 import Data.Foldable
 import Data.Traversable
 import Data.Monoid
 import Data.List.NonEmpty hiding (map)
 import Data.Semigroup
+import Data.Semigroup.Reducer
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
-import Data.Maybe (catMaybes)
+import Data.Sequence (Seq)
 import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
-import Text.Trifecta.Util
 import Text.Trifecta.Render.Prim
 import Text.Trifecta.Diagnostic.Level
 import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
+import Prelude hiding (log)
 
 data Diagnostic m = Diagnostic !Render !DiagnosticLevel m [Diagnostic m]
+
+tellDiagnostic :: (MonadWriter t m, Reducer (Diagnostic e) t) => Diagnostic e -> m ()
+tellDiagnostic = tell . unit
 
 instance Renderable (Diagnostic m) where
   render (Diagnostic r _ _ _) = r
@@ -39,19 +47,17 @@ instance Comonad Diagnostic where
   extract (Diagnostic _ _ m _) = m
 
 instance Pretty m => Pretty (Diagnostic m) where
-  pretty (Diagnostic r l m xs) = vsep $ catMaybes
-     [ return $ pretty (delta r) <> char ':' <+> pretty l <> char ':' <+> nest 4 (pretty m)
-     , return $ pretty r
-     , indent 2 (prettyList xs) <$ guard (not (null xs))
-     ]
+  pretty (Diagnostic r l m xs) = vsep $
+     [ pretty (delta r) <> char ':' <+> pretty l <> char ':' <+> nest 4 (pretty m) ] 
+     <> (pretty r <$ guard (not (nullRender r)))
+     <> (indent 2 (prettyList xs) <$ guard (not (null xs)))
   prettyList = Prelude.foldr ((<>) . pretty) empty
 
 instance PrettyTerm m => PrettyTerm (Diagnostic m) where
-  prettyTerm (Diagnostic r l m xs) = vsep $ catMaybes
-     [ return $ prettyTerm (delta r) <> char ':' <+> prettyTerm l <> char ':' <+> nest 4 (prettyTerm m)
-     , pretty $ pretty r
-     , indent 2 (prettyTermList xs) <$ guard (not (null xs))
-     ]
+  prettyTerm (Diagnostic r l m xs) = vsep $ 
+     [ prettyTerm (delta r) <> char ':' <+> prettyTerm l <> char ':' <+> nest 4 (prettyTerm m) ]
+     <> (prettyTerm r <$ guard (not (nullRender r)))
+     <> (indent 2 (prettyTermList xs) <$ guard (not (null xs)))
   prettyTermList = Prelude.foldr ((<>) . prettyTerm) empty
 
 instance Pretty m => Show (Diagnostic m) where
@@ -75,3 +81,5 @@ instance Traversable1 Diagnostic where
   traverse1 f (Diagnostic r l m (x:xs)) = (\fm (y:|ys) -> Diagnostic r l fm (y:ys)) 
                                       <$> f m 
                                       <.> traverse1 (traverse1 f) (x:|xs)
+
+

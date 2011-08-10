@@ -3,13 +3,6 @@ module Text.Trifecta.Util
   , argmax
   ) where
 
-import Control.Applicative
-import Data.Bifunctor
-import Data.Bifoldable
-import Data.Bitraversable
-import Data.Foldable
-import Data.Traversable
-
 argmin :: Ord b => (a -> b) -> a -> a -> a
 argmin f a b
   | f a <= f b = a

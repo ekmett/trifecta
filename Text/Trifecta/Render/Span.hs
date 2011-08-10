@@ -23,7 +23,6 @@ import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
 import Text.Trifecta.Render.Prim
 import Text.Trifecta.Render.Caret
-import Text.Trifecta.It
 import Text.Trifecta.Util
 import Text.Trifecta.Parser.Class
 import Data.Array

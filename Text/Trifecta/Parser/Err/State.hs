@@ -3,15 +3,17 @@ module Text.Trifecta.Parser.Err.State
   ) where
 
 import Data.Functor.Plus
+import Data.Set as Set
+import Data.Sequence as Seq
 import Data.Semigroup
 import Data.Monoid
 import Text.Trifecta.Parser.Err
 import Text.Trifecta.Diagnostic
 
 data ErrState e = ErrState
- { errExpected :: !Set String
- , errMessage  :: !Err e
- , errLog      :: !Seq (Diagnostic e)
+ { errExpected :: !(Set String)
+ , errMessage  :: !(Err e)
+ , errLog      :: !(Seq (Diagnostic e))
  }
 
 instance Functor ErrState where
@@ -27,6 +29,6 @@ instance Plus ErrState where
 instance Semigroup (ErrState e) where
   (<>) = (<!>) 
 
-instance Monoid ErrState where
+instance Monoid (ErrState e) where
   mempty = zero
   mappend = (<!>)

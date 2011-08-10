@@ -3,14 +3,18 @@ module Text.Trifecta.Parser.Class
   ( MonadParser(..)
   , rest
   , (<?>)
-  , log
   , sliced
   ) where
 
 import Control.Applicative
 import Control.Monad (MonadPlus(..))
-import Text.Trifecta.Diagnostic
-import Data.ByteString
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.State.Lazy
+import Text.Trifecta.It
+import Text.Trifecta.Delta
+import Data.Semigroup
+import Data.ByteString as Strict
+import Data.Set as Set
 
 class ( Alternative m, MonadPlus m) => MonadParser m where
   satisfy :: (Char -> Bool) -> m Char
@@ -19,7 +23,6 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   it :: It a -> m a
   mark :: m Delta
   release :: Delta -> m ()
-  slice :: Delta -> Delta -> m ()
   unexpected :: MonadParser m => String -> m a
   line :: m ByteString
 
@@ -29,13 +32,14 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   skipping :: HasDelta d => d -> m d
   skipping d = do
     m <- mark
-    release (m <> d)
+    d <$ release (m <> delta d)
 
 instance MonadParser m => MonadParser (StateT s m) where
   satisfy = lift . satisfy
   commit (StateT m) = StateT $ commit . m
   labels (StateT m) ss = StateT $ \s -> labels (m s) ss
-  it = lift . liftIt
+  line = lift line
+  it = lift . it
   mark = lift mark 
   release = lift . release
   unexpected = lift . unexpected
@@ -44,13 +48,10 @@ instance MonadParser m => MonadParser (StateT s m) where
 rest :: MonadParser m => m ByteString
 rest = do
   m <- mark
-  drop (columnBytes m) <$> line
+  Strict.drop (columnByte m) <$> line
 
 (<?>) :: MonadParser m => m a -> String -> m a
 p <?> msg = labels p (Set.singleton msg)
-
-log :: MonadError (Seq (Diagnostic e)) m => Diagnostic e -> m ()
-log = tell . Seq.singleton
 
 sliced :: MonadParser m => (a -> Strict.ByteString -> r) -> m a -> m r
 sliced f pa = do

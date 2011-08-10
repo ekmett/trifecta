@@ -6,6 +6,8 @@ module Text.Trifecta.Render.Prim
   , Source(..)
   , Rendered(..)
   , surface
+  , nullRender
+  , emptyRender
   -- * Lower level drawing primitives
   , Lines
   , draw
@@ -19,6 +21,7 @@ import Control.Monad.State
 import Data.Array
 import Data.ByteString hiding (groupBy, empty, any)
 import Data.Foldable
+import Data.Monoid
 import Data.Function (on)
 import Data.Functor.Bind
 import Data.List (groupBy)
@@ -32,7 +35,6 @@ import System.Console.Terminfo.PrettyPrint
 import Text.PrettyPrint.Free hiding (column)
 import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
-import Text.Trifecta.Delta
 import qualified Data.ByteString.UTF8 as UTF8 
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
@@ -43,6 +45,7 @@ type Lines = Array (Int,Int) ([ScopedEffect], Char)
 (///) :: Ix i => Array i e -> [(i, e)] -> Array i e
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
 
+
 grow :: Int -> Lines -> Lines
 grow y a 
   | inRange (t,b) y = a
@@ -52,13 +55,13 @@ grow y a
 
 draw :: [ScopedEffect] -> Int -> Int -> String -> Lines -> Lines
 draw e y n xs a0 = gt $ lt (a /// out) where 
-  a | null xs = a0
+  a | Prelude.null xs = a0
     | otherwise = grow y a0
   ((_,lo),(_,hi)) = bounds a
   out = P.zipWith (\i c -> ((y,i),(e,c))) [n..] xs
-  lt | any (\el -> snd (fst el) < lo) out = (// [((y,lo),(outOfRangeEffects e,'<'))])
+  lt | Prelude.any (\el -> snd (fst el) < lo) out = (// [((y,lo),(outOfRangeEffects e,'<'))])
      | otherwise = id
-  gt | any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
+  gt | Prelude.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
      | otherwise = id
 
 data Render = Render 
@@ -68,9 +71,22 @@ data Render = Render
   , rDraw      :: Delta -> Lines -> Lines
   }
 
+nullRender :: Render -> Bool
+nullRender (Render (Columns 0 0) 0 _ _) = True
+nullRender _ = False
+
+emptyRender :: Render 
+emptyRender = surface (Columns 0 0) ""
+
 instance Semigroup Render where
+  -- an unprincipled hack
+  Render (Columns 0 0) 0 _ f <> Render del len doc g = Render del len doc $ \d l -> f d (g d l)
   Render del len doc f <> Render _ _ _ g = Render del len doc $ \d l -> f d (g d l)
 
+instance Monoid Render where
+  mappend = (<>) 
+  mempty = emptyRender
+  
 ifNear :: Delta -> (Lines -> Lines) -> Delta -> Lines -> Lines
 ifNear d f d' l | near d d' = f l 
                 | otherwise = l

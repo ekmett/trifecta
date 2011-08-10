@@ -45,7 +45,7 @@ columnByte (Tab _ _ b) = b
 columnByte (Lines _ _ _ b) = b
 columnByte (Directed _ _ _ _ b) = b
 
-instance (HasDelta l, HasDelta r) => HasDelta (Either l r)
+instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
 
 instance Pretty Delta where

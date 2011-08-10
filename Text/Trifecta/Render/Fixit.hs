@@ -15,8 +15,8 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Render.Prim
 import Text.Trifecta.Render.Span
 import Text.Trifecta.Render.Caret
+import Text.Trifecta.Parser.Class
 import Text.Trifecta.Util
-import Text.Trifecta.It
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Prelude hiding (span)
@@ -53,5 +53,5 @@ instance Hashable Fixit where
 instance Renderable Fixit where
   render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ surface s bs
 
-fixit :: MonadParser m => m Fixit
-fixit p = (\(rep :~ s) -> Fixit s rep) <$> spanned p
+fixit :: MonadParser m => m Strict.ByteString -> m Fixit
+fixit p = (\(r :~ s) -> Fixit s r) <$> spanned p

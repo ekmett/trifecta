@@ -2,7 +2,7 @@
 module Text.Trifecta.Parser.Char
   ( oneOf      -- :: MonadParser m => [Char] -> m Char
   , noneOf     -- :: MonadParser m => [Char] -> m Char
-  , spaces     -- :: MonadParser m => m ()
+--  , spaces     -- :: MonadParser m => m ()
   , space      -- :: MonadParser m => m Char
   , newline    -- :: MonadParser m => m Char
   , tab        -- :: MonadParser m => m Char
@@ -21,13 +21,10 @@ module Text.Trifecta.Parser.Char
 
 import Data.Char
 import Control.Applicative
-import Control.Monad (MonadPlus(..))
-import Text.Trifecta.Diagnostic
-import Text.Trifecta.Parser.Err
-import Text.Trifecta.Parser.Prim
+import Control.Monad (guard)
 import Text.Trifecta.Parser.Class
-import Control.Monad.Writer.Class
-import Data.ByteString
+import Data.ByteString as Strict hiding (empty, all, elem)
+import Data.ByteString.UTF8 as UTF8
 
 -- | @oneOf cs@ succeeds if the current character is in the supplied
 -- list of characters @cs@. Returns the parsed character. See also
@@ -48,8 +45,8 @@ noneOf cs | all ((< 0x80) . fromEnum) cs = satisfyAscii (\c -> not (elem c cs))
           | otherwise                    = satisfy (\c -> not (elem c cs))
 
 -- | Skips /zero/ or more white space characters. See also 'skipMany'.
-spaces :: MonadParser m => m ()
-spaces = skipMany space <?> "white space"
+-- spaces :: MonadParser m => m ()
+-- spaces = skipMany space <?> "white space"
 
 -- | Parses a white space character (any character which satisfies 'isSpace')
 -- Returns the parsed character. 
@@ -106,7 +103,7 @@ octDigit = satisfy isOctDigit    <?> "octal digit"
 --
 -- >  semiColon  = char ';'
 char :: MonadParser m => Char -> m Char
-char c | fromEnum c <= 0x7f = satisfy8 (o ==) <?> show [c]
+char c | fromEnum c <= 0x7f = satisfyAscii (c ==) <?> show [c]
        | otherwise          = satisfy (c ==) <?> show [c]
 
 -- | This parser succeeds for any character. Returns the parsed character. 
@@ -129,11 +126,14 @@ string s = s <$ byteString (UTF8.fromString s)
 byteString :: MonadParser m => ByteString -> m ByteString
 byteString bs = do
    r <- rest
-   case compare (length bs) (length r) of
+   let lr = Strict.length r
+       lbs = Strict.length bs
+   guard $ lr > 0
+   case compare lbs lr of
      LT | bs `isPrefixOf` r -> bs <$ skipping bs
         | otherwise -> empty
      EQ | bs == r -> bs <$ skipping bs
         | otherwise -> empty
-     GT | r `isPrefix bs -> bs <$ skipping r *> byteString (drop (length r) bs)
+     GT | r `isPrefixOf` bs -> bs <$ skipping r *> byteString (Strict.drop lr bs)
         | otherwise -> empty
  <?> UTF8.toString bs

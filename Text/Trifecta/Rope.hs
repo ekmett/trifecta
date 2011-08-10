@@ -5,7 +5,6 @@ module Text.Trifecta.Rope
   , strands
   , grabRest
   , grabLine
-  , lastNewline
   ) where
 
 import Data.Monoid
@@ -29,6 +28,20 @@ rope r = Rope (measure r) r
 strands :: Rope -> FingerTree Delta Strand
 strands (Rope _ r) = r
 
+-- | grab a the contents of a rope from a given location up to a newline
+grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
+grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
+  trim (PathStrand p : xs) j k = trim xs (j <> delta p) k
+  trim (HunkStrand (Hunk _ _ h) : xs) j 0 = go j h xs
+  trim (HunkStrand (Hunk _ _ h) : xs) _ k = go i (Strict.drop k h) xs
+  trim [] _ _ = kf
+  go j h s = ks j $ Lazy.fromChunks $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
+  (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
+
+-- | grab a the contents of a rope from a given location up to a newline
+grabLine :: Delta -> Rope -> r -> (Delta -> Strict.ByteString -> r) -> r
+grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Strict.concat . Lazy.toChunks . Lazy.takeWhile (/= 10)
+
 instance HasBytes Rope where
   bytes = bytes . measure
 
@@ -37,20 +50,6 @@ instance HasDelta Rope where
 
 instance Measured Delta Rope where
   measure (Rope s _) = s
-
--- | grab a the contents of a rope from a given location up to a newline
-grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
-grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l - bytes m) where
-  trim (PathStrand p : xs) j k = trim xs (j <> delta p) k
-  trim (HunkStrand (Hunk _ _ h) : xs) j 0 = go j h xs
-  trim (HunkStrand (Hunk _ _ h) : xs) _ k = go i (Strict.drop k h) xs
-  trim [] _ _ = kf
-  go j h s = ks j $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
-  (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
-
--- | grab a the contents of a rope from a given location up to a newline
-grabLine :: Delta -> Rope -> (Delta -> Strict.ByteString -> r) -> r -> r
-grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Strict.concat . Lazy.toChunks . Lazy.takeWhile (/= 10)
 
 instance Monoid Rope where
   mempty = Rope mempty mempty

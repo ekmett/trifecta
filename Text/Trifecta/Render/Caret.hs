@@ -24,7 +24,6 @@ import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
-import Text.Trifecta.It
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Render.Prim
 
@@ -99,7 +98,7 @@ instance Hashable a => Hashable (Careted a) where
   
 careted :: MonadParser m => m a -> m (Careted a)
 careted p = do
-  m <- getInput
-  l <- line m
+  m <- mark
+  l <- line
   a <- p
   return $ a :^ Caret m l

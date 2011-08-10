@@ -3,6 +3,10 @@ module Text.Trifecta.Util.MaybePair
   ) where
 
 import Control.Applicative
+import Data.Semigroup
+import Data.Monoid
+import Data.Functor.Apply
+import Data.Functor.Plus
 import Data.Bifunctor
 import Data.Bifoldable
 import Data.Bitraversable
@@ -11,6 +15,15 @@ import Data.Traversable
 
 data MaybePair a b = JustPair a b | NothingPair
 
+instance (Semigroup a, Semigroup b) => Semigroup (MaybePair a b) where
+  a <> NothingPair = a
+  NothingPair <> b = b
+  JustPair a b <> JustPair c d = JustPair (a <> c) (b <> d)
+
+instance (Semigroup a, Semigroup b) => Monoid (MaybePair a b) where
+  mappend = (<>) 
+  mempty = NothingPair
+
 instance Bifunctor MaybePair where
   bimap f g (JustPair a b) = JustPair (f a) (g b)
   bimap _ _ NothingPair = NothingPair
@@ -18,6 +31,18 @@ instance Bifunctor MaybePair where
 instance Functor (MaybePair a) where
   fmap f (JustPair a b) = JustPair a (f b)
   fmap _ NothingPair = NothingPair
+
+instance Semigroup a => Apply (MaybePair a) where
+  JustPair a b <.> JustPair c d = JustPair (a <> c) (b d)
+  _ <.> _ = NothingPair
+
+instance Semigroup a => Alt (MaybePair a) where
+  a <!> NothingPair = a
+  NothingPair <!> b = b
+  JustPair a b <!> JustPair c _ = JustPair (a <> c) b
+
+instance Semigroup a => Plus (MaybePair a) where
+  zero = NothingPair
 
 instance Foldable (MaybePair a) where
   foldMap f (JustPair _ b) = f b
