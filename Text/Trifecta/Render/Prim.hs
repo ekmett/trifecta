@@ -73,6 +73,10 @@ data Render = Render
   , rDraw      :: Delta -> Lines -> Lines
   }
 
+instance Show Render where
+  showsPrec d (Render p ll _ _) = showParen (d > 10) $ 
+    showString "Render " . showsPrec 11 p . showChar ' ' . showsPrec 11 ll . showString " ... ..."
+
 nullRender :: Render -> Bool
 nullRender (Render (Columns 0 0) 0 _ _) = True
 nullRender _ = False
@@ -127,9 +131,6 @@ f .# Render d ll s g = Render d ll s $ \e l -> f e $ g e l
 instance Pretty Render where
   pretty r = prettyTerm r >>= const empty
 
-instance Show Render where
-  showsPrec _ = displayS . renderPretty 0.9 100 . prettyTerm
-
 instance PrettyTerm Render where
   prettyTerm (Render d ll l f) = nesting $ \k -> columns $ \n -> go (n - k) where
     go cols = align (vsep (P.map ln [t..b])) where 
@@ -149,6 +150,8 @@ window c l w
   where w2 = div w 2
 
 data Rendered a = a :@ Render
+  deriving Show
+
 
 instance Functor Rendered where
   fmap f (a :@ s) = f a :@ s

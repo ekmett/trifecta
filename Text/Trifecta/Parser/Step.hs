@@ -19,6 +19,14 @@ data Step e a
   | StepFail !Rope !(Seq (Diagnostic e)) !(Diagnostic e)
   | StepCont !Rope (Result e a) (Rope -> Step e a)
 
+instance (Show e, Show a) => Show (Step e a) where
+  showsPrec d (StepDone r xs a) = showParen (d > 10) $ 
+    showString "StepDone " . showsPrec 11 r . showChar ' ' . showsPrec 11 xs . showChar ' ' . showsPrec 11 a
+  showsPrec d (StepFail r xs e) = showParen (d > 10) $ 
+    showString "StepFail " . showsPrec 11 r . showChar ' ' . showsPrec 11 xs . showChar ' ' . showsPrec 11 e
+  showsPrec d (StepCont r fin _) = showParen (d > 10) $ 
+    showString "StepCont " . showsPrec 11 r . showChar ' ' . showsPrec 11 fin . showString " ..."
+    
 instance Functor (Step e) where
   fmap f (StepDone r xs a) = StepDone r xs (f a)
   fmap _ (StepFail r xs e) = StepFail r xs e

@@ -18,6 +18,7 @@ import System.Console.Terminfo.PrettyPrint
 data Result e a
   = Success !(Seq (Diagnostic e)) a
   | Failure !(Seq (Diagnostic e)) !(Diagnostic e)
+  deriving Show
 
 instance (Pretty e, Show a) => Pretty (Result e a) where
   pretty (Success xs a) = prettyList (toList xs) `above` string (show a)
@@ -26,9 +27,6 @@ instance (Pretty e, Show a) => Pretty (Result e a) where
 instance (PrettyTerm e, Show a) => PrettyTerm (Result e a) where
   prettyTerm (Success xs a) = prettyTermList (toList xs) `above` string (show a)
   prettyTerm (Failure xs e) = prettyTermList $ toList $ xs |> e
-
-instance (Pretty e, Show a) => Show (Result e a) where
-  show = show . pretty
 
 instance Functor (Result e) where
   fmap f (Success xs a) = Success xs (f a)

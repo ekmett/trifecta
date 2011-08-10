@@ -23,6 +23,16 @@ data Err e
   | EndOfFileErr
   | RichErr (Render -> Diagnostic e)
 
+instance Show (Err e) where
+  showsPrec d EmptyErr = showString "EmptyErr"
+  showsPrec d (FailErr s) = showParen (d > 10) $
+    showString "FailErr " . showsPrec 11 s
+  showsPrec d (UnexpectedErr s) = showParen (d > 10) $
+    showString "UnexpectedErr " . showsPrec 11 s
+  showsPrec d EndOfFileErr = showString "EndOfFileErr"
+  showsPrec d (RichErr _) = showParen (d > 10) $ 
+    showString "RichErr ..."
+
 knownErr :: Err e -> Bool
 knownErr EmptyErr = False
 knownErr _ = True
@@ -48,9 +58,6 @@ instance PrettyTerm t => PrettyTerm (Err t) where
   prettyTerm = prettyTerm . diagnoseTerm0
   prettyTermList = prettyTermList . map diagnoseTerm0
   
-instance Pretty t => Show (Err t) where
-  show = show . pretty
-
 instance Functor Err where
   fmap _ EmptyErr = EmptyErr
   fmap _ (FailErr s) = FailErr s

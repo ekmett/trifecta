@@ -1,10 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns, MagicHash, UnboxedTuples #-}
+-- | harder, better, faster, stronger...
 module Text.Trifecta.Parser.It 
   ( It(Pure, It, result)
   , needIt
   , wantIt
   , fillIt
-  , lineIt
+  , rewindIt
   , sliceIt
   , stepIt
   ) where
@@ -20,12 +21,17 @@ import Data.Functor.Plus
 import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
+import Text.Trifecta.Util as Util
 import Text.Trifecta.Util.MaybePair
 import Text.Trifecta.Parser.Step
 
 data It a
   = Pure { result :: a } 
   | It { result :: a, _it :: Rope -> It a }
+
+instance Show a => Show (It a) where
+  showsPrec d (Pure a) = showParen (d > 10) $ showString "Pure " . showsPrec 11 a
+  showsPrec d (It a _) = showParen (d > 10) $ showString "It " . showsPrec 11 a . showString " ..."
 
 instance Functor It where
   fmap f (Pure a) = Pure (f a)
@@ -75,18 +81,15 @@ fillIt n = wantIt NothingPair $ \r ->
   ,  grabLine n r NothingPair JustPair #) 
                                        
 -- return the text of the line that contains a given position
-lineIt :: Delta -> It (Maybe Strict.ByteString)
-lineIt n = wantIt Nothing $ \r -> 
+rewindIt :: Delta -> It (Maybe Strict.ByteString)
+rewindIt n = wantIt Nothing $ \r -> 
   (# bytes n < bytes (rewind (delta r))
-  ,  grabLine n r Nothing (const Just) #)
+  ,  grabLine (rewind n) r Nothing $ const Just #)
 
 sliceIt :: Delta -> Delta -> It Strict.ByteString
 sliceIt !i !j = wantIt mempty $ \r -> 
-  (# bytes j < bytes (rewind (delta r))
-  ,  grabRest i r mempty $ const $ 
-     Strict.concat . 
-     Lazy.toChunks . 
-     Lazy.take (fromIntegral (bj - bi)) #)
+  (# bj < bytes (rewind (delta r))
+  ,  grabRest i r mempty $ const $ Util.fromLazy . Lazy.take (fromIntegral (bj - bi)) #)
   where
     bi = bytes i
     bj = bytes j

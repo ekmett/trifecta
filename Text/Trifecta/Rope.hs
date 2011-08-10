@@ -19,6 +19,7 @@ import Text.Trifecta.Path
 import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
 import Text.Trifecta.Strand
+import Text.Trifecta.Util as Util
 
 data Rope = Rope !Delta !(FingerTree Delta Strand) deriving Show
 
@@ -40,11 +41,7 @@ grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
 
 -- | grab a the contents of a rope from a given location up to a newline
 grabLine :: Delta -> Rope -> r -> (Delta -> Strict.ByteString -> r) -> r
-grabLine i t kf ks = grabRest i t kf $ \c -> 
-  ks c . 
-  Strict.concat . 
-  Lazy.toChunks . 
-  Lazy.takeWhile (/= 10)
+grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Util.fromLazy . Util.takeLine
 
 instance HasBytes Rope where
   bytes = bytes . measure

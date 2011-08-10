@@ -1,7 +1,14 @@
 module Text.Trifecta.Util 
   ( argmin
   , argmax
+  -- * ByteString conversions
+  , fromLazy
+  , toLazy
+  , takeLine
   ) where
+
+import Data.ByteString.Lazy as Lazy
+import Data.ByteString as Strict
 
 argmin :: Ord b => (a -> b) -> a -> a -> a
 argmin f a b
@@ -14,4 +21,15 @@ argmax f a b
   | f a > f b = a
   | otherwise = b
 {-# INLINE argmax #-}
+
+fromLazy :: Lazy.ByteString -> Strict.ByteString
+fromLazy = Strict.concat . Lazy.toChunks
+     
+toLazy :: Strict.ByteString -> Lazy.ByteString
+toLazy = Lazy.fromChunks . return
+
+takeLine :: Lazy.ByteString -> Lazy.ByteString
+takeLine s = case Lazy.elemIndex 10 s of
+  Just i -> Lazy.take (i + 1) s
+  Nothing -> s
 

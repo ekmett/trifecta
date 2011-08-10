@@ -6,6 +6,8 @@ module Text.Trifecta.Parser.Prim
   , parseTest
   ) where
 
+import Debug.Trace
+
 import Control.Applicative
 import Control.Monad.Error.Class
 import Control.Monad.Writer.Class
@@ -109,8 +111,8 @@ instance MonadParser (Parser e) where
   mark = Parser $ \eo _ _ _ e d -> eo d e d
   {-# INLINE mark #-}
   release d' = Parser $ \eo ee _ _ e d bs -> do
-    mbs <- lineIt d'
-    case mbs of
+    mbs <- rewindIt d'
+    traceShow (d',mbs) $ case mbs of
       Just bs' -> eo () e d' bs'
       Nothing -> ee e d bs
   {-# INLINE release #-}
@@ -153,9 +155,9 @@ stepParser yl y (Parser p) e0 d0 bs0 =
   where
     ju a e d bs = Pure (JuSt a e d bs)
     no e d bs = Pure (NoSt e d bs)
-    go r (Pure (JuSt a e _ _)) = StepDone r (yl <$> errLog e) a
-    go r (Pure (NoSt e d bs))  = StepFail r (yl <$> errLog e) $ y e d bs
-    go r (It ma k) = StepCont r (case ma of
+    go r (Pure (JuSt a e _ _)) = trace "puju" $ StepDone r (yl <$> errLog e) a
+    go r (Pure (NoSt e d bs))  = trace "puno" $ StepFail r (yl <$> errLog e) $ y e d bs
+    go r (It ma k) = trace "itma" $ StepCont r (case ma of
                                    JuSt a e _ _ -> Success (yl <$> errLog e) a
                                    NoSt e d bs  -> Failure (yl <$> errLog e) (y e d bs)) 
                                 (go <*> k)

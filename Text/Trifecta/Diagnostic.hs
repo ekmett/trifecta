@@ -26,6 +26,7 @@ import System.Console.Terminfo.PrettyPrint
 import Prelude hiding (log)
 
 data Diagnostic m = Diagnostic !Render !DiagnosticLevel m [Diagnostic m]
+  deriving Show
 
 tellDiagnostic :: (MonadWriter t m, Reducer (Diagnostic e) t) => Diagnostic e -> m ()
 tellDiagnostic = tell . unit
@@ -58,9 +59,6 @@ instance PrettyTerm m => PrettyTerm (Diagnostic m) where
      <> (prettyTerm r <$ guard (not (nullRender r)))
      <> (indent 2 (prettyTermList xs) <$ guard (not (null xs)))
   prettyTermList = Prelude.foldr ((<>) . prettyTerm) empty
-
-instance Pretty m => Show (Diagnostic m) where
-  showsPrec d = showsPrec d . pretty
 
 instance Functor Diagnostic where
   fmap f (Diagnostic r l m xs) = Diagnostic r l (f m) $ map (fmap f) xs
