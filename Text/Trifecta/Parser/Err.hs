@@ -24,12 +24,12 @@ data Err e
   | RichErr (Render -> Diagnostic e)
 
 instance Show (Err e) where
-  showsPrec d EmptyErr = showString "EmptyErr"
+  showsPrec _ EmptyErr = showString "EmptyErr"
   showsPrec d (FailErr s) = showParen (d > 10) $
     showString "FailErr " . showsPrec 11 s
   showsPrec d (UnexpectedErr s) = showParen (d > 10) $
     showString "UnexpectedErr " . showsPrec 11 s
-  showsPrec d EndOfFileErr = showString "EndOfFileErr"
+  showsPrec _ EndOfFileErr = showString "EndOfFileErr"
   showsPrec d (RichErr _) = showParen (d > 10) $ 
     showString "RichErr ..."
 

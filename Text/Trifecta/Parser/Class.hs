@@ -14,17 +14,22 @@ import Data.ByteString as Strict
 import Data.Semigroup
 import Data.Set as Set
 import Text.Trifecta.Delta
+import Text.Trifecta.Rope
 import Text.Trifecta.Parser.It
 
 class ( Alternative m, MonadPlus m) => MonadParser m where
-  satisfy :: (Char -> Bool) -> m Char
-  commit :: m a -> m a
-  labels :: m a -> Set String -> m a
-  liftIt :: It a -> m a
-  mark :: m Delta
-  release :: Delta -> m ()
+
+  -- * non-committal actions
+  try        :: m a -> m a
+  labels     :: m a -> Set String -> m a
+  liftIt     :: It Rope a -> m a
+  mark       :: m Delta
   unexpected :: MonadParser m => String -> m a
-  line :: m ByteString
+  line       :: m ByteString
+
+  -- * actions that commit
+  satisfy    :: (Char -> Bool) -> m Char
+  release    :: Delta -> m ()
 
   satisfyAscii :: (Char -> Bool) -> m Char
   satisfyAscii f = toEnum . fromEnum <$> satisfy (f . toEnum . fromEnum)
@@ -36,7 +41,7 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
 
 instance MonadParser m => MonadParser (StateT s m) where
   satisfy = lift . satisfy
-  commit (StateT m) = StateT $ commit . m
+  try (StateT m) = StateT $ try . m
   labels (StateT m) ss = StateT $ \s -> labels (m s) ss
   line = lift line
   liftIt = lift . liftIt

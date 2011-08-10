@@ -6,8 +6,6 @@ module Text.Trifecta.Parser.Prim
   , parseTest
   ) where
 
-import Debug.Trace
-
 import Control.Applicative
 import Control.Monad.Error.Class
 import Control.Monad.Writer.Class
@@ -26,6 +24,8 @@ import Text.PrettyPrint.Free
 import Text.Trifecta.Delta
 import Text.Trifecta.Diagnostic
 import Text.Trifecta.Render.Prim
+import Text.Trifecta.Render.Caret
+import Text.Trifecta.Rope
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Err
@@ -37,11 +37,11 @@ import System.Console.Terminfo.PrettyPrint
 
 data Parser e a = Parser 
   { unparser :: forall r.
-    (a -> ErrState e -> Delta -> ByteString -> It r) ->  -- uncommitted ok
-    (ErrState e -> Delta -> ByteString -> It r) ->       -- uncommitted err
-    (a ->  ErrState e -> Delta -> ByteString -> It r) -> -- committed ok
-    (ErrState e -> Delta -> ByteString -> It r) ->       -- committed err
-    ErrState e -> Delta -> ByteString -> It r
+    (a -> ErrState e -> Delta -> ByteString -> It Rope r) ->  -- uncommitted ok
+    (ErrState e -> Delta -> ByteString -> It Rope r) ->       -- uncommitted err
+    (a ->  ErrState e -> Delta -> ByteString -> It Rope r) -> -- committed ok
+    (ErrState e -> Delta -> ByteString -> It Rope r) ->       -- committed err
+    Delta -> ByteString -> It Rope r
   } 
 
 instance Functor (Parser e) where
@@ -50,28 +50,35 @@ instance Functor (Parser e) where
 
 instance Apply (Parser e) where (<.>) = (<*>)
 instance Applicative (Parser e) where
-  pure a = Parser $ \ eo _ _ _ -> eo a 
+  pure a = Parser $ \ eo _ _ _ -> eo a mempty
   {-# INLINE pure #-}
   Parser m <*> Parser n = Parser $ \ eo ee co ce -> 
-    m (\f -> n (eo . f) ee (co . f) ce) ee
-      (\f -> n (co . f) ce (co . f) ce) ce
+    m (\f e -> n (\a e' -> eo (f a) (e <> e')) ee (\a e' -> co (f a) (e <> e')) ce) ee
+      (\f e -> n (\a e' -> co (f a) (e <> e')) ce (\a e' -> co (f a) (e <> e')) ce) ce
   {-# INLINE (<*>) #-}
 
 instance Alt (Parser e) where (<!>) = (<|>)
 instance Plus (Parser e) where zero = empty
 instance Alternative (Parser e) where
-  empty = Parser $ \_ ee _ _ -> ee
+  empty = Parser $ \_ ee _ _ -> ee mempty
   {-# INLINE empty #-}
-  Parser m <|> Parser n = Parser $ \ eo ee co ce -> m eo (n eo ee co ce) co ce
+  -- Parser m <|> Parser n = Parser $ \ eo ee co ce -> m eo (n eo ee co ce) co ce
+  Parser m <|> Parser n = Parser $ \ eo ee co ce -> 
+    m eo (\e -> n (\a e'-> eo a (e <> e')) 
+                  (\e' -> ee (e <> e')) 
+                  co 
+                  ce) 
+      co ce
+ 
   {-# INLINE (<|>) #-}
 
 instance Bind (Parser e) where (>>-) = (>>=)
 instance Monad (Parser e) where
-  return a = Parser $ \ eo _ _ _ -> eo a 
+  return a = Parser $ \ eo _ _ _ -> eo a mempty
   {-# INLINE return #-}
   Parser m >>= k = Parser $ \ eo ee co ce -> 
-    m (\a -> unparser (k a) eo ee co ce) ee 
-      (\a -> unparser (k a) co ce co ce) ce
+    m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce) ee 
+      (\a e -> unparser (k a) (\b e' -> co b (e <> e')) (\e' -> ce (e <> e')) co ce) ce
   {-# INLINE (>>=) #-}
   fail = throwError . FailErr
   {-# INLINE fail #-}
@@ -81,7 +88,7 @@ instance MonadPlus (Parser e) where
   mplus = (<|>) 
 
 instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
-  tell w = Parser $ \eo _ _ _ e -> eo () e { errLog = errLog e <> w }
+  tell w = Parser $ \eo _ _ _ -> eo () mempty { errLog = w }
   {-# INLINE tell #-}
   listen (Parser m) = Parser $ \eo ee co ce -> 
     m (\ a e -> eo (a,errLog e) e) ee 
@@ -91,53 +98,59 @@ instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
       (\(a,p) e -> co a e { errLog = p $ errLog e }) ce
 
 instance MonadError (Err e) (Parser e) where
-  throwError m = Parser $ \_ ee _ _ e -> ee e { errMessage = errMessage e <> m } 
+  throwError m = Parser $ \_ ee _ _ -> ee mempty { errMessage = m } 
   {-# INLINE throwError #-}
-  catchError (Parser p) k = Parser $ \ eo ee co ce e -> p eo (\e' -> unparser (k (errMessage e')) eo ee co ce e) co ce e
+  catchError (Parser m) k = Parser $ \ eo ee co ce -> 
+    m eo (\e -> unparser (k (errMessage e)) (\a e'-> eo a (e <> e')) (\e' -> ee (e <> e')) co ce) 
+      co ce
   {-# INLINE catchError #-}
 
 instance MonadParser (Parser e) where
-  commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
-  unexpected s = Parser $ \ _ ee _ _ e -> ee e { errMessage = UnexpectedErr s } 
-  {-# INLINE commit #-}
+  -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
+  try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co ee
+  {-# INLINE try #-}
+  unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = UnexpectedErr s } 
+
   labels (Parser p) msgs = Parser $ \ eo ee -> p
-     (\a e -> eo a (if knownErr (errMessage e) then e { errExpected = errExpected e `union` msgs } else e))
+     (\a e -> eo a $ if knownErr (errMessage e) 
+                     then e { errExpected = errExpected e }
+                     else e)
      (\e -> ee e { errExpected = msgs })
   {-# INLINE labels #-}
-  liftIt m = Parser $ \ eo _ _ _ e d bs -> do 
+  liftIt m = Parser $ \ eo _ _ _ d bs -> do 
      a <- m
-     eo a e d bs
+     eo a mempty d bs
   {-# INLINE liftIt #-}
-  mark = Parser $ \eo _ _ _ e d -> eo d e d
+  mark = Parser $ \eo _ _ _ d -> eo d mempty d
   {-# INLINE mark #-}
-  release d' = Parser $ \eo ee _ _ e d bs -> do
+  release d' = Parser $ \_ ee co _ d bs -> do
     mbs <- rewindIt d'
-    traceShow (d',mbs) $ case mbs of
-      Just bs' -> eo () e d' bs'
-      Nothing -> ee e d bs
+    case mbs of
+      Just bs' -> co () mempty d' bs'
+      Nothing -> ee mempty d bs
   {-# INLINE release #-}
-  line = Parser $ \eo _ _ _ e d bs -> eo bs e d bs
+  line = Parser $ \eo _ _ _ d bs -> eo bs mempty d bs
   {-# INLINE line #-}
-  satisfy f = Parser $ \ eo ee _ _ e d bs ->
+  satisfy f = Parser $ \ _ ee co _ d bs ->
     case UTF8.uncons $ Strict.drop (columnByte d) bs of
-      Nothing -> ee e { errMessage = EndOfFileErr } d bs
+      Nothing             -> ee mempty { errMessage = EndOfFileErr } d bs
       Just (c, xs) 
-        | not (f c) -> ee e d bs
-        | Strict.null xs -> fillIt (d <> delta c) >>= \dbs -> case dbs of
-          JustPair d' bs' -> eo c e d' bs'
-          NothingPair -> eo c e (d <> delta c) bs -- END OF LINE
-        | otherwise -> eo c e (d <> delta c) bs 
+        | not (f c)       -> ee mempty d bs
+        | Strict.null xs  -> fillIt (d <> delta c) >>= \dbs -> case dbs of
+          JustPair d' bs' -> co c mempty d' bs'
+          NothingPair     -> co c mempty (d <> delta c) bs -- END OF LINE
+        | otherwise       -> co c mempty (d <> delta c) bs 
   {-# INLINE satisfy #-}
-  satisfyAscii f = Parser $ \ eo ee _ _ e d bs ->
+  satisfyAscii f = Parser $ \ _ ee co _ d bs ->
     let b = columnByte d in
     if b >= 0 && b < Strict.length bs 
     then case toEnum $ fromEnum $ Strict.index bs b of
-      c | not (f c) -> ee e d bs
+      c | not (f c)                 -> ee mempty d bs
         | b == Strict.length bs - 1 -> fillIt (d <> delta c) >>= \dbs -> case dbs of
-          JustPair d' bs' -> eo c e d' bs'
-          NothingPair -> eo c e (d <> delta c) bs
-        | otherwise -> eo c e (d <> delta c) bs
-    else ee e { errMessage = EndOfFileErr } d bs
+          JustPair d' bs'           -> co c mempty d' bs'
+          NothingPair               -> co c mempty (d <> delta c) bs
+        | otherwise                 -> co c mempty (d <> delta c) bs
+    else ee mempty { errMessage = EndOfFileErr } d bs
   {-# INLINE satisfyAscii #-}
 
 data St e a = JuSt a !(ErrState e) !Delta !ByteString
@@ -149,23 +162,23 @@ instance Bifunctor St where
 
 stepParser :: (Diagnostic e -> Diagnostic t) -> 
               (ErrState e -> Delta -> ByteString -> Diagnostic t) ->
-              Parser e a -> ErrState e -> Delta -> ByteString -> Step t a
-stepParser yl y (Parser p) e0 d0 bs0 = 
-  go mempty $ p ju no ju no e0 d0 bs0
+              Parser e a -> Delta -> ByteString -> Step t a
+stepParser yl y (Parser p) d0 bs0 = 
+  go mempty $ p ju no ju no d0 bs0
   where
     ju a e d bs = Pure (JuSt a e d bs)
     no e d bs = Pure (NoSt e d bs)
-    go r (Pure (JuSt a e _ _)) = trace "puju" $ StepDone r (yl <$> errLog e) a
-    go r (Pure (NoSt e d bs))  = trace "puno" $ StepFail r (yl <$> errLog e) $ y e d bs
-    go r (It ma k) = trace "itma" $ StepCont r (case ma of
+    go r (Pure (JuSt a e _ _)) = StepDone r (yl <$> errLog e) a
+    go r (Pure (NoSt e d bs))  = StepFail r (yl <$> errLog e) $ y e d bs
+    go r (It ma k) = StepCont r (case ma of
                                    JuSt a e _ _ -> Success (yl <$> errLog e) a
                                    NoSt e d bs  -> Failure (yl <$> errLog e) (y e d bs)) 
                                 (go <*> k)
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
 why pp (ErrState ss _m _) d bs 
-  | Set.null ss = diagnose pp (surface d bs) m
-  | otherwise   = expected <$> diagnose pp (surface d bs) m 
+  | Set.null ss = diagnose pp (addCaret d $ surface d bs) m
+  | otherwise   = expected <$> diagnose pp (addCaret d $ surface d bs) m 
   where
     m = EmptyErr
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
@@ -176,4 +189,4 @@ parseTest p s = case eof (feed st (UTF8.fromString s)) of
   Success xs a -> do 
     displayLn $ prettyTerm $ toList xs
     print a
-  where st = stepParser id (why id) (release mempty *> p) mempty mempty mempty
+  where st = stepParser id (why id) (release mempty *> p) mempty mempty
