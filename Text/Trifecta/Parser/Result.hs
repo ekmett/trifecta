@@ -23,7 +23,7 @@ instance Functor (Result e) where
 
 instance Bifunctor Result where
   bimap f g (Success xs a) = Success (fmap (fmap f) xs) (g a)
-  bimap f g (Failure xs e) = Failure (fmap (fmap f) xs) (fmap f e)
+  bimap f _ (Failure xs e) = Failure (fmap (fmap f) xs) (fmap f e)
 
 instance Foldable (Result e) where
   foldMap f (Success _ a) = f a

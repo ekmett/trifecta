@@ -43,6 +43,7 @@ library
   ghc-options: -Wall
 
   exposed-modules:
+    Text.Trifecta
     Text.Trifecta.Bytes
     Text.Trifecta.Delta
     Text.Trifecta.Diagnostic

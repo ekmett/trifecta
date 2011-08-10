@@ -17,7 +17,6 @@ import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
-import Data.Sequence (Seq)
 import Text.Trifecta.Bytes
 import Text.Trifecta.Delta
 import Text.Trifecta.Render.Prim
