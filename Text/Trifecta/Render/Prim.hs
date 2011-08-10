@@ -54,15 +54,17 @@ grow y a
         new = ((min t y,lo),(max b y,hi))
 
 draw :: [ScopedEffect] -> Int -> Int -> String -> Lines -> Lines
-draw e y n xs a0 = gt $ lt (a /// out) where 
-  a | Prelude.null xs = a0
-    | otherwise = grow y a0
-  ((_,lo),(_,hi)) = bounds a
-  out = P.zipWith (\i c -> ((y,i),(e,c))) [n..] xs
-  lt | Prelude.any (\el -> snd (fst el) < lo) out = (// [((y,lo),(outOfRangeEffects e,'<'))])
-     | otherwise = id
-  gt | Prelude.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
-     | otherwise = id
+draw e y n xs a0 
+  | Prelude.null xs = a0
+  | otherwise = gt $ lt (a /// out) 
+  where 
+    a = grow y a0
+    ((_,lo),(_,hi)) = bounds a
+    out = P.zipWith (\i c -> ((y,i),(e,c))) [n..] xs
+    lt | Prelude.any (\el -> snd (fst el) < lo) out = (// [((y,lo),(outOfRangeEffects e,'<'))])
+       | otherwise = id
+    gt | Prelude.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
+       | otherwise = id
 
 data Render = Render 
   { rDelta     :: !Delta                  -- focus, the render will keep this visible

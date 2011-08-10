@@ -100,12 +100,12 @@ instance MonadParser (Parser e) where
   {-# INLINE commit #-}
   labels (Parser p) msgs = Parser $ \ eo ee -> p
      (\a e -> eo a (if knownErr (errMessage e) then e { errExpected = errExpected e `union` msgs } else e))
-     (\e -> ee e { errExpected = errExpected e `union` msgs })
+     (\e -> ee e { errExpected = msgs })
   {-# INLINE labels #-}
-  it m = Parser $ \ eo _ _ _ e d bs -> do 
+  liftIt m = Parser $ \ eo _ _ _ e d bs -> do 
      a <- m
      eo a e d bs
-  {-# INLINE it #-}
+  {-# INLINE liftIt #-}
   mark = Parser $ \eo _ _ _ e d -> eo d e d
   {-# INLINE mark #-}
   release d' = Parser $ \eo ee _ _ e d bs -> do
@@ -160,17 +160,18 @@ stepParser yl y (Parser p) e0 d0 bs0 =
                                    NoSt e d bs  -> Failure (yl <$> errLog e) (y e d bs)) 
                                 (go <*> k)
 
-why :: (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
-why pp (ErrState ss m _) d bs 
+why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
+why pp (ErrState ss _m _) d bs 
   | Set.null ss = diagnose pp (surface d bs) m
   | otherwise   = expected <$> diagnose pp (surface d bs) m 
   where
+    m = EmptyErr
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
 
-parseTest :: Show a => Parser TermDoc a -> ByteString -> IO ()
-parseTest p bs = case eof (feed st bs) of
+parseTest :: Show a => Parser TermDoc a -> String -> IO ()
+parseTest p s = case eof (feed st (UTF8.fromString s)) of
   Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
   Success xs a -> do 
     displayLn $ prettyTerm $ toList xs
     print a
-  where st = stepParser id (why id) (release mempty *> p) mempty mempty bs
+  where st = stepParser id (why id) (release mempty *> p) mempty mempty mempty

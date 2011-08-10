@@ -5,6 +5,7 @@ module Text.Trifecta.Parser.Err
   ) where
 
 import Control.Applicative
+import Control.Comonad
 import Data.Semigroup
 import Data.Monoid
 import Data.Functor.Plus
@@ -40,8 +41,8 @@ diagnoseTerm0 :: PrettyTerm t => Err t -> Diagnostic TermDoc
 diagnoseTerm0 = diagnose prettyTerm emptyRender
 
 instance Pretty t => Pretty (Err t) where
-  pretty = pretty . diagnose0
-  prettyList = prettyList . map diagnose0
+  pretty = pretty . extract . diagnose0
+  prettyList = prettyList . map (extract . diagnose0)
 
 instance PrettyTerm t => PrettyTerm (Err t) where
   prettyTerm = prettyTerm . diagnoseTerm0
@@ -51,11 +52,11 @@ instance Pretty t => Show (Err t) where
   show = show . pretty
 
 instance Functor Err where
-  fmap _ EmptyErr          = EmptyErr
-  fmap _ (FailErr s)       = FailErr s
-  fmap _ EndOfFileErr      = EndOfFileErr
+  fmap _ EmptyErr = EmptyErr
+  fmap _ (FailErr s) = FailErr s
+  fmap _ EndOfFileErr = EndOfFileErr
   fmap _ (UnexpectedErr s) = UnexpectedErr s 
-  fmap f (RichErr k)       = RichErr (fmap f . k)
+  fmap f (RichErr k) = RichErr (fmap f . k)
 
 instance Alt Err where
   EmptyErr <!> a = a

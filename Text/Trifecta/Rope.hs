@@ -31,7 +31,7 @@ strands (Rope _ r) = r
 -- | grab a the contents of a rope from a given location up to a newline
 grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
 grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
-  trim (PathStrand p : xs) j k = trim xs (j <> delta p) k
+  trim (PathStrand p            : xs) j k = trim xs (j <> delta p) k
   trim (HunkStrand (Hunk _ _ h) : xs) j 0 = go j h xs
   trim (HunkStrand (Hunk _ _ h) : xs) _ k = go i (Strict.drop k h) xs
   trim [] _ _ = kf
@@ -40,7 +40,11 @@ grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
 
 -- | grab a the contents of a rope from a given location up to a newline
 grabLine :: Delta -> Rope -> r -> (Delta -> Strict.ByteString -> r) -> r
-grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Strict.concat . Lazy.toChunks . Lazy.takeWhile (/= 10)
+grabLine i t kf ks = grabRest i t kf $ \c -> 
+  ks c . 
+  Strict.concat . 
+  Lazy.toChunks . 
+  Lazy.takeWhile (/= 10)
 
 instance HasBytes Rope where
   bytes = bytes . measure

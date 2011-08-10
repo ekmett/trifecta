@@ -14,6 +14,7 @@ import Data.Foldable
 import Data.Traversable
 
 data MaybePair a b = JustPair a b | NothingPair
+  deriving (Eq,Ord,Show,Read)
 
 instance (Semigroup a, Semigroup b) => Semigroup (MaybePair a b) where
   a <> NothingPair = a

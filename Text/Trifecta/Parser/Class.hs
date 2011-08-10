@@ -20,7 +20,7 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   satisfy :: (Char -> Bool) -> m Char
   commit :: m a -> m a
   labels :: m a -> Set String -> m a
-  it :: It a -> m a
+  liftIt :: It a -> m a
   mark :: m Delta
   release :: Delta -> m ()
   unexpected :: MonadParser m => String -> m a
@@ -39,7 +39,7 @@ instance MonadParser m => MonadParser (StateT s m) where
   commit (StateT m) = StateT $ commit . m
   labels (StateT m) ss = StateT $ \s -> labels (m s) ss
   line = lift line
-  it = lift . it
+  liftIt = lift . liftIt
   mark = lift mark 
   release = lift . release
   unexpected = lift . unexpected
@@ -58,4 +58,4 @@ sliced f pa = do
   m <- mark
   a <- pa
   r <- mark
-  it $ f a <$> sliceIt m r
+  liftIt $ f a <$> sliceIt m r

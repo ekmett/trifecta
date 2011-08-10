@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing
-version:       0.13
+version:       0.14
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -58,6 +58,7 @@ library
     Text.Trifecta.Parser.Result
     Text.Trifecta.Parser.Step
     Text.Trifecta.Path
+    Text.Trifecta.Render.Prim
     Text.Trifecta.Render.Caret
     Text.Trifecta.Render.Fixit
     Text.Trifecta.Render.Span
