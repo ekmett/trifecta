@@ -167,10 +167,10 @@ why pp (ErrState ss m _) d bs
   where
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
 
-parseTest :: (PrettyTerm e, Show a) => Parser e a -> ByteString -> IO ()
+parseTest :: Show a => Parser TermDoc a -> ByteString -> IO ()
 parseTest p bs = case eof (feed st bs) of
   Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
   Success xs a -> do 
     displayLn $ prettyTerm $ toList xs
     print a
-  where st = stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty mempty mempty
+  where st = stepParser id (why id) (release mempty *> p) mempty mempty bs
