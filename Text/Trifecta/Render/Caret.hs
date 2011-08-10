@@ -1,4 +1,4 @@
-module Text.Trifecta.Caret
+module Text.Trifecta.Render.Caret
   ( Caret(..)
   , HasCaret(..)
   , Careted(..)
@@ -10,23 +10,23 @@ module Text.Trifecta.Caret
   ) where
 
 import Control.Applicative
+import Control.Comonad
+import Data.ByteString (ByteString)
+import Data.Foldable
+import Data.Functor.Bind
 import Data.Hashable
 import Data.Semigroup
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
-import Data.Foldable
 import Data.Traversable
-import Control.Comonad
-import Data.Functor.Bind
-import Data.ByteString (ByteString)
-import Text.Trifecta.Delta
-import Text.Trifecta.Render
-import Text.Trifecta.Bytes
-import Text.Trifecta.It
-import Text.Parsec.Prim
+import Prelude hiding (span)
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
-import Prelude hiding (span)
+import Text.Trifecta.Bytes
+import Text.Trifecta.Delta
+import Text.Trifecta.It
+import Text.Trifecta.Parser.Class
+import Text.Trifecta.Render.Prim
 
 -- |
 -- > In file included from baz.c:9
@@ -97,7 +97,7 @@ instance HasCaret (Careted a) where
 
 instance Hashable a => Hashable (Careted a) where
   
-careted :: P u a -> P u (Careted a)
+careted :: MonadParser m => m a -> m (Careted a)
 careted p = do
   m <- getInput
   l <- line m

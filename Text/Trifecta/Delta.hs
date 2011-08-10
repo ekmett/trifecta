@@ -5,6 +5,7 @@ module Text.Trifecta.Delta
   , rewind
   , near
   , column
+  , columnByte
   ) where
 
 import Control.Applicative
@@ -37,6 +38,15 @@ data Delta
               {-# UNPACK #-} !Int  -- number of bytes
               {-# UNPACK #-} !Int  -- the number of bytes since the last newline
   deriving (Eq, Ord, Show)
+
+columnByte :: Delta -> Int
+columnByte (Columns _ b) = b
+columnByte (Tab _ _ b) = b
+columnByte (Lines _ _ _ b) = b
+columnByte (Directed _ _ _ _ b) = b
+
+instance (HasDelta l, HasDelta r) => HasDelta (Either l r)
+  delta = either delta delta
 
 instance Pretty Delta where
   pretty p = prettyTerm p *> empty

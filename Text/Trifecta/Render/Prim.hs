@@ -1,9 +1,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 -- | Diagnostics rendering
-module Text.Trifecta.Render 
+module Text.Trifecta.Render.Prim 
   ( Render(..)
   , Renderable(..)
   , Source(..)
+  , Rendered(..)
   , surface
   -- * Lower level drawing primitives
   , Lines
@@ -12,17 +13,27 @@ module Text.Trifecta.Render
   , (.#)
   ) where
 
-import Data.ByteString hiding (groupBy, empty, any)
-import qualified Data.ByteString.UTF8 as UTF8 
-import Data.List (groupBy)
-import Data.Function (on)
-import Text.Trifecta.Delta
-import Data.Semigroup
-import Data.Array
-import Text.PrettyPrint.Free hiding (column)
-import System.Console.Terminfo.PrettyPrint
+import Control.Applicative
+import Control.Comonad
 import Control.Monad.State
+import Data.Array
+import Data.ByteString hiding (groupBy, empty, any)
+import Data.Foldable
+import Data.Function (on)
+import Data.Functor.Bind
+import Data.List (groupBy)
+import Data.Semigroup
+import Data.Semigroup.Foldable
+import Data.Semigroup.Traversable
+import Data.Traversable
 import Prelude as P
+import Prelude hiding (span)
+import System.Console.Terminfo.PrettyPrint
+import Text.PrettyPrint.Free hiding (column)
+import Text.Trifecta.Bytes
+import Text.Trifecta.Delta
+import Text.Trifecta.Delta
+import qualified Data.ByteString.UTF8 as UTF8 
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
 outOfRangeEffects xs = soft Bold : xs
@@ -41,7 +52,8 @@ grow y a
 
 draw :: [ScopedEffect] -> Int -> Int -> String -> Lines -> Lines
 draw e y n xs a0 = gt $ lt (a /// out) where 
-  a = grow y a0
+  a | null xs = a0
+    | otherwise = grow y a0
   ((_,lo),(_,hi)) = bounds a
   out = P.zipWith (\i c -> ((y,i),(e,c))) [n..] xs
   lt | any (\el -> snd (fst el) < lo) out = (// [((y,lo),(outOfRangeEffects e,'<'))])
@@ -117,3 +129,42 @@ window c l w
   | c + w2 >= l = if l > w then (l-w, l) else (0, w)
   | otherwise   = (c-w2,c + w2)
   where w2 = div w 2
+
+data Rendered a = a :@ Render
+
+instance Functor Rendered where
+  fmap f (a :@ s) = f a :@ s
+
+instance HasDelta (Rendered a) where
+  delta = delta . render
+
+instance HasBytes (Rendered a) where
+  bytes = bytes . delta
+
+instance Extend Rendered where
+  extend f as@(_ :@ s) = f as :@ s
+
+instance Comonad Rendered where
+  extract (a :@ _) = a
+
+instance Apply Rendered where
+  (f :@ s) <.> (a :@ t) = f a :@ (s <> t)
+
+instance Bind Rendered where
+  (a :@ s) >>- f = case f a of
+     b :@ t -> b :@ (s <> t)
+
+instance Foldable Rendered where
+  foldMap f (a :@ _) = f a 
+
+instance Traversable Rendered where
+  traverse f (a :@ s) = (:@ s) <$> f a
+
+instance Foldable1 Rendered where
+  foldMap1 f (a :@ _) = f a 
+
+instance Traversable1 Rendered where
+  traverse1 f (a :@ s) = (:@ s) <$> f a
+
+instance Renderable (Rendered a) where
+  render (_ :@ s) = s

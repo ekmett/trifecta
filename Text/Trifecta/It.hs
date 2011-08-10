@@ -1,16 +1,20 @@
-{-# LANGUAGE MultiParamTypeClasses, BangPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses, BangPatterns, MagicHash, UnboxedTuples #-}
 module Text.Trifecta.It 
-  ( P
-  , It(..)
-  , input
-  , line
-  , peekIt
+  ( It(Pure, It, result)
+  , needIt
+  , wantIt
+  , fillIt
+  , lineIt
+  , sliceIt
   ) where
 
 import Control.Applicative
+import Control.Comonad
 import Control.Monad
 import Control.Monad.Trans.Class
+import Data.Bifunctor
 import Data.Semigroup
+import Data.Semigroup.Reducer
 import Data.Monoid
 import Data.FingerTree as FingerTree
 import Data.ByteString as Strict
@@ -21,82 +25,77 @@ import Data.Functor.Plus
 import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
-import Text.Parsec.Prim hiding ((<|>))
+import Text.Trifecta.Util
+import Text.Trifecta.Parser.Step
 
-type P u = ParsecT Delta u It
-
--- grab the contents of the line that contains delta
-line :: Delta -> P u Strict.ByteString
-line d = lift $ Strict.concat
-              . Lazy.toChunks
-              . Lazy.takeWhile (/= 10)
-              . snd <$> peekIt (rewind d)
-
-data It a 
-  = Done !Rope !Bool a
-  | Fail !Rope !Bool String
-  | Cont (Rope -> Bool -> It a)
-  
-instance Show a => Show (It a) where
-  showsPrec d (Done r b a) = showParen (d > 10) $ 
-    showString "Done " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 a
-  showsPrec d (Fail r b s) = showParen (d > 10) $
-    showString "Fail " . showsPrec 11 r . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 s
-  showsPrec d (Cont _) = showParen (d > 10) $ showString "Cont ..."
+data It a
+  = Pure { result :: a } 
+  | It { result :: a, _it :: Rope -> It a }
 
 instance Functor It where
-  fmap f (Done r b a) = Done r b (f a)
-  fmap _ (Fail r b s) = Fail r b s
-  fmap f (Cont k) = Cont (\r b -> fmap f (k r b))
-
-instance Apply It where
-  (<.>) = (<*>) 
+  fmap f (Pure a) = Pure (f a)
+  fmap f (It a k) = It (f a) (fmap f . k)
 
 instance Applicative It where
-  pure = Done mempty False
-  (<*>) = ap
-
-instance Alt It where
-  Fail r b _ <!> Cont k = k r b
-  Fail r b _ <!> Done _ _ a = Done r b a
-  Fail r b _ <!> Fail _ _ s = Fail r b s
-  m <!> _ = m
-
-instance Alternative It where
-  (<|>) = (<!>)
-  empty = fail "empty"
-
-instance Bind It where
-  (>>-) = (>>=)
+  pure = Pure
+  Pure f  <*> Pure a  = Pure (f a)
+  Pure f  <*> It a ka = It (f a) (fmap f . ka)
+  It f kf <*> Pure a  = It (f a) (fmap ($a) . kf)
+  It f kf <*> It a ka = It (f a) (\r -> kf r <*> ka r)
 
 instance Monad It where
-  return = Done mempty False
-  Done (Rope _ t) False a >>= f | FingerTree.null t = f a
-  Done h e a >>= f = case f a of
-    Done _ _ b -> Done h e b
-    Fail _ _ s -> Fail h e s
-    Cont k     -> k h e
-  Fail r b s >>= _ = Fail r b s
-  Cont k >>= f     = Cont $ \h e -> k h e >>= f
-  fail = Fail mempty False
+  return = Pure
+  Pure a >>= f = f a
+  It a k >>= f = It (result (f a)) (k >=> f)
 
-instance MonadPlus It where
-  mplus = (<!>) 
-  mzero = fail "mzero"
+instance Apply It where (<.>) = (<*>) 
+instance Bind It where (>>-) = (>>=) 
 
-input :: It Rope
-input = Cont $ \r e -> Done r e r
+instance Extend It where
+  duplicate p@Pure{} = Pure p
+  duplicate p@(It _ k) = It p (duplicate . k)
 
-instance Stream Delta It Char where
-  uncons d = (k <$> peekIt d) <|> return Nothing where 
-    k (d', bs) = case LazyUTF8.uncons bs of
-      Just (c, _) -> Just (c, d' <> delta c)
-      Nothing     -> Nothing
+  extend f p@Pure{} = Pure (f p)
+  extend f p@(It _ k) = It p (extend f . k)
 
-peekIt :: Delta -> It (Delta, Lazy.ByteString)
-peekIt n = Cont go where
-  go h eof 
-    | bytes n < bytes (lastNewline h eof) = grab n h (\c lbs -> Done h eof (c, lbs)) 
-                                            (Fail h eof "peek: failed to grab rope")
-    | eof                   = Fail h True "Unexpected EOF"
-    | otherwise             = Cont $ \h' -> go (h <> h') -- h' <> h
+instance Comonad It where
+  extract = result
+
+needIt :: a -> (Rope -> Maybe a) -> It a
+needIt z f = k where k = It z $ \r -> case f r of 
+  Just a -> Pure a
+  Nothing -> k
+
+wantIt :: a -> (Rope -> (# Bool, a #)) -> It a
+wantIt z f = It z k where 
+  k r -> case f r of
+    (# False, a #) -> It a k
+    (# True,  a #) -> Pure a
+
+-- given a position, go there, and grab the text forward from that point
+fillIt :: Delta -> It (MaybePair Delta Strict.ByteString)
+fillIt n = wantIt NothingPair $ \r -> 
+  (# bytes n < bytes (rewind (delta r))
+  ,  grabLine n h NothingPair JustPair #) 
+                                       
+-- return the text of the line that contains a given position
+lineIt :: Delta -> It (Maybe Strict.ByteString)
+lineIt n = wantIt Nothing $ \r -> 
+  (# bytes n < bytes (rewind (delta r))
+  ,  grabLine n h Nothing (const Just) #)
+
+sliceIt :: Delta -> Delta -> It Strict.ByteString
+sliceIt !i !j = wantIt mempty $ \r -> 
+  (# bytes n < bytes (rewind (delta r))
+  ,  grabRest n h mempty $ const $ 
+     Strict.concat . 
+     Lazy.toChunks . 
+     Lazy.take (fromIntegral (bj - bi)) bs) #)
+  where
+    bi = bytes i
+    bj = bytes j
+
+stepIt :: It a -> Step e a
+stepIt = go mempty where
+  go r (Pure a) = StepDone mempty a
+  go r (It a k) = StepIt (pure a) $ \t -> let s = snoc r t in go s $ k s

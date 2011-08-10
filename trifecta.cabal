@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing
-version:       0.11
+version:       0.12
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -43,22 +43,26 @@ library
   ghc-options: -Wall
 
   exposed-modules:
-    Text.Trifecta
-    Text.Trifecta.It
-    Text.Trifecta.Path
-    Text.Trifecta.Rope
-    Text.Trifecta.Hunk
-    Text.Trifecta.Span
     Text.Trifecta.Bytes
-    Text.Trifecta.Caret
-    Text.Trifecta.Fixit
     Text.Trifecta.Delta
-    Text.Trifecta.Slice
-    Text.Trifecta.Strand
-    Text.Trifecta.Supply
-    Text.Trifecta.Render
-    Text.Trifecta.Rendered
     Text.Trifecta.Diagnostic
+    Text.Trifecta.Diagnostic.Level
+    Text.Trifecta.Hunk
+    Text.Trifecta.It
+    Text.Trifecta.Parser.Char
+    Text.Trifecta.Parser.Class
+    Text.Trifecta.Parser.Err
+    Text.Trifecta.Parser.Err.State
+    Text.Trifecta.Parser.Prim
+    Text.Trifecta.Parser.Result
+    Text.Trifecta.Parser.Step
+    Text.Trifecta.Path
+    Text.Trifecta.Render.Caret
+    Text.Trifecta.Render.Fixit
+    Text.Trifecta.Render.Span
+    Text.Trifecta.Rope
+    Text.Trifecta.Strand
+    Text.Trifecta.Util.MaybePair
 
   other-modules:
     Text.Trifecta.Util

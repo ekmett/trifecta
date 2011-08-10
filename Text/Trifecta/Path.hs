@@ -101,23 +101,3 @@ pathCache :: Cache Path
 pathCache = mkCache
 {-# NOINLINE pathCache #-}
 
-{-
-instance Pretty Path where
-  pretty p = prettyPathWith id p 0
-
-prettyPathWith :: (Doc e -> Doc e) -> Path -> Int -> Doc e 
-prettyPathWith wrapDir = go where
-  go (Path _ h mf l flags) delta 
-     = addHistory 
-     $ wrapDir $ hsep $ text "#" : pretty (l + delta) : addFile (map pretty flags) where
-    addHistory = case h of
-      Continue p d -> above (prettyPathWith wrapDir p d)
-      Complete -> id
-    addFile = case mf of
-      JustFileName f -> (:) (dquotes (pretty (unintern f)))
-      NothingFileName -> id
-
-instance Show Path where
-  showsPrec d (Path _ _ (JustFileName f) l _) = showString (unintern f) . showChar ':' . showsPrec 10 l
-  showsPrec d (Path _ _ NothingFileName l _) = showString "-:" . showsPrec 10 l
--}

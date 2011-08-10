@@ -1,4 +1,4 @@
-module Text.Trifecta.Fixit
+module Text.Trifecta.Render.Fixit
   ( Fixit(..)
   , drawFixit
   , addFixit
@@ -11,10 +11,10 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as Strict
 import qualified Data.ByteString.UTF8 as UTF8
 import Text.Trifecta.Bytes
-import Text.Trifecta.Caret
 import Text.Trifecta.Delta
-import Text.Trifecta.Span
-import Text.Trifecta.Render
+import Text.Trifecta.Render.Prim
+import Text.Trifecta.Render.Span
+import Text.Trifecta.Render.Caret
 import Text.Trifecta.Util
 import Text.Trifecta.It
 import System.Console.Terminfo.Color
@@ -53,5 +53,5 @@ instance Hashable Fixit where
 instance Renderable Fixit where
   render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ surface s bs
 
-fixit :: P u Strict.ByteString -> P u Fixit
+fixit :: MonadParser m => m Fixit
 fixit p = (\(rep :~ s) -> Fixit s rep) <$> spanned p

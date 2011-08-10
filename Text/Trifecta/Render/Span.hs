@@ -1,4 +1,4 @@
-module Text.Trifecta.Span
+module Text.Trifecta.Render.Span
   ( Span(..)
   , HasSpan(..)
   , Spanned(..)
@@ -20,12 +20,12 @@ import Control.Comonad
 import Data.Functor.Bind
 import Data.ByteString (ByteString)
 import Text.Trifecta.Bytes
-import Text.Trifecta.Caret
 import Text.Trifecta.Delta
-import Text.Trifecta.Render
+import Text.Trifecta.Render.Prim
+import Text.Trifecta.Render.Caret
 import Text.Trifecta.It
 import Text.Trifecta.Util
-import Text.Parsec.Prim
+import Text.Trifecta.Parser.Class
 import Data.Array
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
@@ -116,10 +116,10 @@ instance Hashable Span where
 instance Hashable a => Hashable (Spanned a) where
   hash (a :~ s) = hash a `hashWithSalt` s
 
-spanned :: P u a -> P u (Spanned a)
+spanned :: MonadParser m => m a -> m (Spanned a)
 spanned p = do
-  m <- getInput
-  l <- line m
+  m <- mark
+  l <- line
   a <- p
-  r <- getInput
+  r <- mark
   return $ a :~ Span m r l

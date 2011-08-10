@@ -3,7 +3,8 @@ module Text.Trifecta.Rope
   ( Rope(..)
   , rope
   , strands
-  , grab
+  , grabRest
+  , grabLine
   , lastNewline
   ) where
 
@@ -37,22 +38,19 @@ instance HasDelta Rope where
 instance Measured Delta Rope where
   measure (Rope s _) = s
 
--- | obtain the byte location of the last newline in a rope, or the end of the rope if at EOF
-lastNewline :: Rope -> Bool -> Delta
-lastNewline t True  = delta t
-lastNewline t False = rewind (delta t)
-
--- | grab a lazy bytestring starting from some point. This bytestring does not cross path nodes
---   if the index is to the start of a bytestring fragment, we update it to deal with any 
---   intervening path fragments
-grab :: Delta -> Rope -> (Delta ->  Lazy.ByteString -> r) -> r -> r
-grab i t ks kf = trim (toList r) (delta l) (bytes i - bytes l) where
-  trim (PathStrand p : xs)            j k = trim xs (j <> delta p) k
+-- | grab a the contents of a rope from a given location up to a newline
+grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
+grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l - bytes m) where
+  trim (PathStrand p : xs) j k = trim xs (j <> delta p) k
   trim (HunkStrand (Hunk _ _ h) : xs) j 0 = go j h xs
   trim (HunkStrand (Hunk _ _ h) : xs) _ k = go i (Strict.drop k h) xs
-  trim [] _ _                             = kf
-  go j h s = ks j $ Lazy.fromChunks $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
-  (l, r) = FingerTree.split (\b -> bytes b > bytes i) (strands t)
+  trim [] _ _ = kf
+  go j h s = ks j $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
+  (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
+
+-- | grab a the contents of a rope from a given location up to a newline
+grabLine :: Delta -> Rope -> (Delta -> Strict.ByteString -> r) -> r -> r
+grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Strict.concat . Lazy.toChunks . Lazy.takeWhile (/= 10)
 
 instance Monoid Rope where
   mempty = Rope mempty mempty
