@@ -1,15 +1,29 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, FlexibleInstances, FlexibleContexts #-}
+
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Parser.Class
+-- Copyright   :  (c) Edward Kmett 2011
+-- License     :  BSD3
+-- 
+-- Maintainer  :  ekmett@gmail.com
+-- Stability   :  experimental
+-- Portability :  non-portable
+-- 
+-----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Class 
   ( MonadParser(..)
-  , rest
+  , restOfLine
+  , skipping
   , (<?>)
+  , slicedWith
   , sliced
   ) where
 
 import Control.Applicative
 import Control.Monad (MonadPlus(..))
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.State.Lazy
+import Control.Monad.Trans.State.Lazy as Lazy
 import Data.ByteString as Strict
 import Data.Semigroup
 import Data.Set as Set
@@ -17,8 +31,9 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Rope
 import Text.Trifecta.Parser.It
 
-class ( Alternative m, MonadPlus m) => MonadParser m where
+infix 0 <?>
 
+class ( Alternative m, MonadPlus m) => MonadParser m where
   -- * non-committal actions
   try        :: m a -> m a
   labels     :: m a -> Set String -> m a
@@ -27,22 +42,17 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   unexpected :: MonadParser m => String -> m a
   line       :: m ByteString
 
-  -- * actions that commit
-  satisfy    :: (Char -> Bool) -> m Char
+  -- * actions that definitely commit
   release    :: Delta -> m ()
+  satisfy    :: (Char -> Bool) -> m Char
 
   satisfyAscii :: (Char -> Bool) -> m Char
   satisfyAscii f = toEnum . fromEnum <$> satisfy (f . toEnum . fromEnum)
 
-  skipping :: HasDelta d => d -> m d
-  skipping d = do
-    m <- mark
-    d <$ release (m <> delta d)
-
-instance MonadParser m => MonadParser (StateT s m) where
+instance MonadParser m => MonadParser (Lazy.StateT s m) where
   satisfy = lift . satisfy
-  try (StateT m) = StateT $ try . m
-  labels (StateT m) ss = StateT $ \s -> labels (m s) ss
+  try (Lazy.StateT m) = Lazy.StateT $ try . m
+  labels (Lazy.StateT m) ss = Lazy.StateT $ \s -> labels (m s) ss
   line = lift line
   liftIt = lift . liftIt
   mark = lift mark 
@@ -50,17 +60,31 @@ instance MonadParser m => MonadParser (StateT s m) where
   unexpected = lift . unexpected
   satisfyAscii = lift . satisfyAscii
 
-rest :: MonadParser m => m ByteString
-rest = do
+-- useful when we've just recognized something out of band using access to the current line 
+skipping :: (MonadParser m, HasDelta d) => d -> m d
+skipping d = do
+  m <- mark
+  d <$ release (m <> delta d)
+
+-- | grab the remainder of the current line
+restOfLine :: MonadParser m => m ByteString
+restOfLine = do
   m <- mark
   Strict.drop (columnByte m) <$> line
 
+-- | label a parser with a name
 (<?>) :: MonadParser m => m a -> String -> m a
 p <?> msg = labels p (Set.singleton msg)
 
-sliced :: MonadParser m => (a -> Strict.ByteString -> r) -> m a -> m r
-sliced f pa = do
+-- | run a parser, grabbing all of the text between its start and end points
+slicedWith :: MonadParser m => (a -> Strict.ByteString -> r) -> m a -> m r
+slicedWith f pa = do
   m <- mark
   a <- pa
   r <- mark
   liftIt $ f a <$> sliceIt m r
+
+-- | run a parser, grabbing all of the text between its start and end points and discarding the original result
+sliced :: MonadParser m => m a -> m ByteString
+sliced = slicedWith (\_ bs -> bs)
+  

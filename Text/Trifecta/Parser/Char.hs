@@ -125,7 +125,7 @@ string s = s <$ byteString (UTF8.fromString s)
 -- >              <|> string "mod"
 byteString :: MonadParser m => ByteString -> m ByteString
 byteString bs = do
-   r <- rest
+   r <- restOfLine
    let lr = Strict.length r
        lbs = Strict.length bs
    guard $ lr > 0

@@ -1,4 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, Rank2Types, FlexibleInstances #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Parser.Prim
+-- Copyright   :  (c) Edward Kmett 2011
+-- License     :  BSD3
+-- 
+-- Maintainer  :  ekmett@gmail.com
+-- Stability   :  experimental
+-- Portability :  non-portable
+-- 
+-----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Prim 
   ( Parser(..)
   , why
@@ -47,6 +58,8 @@ data Parser e a = Parser
 instance Functor (Parser e) where
   fmap f (Parser m) = Parser $ \ eo ee co -> m (eo . f) ee (co . f)
   {-# INLINE fmap #-}
+  a <$ Parser m = Parser $ \ eo ee co -> m (\_ -> eo a) ee (\_ -> co a)
+  {-# INLINE (<$) #-}
 
 instance Apply (Parser e) where (<.>) = (<*>)
 instance Applicative (Parser e) where
@@ -56,6 +69,14 @@ instance Applicative (Parser e) where
     m (\f e -> n (\a e' -> eo (f a) (e <> e')) ee (\a e' -> co (f a) (e <> e')) ce) ee
       (\f e -> n (\a e' -> co (f a) (e <> e')) ce (\a e' -> co (f a) (e <> e')) ce) ce
   {-# INLINE (<*>) #-}
+  Parser m <* Parser n = Parser $ \ eo ee co ce -> 
+    m (\a e -> n (\_ e' -> eo a (e <> e')) ee (\_ e' -> co a (e <> e')) ce) ee
+      (\a e -> n (\_ e' -> co a (e <> e')) ce (\_ e' -> co a (e <> e')) ce) ce
+  {-# INLINE (<*) #-}
+  Parser m *> Parser n = Parser $ \ eo ee co ce -> 
+    m (\_ e -> n (\a e' -> eo a (e <> e')) ee (\a e' -> co a (e <> e')) ce) ee
+      (\_ e -> n (\a e' -> co a (e <> e')) ce (\a e' -> co a (e <> e')) ce) ce
+  {-# INLINE (*>) #-}
 
 instance Alt (Parser e) where (<!>) = (<|>)
 instance Plus (Parser e) where zero = empty
@@ -69,8 +90,13 @@ instance Alternative (Parser e) where
                   co 
                   ce) 
       co ce
- 
   {-# INLINE (<|>) #-}
+instance Semigroup (Parser e a) where
+  (<>) = (<|>) 
+
+instance Monoid (Parser e a) where
+  mappend = (<|>)
+  mempty = empty
 
 instance Bind (Parser e) where (>>-) = (>>=)
 instance Monad (Parser e) where
@@ -80,6 +106,8 @@ instance Monad (Parser e) where
     m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce) ee 
       (\a e -> unparser (k a) (\b e' -> co b (e <> e')) (\e' -> ce (e <> e')) co ce) ce
   {-# INLINE (>>=) #-}
+  (>>) = (*>) 
+  {-# INLINE (>>) #-}
   fail = throwError . FailErr
   {-# INLINE fail #-}
 
@@ -184,7 +212,7 @@ why pp (ErrState ss _m _) d bs
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
 
 parseTest :: Show a => Parser TermDoc a -> String -> IO ()
-parseTest p s = case eof (feed st (UTF8.fromString s)) of
+parseTest p s = case starve (feed st (UTF8.fromString s)) of
   Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
   Success xs a -> do 
     displayLn $ prettyTerm $ toList xs

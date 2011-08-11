@@ -2,8 +2,7 @@
 module Text.Trifecta.Parser.Step 
   ( Step(..)
   , feed
-  , eof
-  , eof'
+  , starve
   , stepResult
   ) where
 
@@ -42,15 +41,10 @@ feed (StepDone r xs a) t = StepDone (snoc r t) xs a
 feed (StepFail r xs e) t = StepFail (snoc r t) xs e
 feed (StepCont r _ k) t = k (snoc r t)
 
-eof :: Step e a -> Result e a
-eof (StepDone _ xs a) = Success xs a
-eof (StepFail _ xs e) = Failure xs e
-eof (StepCont _ z _)  = z
-
-eof' :: Step e a -> Result e (Rope, a)
-eof' (StepDone r xs a) = Success xs (r, a)
-eof' (StepFail _ xs e) = Failure xs e
-eof' (StepCont r z _)  = fmap ((,) r) z
+starve :: Step e a -> Result e a
+starve (StepDone _ xs a) = Success xs a
+starve (StepFail _ xs e) = Failure xs e
+starve (StepCont _ z _)  = z
 
 stepResult :: Rope -> Result e a -> Step e a
 stepResult r (Success xs a) = StepDone r xs a

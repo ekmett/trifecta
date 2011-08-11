@@ -1,6 +1,6 @@
 name:          trifecta
-category:      Text, Parsing
-version:       0.14
+category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
+version:       0.15
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -9,8 +9,8 @@ maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 copyright:     Copyright (C) 2011 Edward A. Kmett
-synopsis:      Parser combinators with slicing and diagnostic support
-description:   Parser combinators with slicing and diagnostic support
+synopsis:      A modern parser combinator library with convenient diagnostics
+description:   A modern parser combinator library with slicing and Clang-style colored diagnostics
 build-type:    Simple  
 
 source-repository head
@@ -18,6 +18,38 @@ source-repository head
   location: git://github.com/ekmett/trifecta.git
 
 library
+  exposed-modules:
+    Text.Trifecta
+    Text.Trifecta.Bytes
+    Text.Trifecta.Delta
+    Text.Trifecta.Diagnostic
+    Text.Trifecta.Diagnostic.Level
+    Text.Trifecta.Hunk
+    Text.Trifecta.Parser.It
+    Text.Trifecta.Parser.Char
+    Text.Trifecta.Parser.Class
+    Text.Trifecta.Parser.Err
+    Text.Trifecta.Parser.Err.State
+    Text.Trifecta.Parser.Prim
+    Text.Trifecta.Parser.Result
+    Text.Trifecta.Parser.Combinators
+    Text.Trifecta.Parser.Step
+    Text.Trifecta.Parser.Token
+    Text.Trifecta.Parser.Token.Class
+    Text.Trifecta.Path
+    Text.Trifecta.Render.Prim
+    Text.Trifecta.Render.Caret
+    Text.Trifecta.Render.Fixit
+    Text.Trifecta.Render.Span
+    Text.Trifecta.Rope
+    Text.Trifecta.Strand
+    Text.Trifecta.Util.MaybePair
+
+  other-modules:
+    Text.Trifecta.Util
+
+  ghc-options: -Wall
+
   build-depends: 
     base               >= 4       && < 5,
     array              >= 0.3.0.2 && < 0.4, 
@@ -41,32 +73,3 @@ library
     keys               >= 2.0.1   && < 2.1,
     wl-pprint-extras   >= 1.4     && < 1.5,
     wl-pprint-terminfo >= 0.4     && < 0.5
-
-  ghc-options: -Wall
-
-  exposed-modules:
-    Text.Trifecta
-    Text.Trifecta.Bytes
-    Text.Trifecta.Delta
-    Text.Trifecta.Diagnostic
-    Text.Trifecta.Diagnostic.Level
-    Text.Trifecta.Hunk
-    Text.Trifecta.Parser.It
-    Text.Trifecta.Parser.Char
-    Text.Trifecta.Parser.Class
-    Text.Trifecta.Parser.Err
-    Text.Trifecta.Parser.Err.State
-    Text.Trifecta.Parser.Prim
-    Text.Trifecta.Parser.Result
-    Text.Trifecta.Parser.Step
-    Text.Trifecta.Path
-    Text.Trifecta.Render.Prim
-    Text.Trifecta.Render.Caret
-    Text.Trifecta.Render.Fixit
-    Text.Trifecta.Render.Span
-    Text.Trifecta.Rope
-    Text.Trifecta.Strand
-    Text.Trifecta.Util.MaybePair
-
-  other-modules:
-    Text.Trifecta.Util
