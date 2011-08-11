@@ -18,6 +18,7 @@ module Text.Trifecta
   , module Text.Trifecta.Parser.Step
   , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Token.Class
+  , module Text.Trifecta.Parser.Expr
   , module Text.Trifecta.Path
   , module Text.Trifecta.Render.Caret
   , module Text.Trifecta.Render.Fixit
@@ -44,6 +45,7 @@ import Text.Trifecta.Parser.Result
 import Text.Trifecta.Parser.Step
 import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Expr
 import Text.Trifecta.Path
 import Text.Trifecta.Render.Caret
 import Text.Trifecta.Render.Fixit
