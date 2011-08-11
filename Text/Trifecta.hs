@@ -16,8 +16,10 @@ module Text.Trifecta
   , module Text.Trifecta.Parser.Prim
   , module Text.Trifecta.Parser.Result
   , module Text.Trifecta.Parser.Step
-  , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Token.Class
+  , module Text.Trifecta.Parser.Token.Combinators
+  , module Text.Trifecta.Parser.Token.Prim
+  , module Text.Trifecta.Parser.Token.Style
   , module Text.Trifecta.Parser.Expr
   , module Text.Trifecta.Path
   , module Text.Trifecta.Render.Caret
@@ -43,8 +45,10 @@ import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Prim
 import Text.Trifecta.Parser.Result
 import Text.Trifecta.Parser.Step
-import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Token.Combinators
+import Text.Trifecta.Parser.Token.Prim
+import Text.Trifecta.Parser.Token.Style
 import Text.Trifecta.Parser.Expr
 import Text.Trifecta.Path
 import Text.Trifecta.Render.Caret

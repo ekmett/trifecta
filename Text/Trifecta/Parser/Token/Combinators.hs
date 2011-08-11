@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Token
+-- Module      :  Text.Trifecta.Parser.Token.Combinators
 -- Copyright   :  (c) Edward Kmett 2011,
 --                (c) Daan Leijen 1999-2001
 -- License     :  BSD3
@@ -10,12 +10,8 @@
 -- Portability :  non-portable
 -- 
 -----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Token
-  ( identifier
-  , reserved
-  , operator
-  , reservedOp
-  , charLiteral
+module Text.Trifecta.Parser.Token.Combinators
+  ( charLiteral
   , stringLiteral
   , natural
   , integer
@@ -26,7 +22,6 @@ module Text.Trifecta.Parser.Token
   , octal
   , symbol
   , symbolic
-  , lexeme
   , parens
   , braces
   , angles
@@ -44,58 +39,10 @@ module Text.Trifecta.Parser.Token
 import Data.Char (digitToInt)
 import Data.ByteString as Strict hiding (map, zip, foldl, foldr)
 import Control.Applicative
-import Control.Monad (when)
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
-
--- | This lexeme parser parses a legal identifier. Returns the identifier
--- string. This parser will fail on identifiers that are reserved
--- words. Legal identifier (start) characters and reserved words are
--- defined in the 'LanguageDef' that is passed to
--- 'makeTokenParser'. An @identifier@ is treated as
--- a single token using 'try'.
-identifier :: MonadTokenParser m => m ByteString
-identifier = lexeme $ try $ do 
-  name <- sliced ident 
-  b <- isReservedName name
-  when b $ unexpected $ "reserved word " ++ show name
-  return name
-  where 
-    ident = identStart *> skipMany identLetter
-        <?> "identifier"
-
--- | The lexeme parser @reserved name@ parses @symbol 
--- name@, but it also checks that the @name@ is not a prefix of a
--- valid identifier. A @reserved@ word is treated as a single token
--- using 'try'. 
-reserved :: MonadTokenParser m => ByteString -> m ()
-reserved name = lexeme $ try $ do
-  _ <- byteString name
-  notFollowedBy identLetter <?> "end of " ++ show name
-
--- | This lexeme parser parses a legal operator. Returns the name of the
--- operator. This parser will fail on any operators that are reserved
--- operators. Legal operator (start) characters and reserved operators
--- are defined in the 'LanguageDef' that is passed to
--- 'makeTokenParser'. An @operator@ is treated as a
--- single token using 'try'. 
-operator :: MonadTokenParser m => m ByteString
-operator = lexeme $ try $ do
-  name <- sliced (opStart *> skipMany opLetter) <?> "operator"
-  b <- isReservedOpName name
-  when b $ unexpected $ "reserved operator " ++ show name
-  return name
-
--- |The lexeme parser @reservedOp name@ parses @symbol
--- name@, but it also checks that the @name@ is not a prefix of a
--- valid operator. A @reservedOp@ is treated as a single token using
--- 'try'. 
-reservedOp :: MonadTokenParser m => String -> m ()
-reservedOp name = lexeme $ try $ do
-   _ <- string name 
-   notFollowedBy opLetter <?> "end of " ++ show name
 
 -- | This lexeme parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape
@@ -277,25 +224,6 @@ symbol name = lexeme (byteString name)
 
 symbolic :: MonadTokenParser m => Char -> m Char
 symbolic name = lexeme (char name)
-
--- | @lexeme p@ first applies parser @p@ and than the 'whiteSpace'
--- parser, returning the value of @p@. Every lexical
--- token (lexeme) is defined using @lexeme@, this way every parse
--- starts at a point without white space. Parsers that use @lexeme@ are
--- called /lexeme/ parsers in this document.
--- 
--- The only point where the 'whiteSpace' parser should be
--- called explicitly is the start of the main parser in order to skip
--- any leading white space.
---
--- >    mainParser  = do{ whiteSpace
--- >                     ; ds <- many (lexeme digit)
--- >                     ; eof
--- >                     ; return (sum ds)
--- >                     }
-
-lexeme :: MonadTokenParser m => m a -> m a
-lexeme p = p <* whiteSpace
 
 -- | Lexeme parser @parens p@ parses @p@ enclosed in parenthesis,
 -- returning the value of @p@.

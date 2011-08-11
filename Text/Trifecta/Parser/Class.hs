@@ -24,6 +24,7 @@ import Control.Applicative
 import Control.Monad (MonadPlus(..))
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Lazy as Lazy
+import Control.Monad.Trans.State.Strict as Strict
 import Data.ByteString as Strict
 import Data.Semigroup
 import Data.Set as Set
@@ -53,6 +54,17 @@ instance MonadParser m => MonadParser (Lazy.StateT s m) where
   satisfy = lift . satisfy
   try (Lazy.StateT m) = Lazy.StateT $ try . m
   labels (Lazy.StateT m) ss = Lazy.StateT $ \s -> labels (m s) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance MonadParser m => MonadParser (Strict.StateT s m) where
+  satisfy = lift . satisfy
+  try (Strict.StateT m) = Strict.StateT $ try . m
+  labels (Strict.StateT m) ss = Strict.StateT $ \s -> labels (m s) ss
   line = lift line
   liftIt = lift . liftIt
   mark = lift mark 

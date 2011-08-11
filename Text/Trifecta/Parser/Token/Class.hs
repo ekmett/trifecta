@@ -13,9 +13,10 @@ module Text.Trifecta.Parser.Token.Class
   ( MonadTokenParser(..)
   ) where
 
+import Control.Applicative
 import Control.Monad.Trans.Class
-import Data.ByteString
 import Control.Monad.Trans.State.Lazy as Lazy
+import Control.Monad.Trans.State.Strict as Strict
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadTokenParser m where
@@ -24,37 +25,29 @@ class MonadParser m => MonadTokenParser m where
   -- line) comment. Block comments may be nested. How comments are
   -- started and ended is defined by this method.
   whiteSpace       :: m ()
-
-  -- | This parser should accept any start characters of identifiers. For
-  -- example @letter \<|> char \"_\"@. 
-  identStart       :: m Char
-
-  -- | This parser should accept any legal tail characters of identifiers.
-  -- For example @alphaNum \<|> char \"_\"@. 
-  identLetter      :: m Char
-
-  -- | This parser should accept any start characters of operators. For
-  -- example @oneOf \":!#$%&*+.\/\<=>?\@\\\\^|-~\"@  
-  opStart          :: m Char
-
-  -- | This parser should accept any legal tail characters of operators.
-  -- Note that this parser should even be defined if the language doesn't
-  -- support user-defined operators, or otherwise the 'reservedOp'
-  -- parser won't work correctly.  
-  opLetter         :: m Char
-
-  -- | Check the list of reserved identifiers.  
-  isReservedName   :: ByteString -> m Bool
-
-  -- | Check the list of reserved operators. 
-  isReservedOpName :: ByteString -> m Bool
+  
+  -- | @lexeme p@ first applies parser @p@ and than the 'whiteSpace'
+  -- parser, returning the value of @p@. Every lexical
+  -- token (lexeme) is defined using @lexeme@, this way every parse
+  -- starts at a point without white space. Parsers that use @lexeme@ are
+  -- called /lexeme/ parsers in this document.
+  -- 
+  -- The only point where the 'whiteSpace' parser should be
+  -- called explicitly is the start of the main parser in order to skip
+  -- any leading white space.
+  --
+  -- >    mainParser  = do { whiteSpace
+  -- >                     ; ds <- many (lexeme digit)
+  -- >                     ; eof
+  -- >                     ; return (sum ds)
+  -- >                     }
+  lexeme :: m a -> m a
+  lexeme p = p <* whiteSpace
 
 instance MonadTokenParser m => MonadTokenParser (Lazy.StateT s m) where
   whiteSpace = lift whiteSpace
-  identStart = lift identStart
-  identLetter = lift identLetter
-  opStart = lift opStart
-  opLetter = lift opLetter
-  isReservedName = lift . isReservedName
-  isReservedOpName = lift . isReservedOpName
+  lexeme (Lazy.StateT m) = Lazy.StateT $ lexeme . m
 
+instance MonadTokenParser m => MonadTokenParser (Strict.StateT s m) where
+  whiteSpace = lift whiteSpace
+  lexeme (Strict.StateT m) = Strict.StateT $ lexeme . m
