@@ -18,7 +18,7 @@ module Text.Trifecta.CharSet.Posix.Unicode
 
 import Prelude hiding (print)
 import Data.Char
-import Text.Trifecta.CharSet.Prim
+import Text.Trifecta.CharSet
 import qualified Text.Trifecta.CharSet.Unicode.Category as Category
 import qualified Text.Trifecta.CharSet.Unicode.Block as Block
 import Data.HashMap.Lazy (HashMap)

@@ -18,7 +18,7 @@ module Text.Trifecta.CharSet.Posix.Ascii
 
 import Prelude hiding (print)
 import Data.Char
-import Text.Trifecta.CharSet.Prim
+import Text.Trifecta.CharSet
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
 

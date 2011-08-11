@@ -45,7 +45,7 @@ module Text.Trifecta.CharSet.Unicode.Category
     ) where
 
 import Data.Char
-import Text.Trifecta.CharSet.Prim
+import Text.Trifecta.CharSet
 import Data.Data
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HashMap
