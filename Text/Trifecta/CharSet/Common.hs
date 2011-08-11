@@ -36,7 +36,7 @@ module Text.Trifecta.CharSet.Common
 
 import Prelude ()
 import Data.Char
-import Text.Trifecta.CharSet
+import Text.Trifecta.CharSet.Prim
 
 -- Haskell character classes from Data.Char
 control, space, lower, upper, alpha, alphaNum, 

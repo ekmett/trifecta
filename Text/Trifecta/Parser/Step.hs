@@ -9,8 +9,8 @@ module Text.Trifecta.Parser.Step
 import Data.Bifunctor
 import Data.Semigroup.Reducer
 import Data.Sequence
-import Text.Trifecta.Rope
-import Text.Trifecta.Diagnostic
+import Text.Trifecta.Rope.Prim
+import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Parser.Result
 
 data Step e a

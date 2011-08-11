@@ -28,8 +28,8 @@ import Control.Monad.Trans.State.Strict as Strict
 import Data.ByteString as Strict
 import Data.Semigroup
 import Data.Set as Set
-import Text.Trifecta.Delta
-import Text.Trifecta.Rope
+import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Parser.It
 
 infix 0 <?>

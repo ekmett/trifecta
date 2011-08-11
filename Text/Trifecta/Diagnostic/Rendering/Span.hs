@@ -1,6 +1,7 @@
-module Text.Trifecta.Render.Span
+{-# LANGUAGE MultiParamTypeClasses #-}
+module Text.Trifecta.Diagnostic.Rendering.Span
   ( Span(..)
-  , HasSpan(..)
+  , span
   , Spanned(..)
   , spanned
   -- * Internals
@@ -12,6 +13,7 @@ module Text.Trifecta.Render.Span
 import Control.Applicative
 import Data.Hashable
 import Data.Semigroup
+import Data.Semigroup.Reducer
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
 import Data.Foldable
@@ -19,10 +21,9 @@ import Data.Traversable
 import Control.Comonad
 import Data.Functor.Bind
 import Data.ByteString (ByteString)
-import Text.Trifecta.Bytes
-import Text.Trifecta.Delta
-import Text.Trifecta.Render.Prim
-import Text.Trifecta.Render.Caret
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Util
 import Text.Trifecta.Parser.Class
 import Data.Array
@@ -49,26 +50,19 @@ drawSpan s e d a
 -- |
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^~~
-addSpan :: Delta -> Delta -> Render -> Render
+addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
 
-instance HasCaret Span where
-  caret (Span s _ b) = Caret s b
-
 instance Renderable Span where
-  render (Span s e bs) = addSpan s e $ surface s bs
-
-class HasSpan t where
-  span :: t -> Span
-
-instance HasSpan Span where
-  span = id
+  render (Span s e bs) = addSpan s e $ rendering s bs
 
 instance Semigroup Span where
   Span s _ b <> Span _ e _ = Span s e b
 
+instance Reducer Span Rendering where
+  unit = render
 
 data Spanned a = a :~ Span deriving (Eq,Ord,Show)
 
@@ -100,14 +94,11 @@ instance Foldable1 Spanned where
 instance Traversable1 Spanned where
   traverse1 f (a :~ s) = (:~ s) <$> f a
 
-instance HasSpan (Spanned a) where
-  span (_ :~ c) = c
+instance Reducer (Spanned a) Rendering where
+  unit = render
 
 instance Renderable (Spanned a) where
-  render = render . span
-
-instance HasCaret (Spanned a) where
-  caret = caret . span
+  render (_ :~ s) = render s
 
 instance Hashable Span where
   hash (Span s e bs) = hash s `hashWithSalt` e `hashWithSalt` bs
@@ -115,10 +106,8 @@ instance Hashable Span where
 instance Hashable a => Hashable (Spanned a) where
   hash (a :~ s) = hash a `hashWithSalt` s
 
+span :: MonadParser m => m a -> m Span 
+span p = (\s l e -> Span s e l) <$> mark <*> line <*> (p *> mark)
+  
 spanned :: MonadParser m => m a -> m (Spanned a)
-spanned p = do
-  m <- mark
-  l <- line
-  a <- p
-  r <- mark
-  return $ a :~ Span m r l
+spanned p = (\s l a e -> a :~ Span s e l) <$> mark <*> line <*> p <*> mark

@@ -32,15 +32,15 @@ import Data.Sequence as Seq hiding (empty)
 import Data.ByteString.UTF8 as UTF8
 import Data.Bifunctor
 import Text.PrettyPrint.Free
-import Text.Trifecta.Delta
-import Text.Trifecta.Diagnostic
-import Text.Trifecta.Render.Prim
-import Text.Trifecta.Render.Caret
-import Text.Trifecta.Rope
+import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Rope.Prim
+import Text.Trifecta.Diagnostic.Prim
+import Text.Trifecta.Diagnostic.Err
+import Text.Trifecta.Diagnostic.Err.State
+import Text.Trifecta.Diagnostic.Rendering.Prim
+import Text.Trifecta.Diagnostic.Rendering.Caret
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.It
-import Text.Trifecta.Parser.Err
-import Text.Trifecta.Parser.Err.State
 import Text.Trifecta.Parser.Step
 import Text.Trifecta.Parser.Result
 import System.Console.Terminfo.PrettyPrint
@@ -202,8 +202,8 @@ stepParser yl y (Parser p) d0 bs0 =
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
 why pp (ErrState ss _m _) d bs 
-  | Set.null ss = diagnose pp (addCaret d $ surface d bs) m
-  | otherwise   = expected <$> diagnose pp (addCaret d $ surface d bs) m 
+  | Set.null ss = diagnose pp (addCaret d $ rendering d bs) m
+  | otherwise   = expected <$> diagnose pp (addCaret d $ rendering d bs) m 
   where
     m = EmptyErr
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)

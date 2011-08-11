@@ -41,7 +41,7 @@ module Text.Trifecta.CharSet.Unicode
 
 import Data.Char
 import Data.Data
-import Text.Trifecta.CharSet
+import Text.Trifecta.CharSet.Prim
 
 data UnicodeCategory = UnicodeCategory String String CharSet String
     deriving (Show, Data, Typeable)

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeFamilies, FlexibleInstances #-}
-module Text.Trifecta.Hunk 
+module Text.Trifecta.Rope.Hunk 
   ( Hunk(..)
   , hunk
   ) where
@@ -11,7 +11,7 @@ import Data.Function (on)
 import Data.Hashable
 import Data.Interned
 import Data.String
-import Text.Trifecta.Delta
+import Text.Trifecta.Rope.Delta
 
 data Hunk = Hunk {-# UNPACK #-} !Id !Delta {-# UNPACK #-} !ByteString
   deriving Show

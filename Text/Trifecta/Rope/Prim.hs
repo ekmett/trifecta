@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, PatternGuards #-}
-module Text.Trifecta.Rope
+module Text.Trifecta.Rope.Prim
   ( Rope(..)
   , rope
   , strands
@@ -14,11 +14,11 @@ import qualified Data.ByteString as Strict
 import qualified Data.ByteString.Lazy as Lazy
 import Data.FingerTree as FingerTree
 import Data.Foldable (toList)
-import Text.Trifecta.Hunk
-import Text.Trifecta.Path
-import Text.Trifecta.Delta
-import Text.Trifecta.Bytes
-import Text.Trifecta.Strand
+import Text.Trifecta.Rope.Hunk
+import Text.Trifecta.Rope.Path
+import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Strand
 import Text.Trifecta.Util as Util
 
 data Rope = Rope !Delta !(FingerTree Delta Strand) deriving Show

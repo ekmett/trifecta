@@ -1,4 +1,4 @@
-module Text.Trifecta.Delta 
+module Text.Trifecta.Rope.Delta 
   ( Delta(..) 
   , HasDelta(..)
   , nextTab
@@ -17,8 +17,8 @@ import Data.Interned
 import Data.Foldable
 import Data.FingerTree hiding (empty)
 import Data.ByteString hiding (empty)
-import Text.Trifecta.Path
-import Text.Trifecta.Bytes
+import Text.Trifecta.Rope.Path
+import Text.Trifecta.Rope.Bytes
 import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
 

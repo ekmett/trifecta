@@ -10,89 +10,62 @@
 -- 
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Style
-  ( Style(..)
- 
-  -- identifier styles
-  , emptyIdents, haskellIdents, haskell98Idents
-
-  -- operator styles
-  , emptyOps, haskellOps, haskell98Ops
-
-  -- reading identifiers
-  , ident
-  , reserved
-  , reservedByteString
+  ( CommentStyle(..)
+  , emptyCommentStyle
+  , javaCommentStyle
+  , haskellCommentStyle
+  , buildWhiteSpaceParser
   ) where
 
-import Data.ByteString as Strict hiding (map, zip, foldl, foldr)
-import Data.ByteString.UTF8 as UTF8
-import Data.HashSet as HashSet
-import Data.Monoid
+import Data.Char (isSpace)
 import Control.Applicative
-import Control.Monad (when)
+import Data.List (nub)
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Token.Class
 
-data Style m = Style
-  { styleName         :: String
-  , styleStart        :: m ()
-  , styleLetter       :: m ()
-  , styleReserved     :: HashSet ByteString
-  }
+data CommentStyle = CommentStyle 
+  { commentStart   :: String
+  , commentEnd     :: String
+  , commentLine    :: String
+  , commentNesting :: Bool
+  } 
 
--- | parse a reserved operator or identifier
-reserved :: MonadTokenParser m => Style m -> String -> m ()
-reserved s name = reservedByteString s $! UTF8.fromString name
+emptyCommentStyle, javaCommentStyle, haskellCommentStyle :: CommentStyle
+emptyCommentStyle   = CommentStyle "" "" "" True
+javaCommentStyle    = CommentStyle "/*" "*/" "//" True
+haskellCommentStyle = CommentStyle "{-" "-}" "--" True
 
--- | parse a reserved operator or identifier specified by bytestring
-reservedByteString :: MonadTokenParser m => Style m -> ByteString -> m ()
-reservedByteString s name = lexeme $ try $ do
-   _ <- byteString name 
-   notFollowedBy (styleLetter s) <?> "end of " ++ show name
-
--- | parse an non-reserved identifier or symbol
-ident :: MonadTokenParser m => Style m -> m ByteString
-ident s = lexeme $ try $ do
-  name <- sliced (styleStart s *> skipMany (styleLetter s)) <?> styleName s
-  when (member name (styleReserved s)) $ unexpected $ "reserved " ++ styleName s ++ " " ++ show name
-  return name
-
-set :: [String] -> HashSet ByteString
-set = HashSet.fromList . fmap UTF8.fromString
-
-emptyOps, haskell98Ops, haskellOps :: MonadTokenParser m => Style m
-emptyOps = Style
-  { styleName     = "operator"
-  , styleStart    = styleLetter emptyOps
-  , styleLetter   = () <$ oneOf ":!#$%&*+./<=>?@\\^|-~"
-  , styleReserved = mempty
-  }
-haskell98Ops = emptyOps 
-  { styleReserved = set ["::","..","=","\\","|","<-","->","@","~","=>"]
-  }
-haskellOps = haskell98Ops
-
-emptyIdents, haskell98Idents, haskellIdents :: MonadTokenParser m => Style m
-emptyIdents = Style
-  { styleName     = "identifier"
-  , styleStart    = () <$ (letter <|> char '_')
-  , styleLetter   = () <$ (alphaNum <|> oneOf "_'")
-  , styleReserved = set [] }
-
-haskell98Idents = emptyIdents
-  { styleReserved = set haskell98ReservedIdents }
-haskellIdents = haskell98Idents
-  { styleLetter	  = styleLetter haskell98Idents <|> () <$ char '#'
-  , styleReserved = set $ haskell98ReservedIdents ++
-      ["foreign","import","export","primitive","_ccall_","_casm_" ,"forall"]
-  }
-
-haskell98ReservedIdents :: [String]
-haskell98ReservedIdents = 
-  ["let","in","case","of","if","then","else","data","type"
-  ,"class","default","deriving","do","import","infix"
-  ,"infixl","infixr","instance","module","newtype"
-  ,"where","primitive" -- "as","qualified","hiding"
-  ]
+-- | Use this to easily build the definition of whiteSpace for your MonadTokenParser
+buildWhiteSpaceParser :: MonadParser m => CommentStyle -> m ()
+buildWhiteSpaceParser (CommentStyle startStyle endStyle lineStyle nestingStyle)
+  | noLine && noMulti  = skipMany (simpleSpace <?> "")
+  | noLine             = skipMany (simpleSpace <|> multiLineComment <?> "")
+  | noMulti            = skipMany (simpleSpace <|> oneLineComment <?> "")
+  | otherwise          = skipMany (simpleSpace <|> oneLineComment <|> multiLineComment <?> "")
+  where
+    noLine  = null lineStyle
+    noMulti = null startStyle
+    simpleSpace = skipSome (satisfy isSpace)
+    oneLineComment = do
+      _ <- try $ string lineStyle
+      skipMany (satisfyAscii (/= '\n')) -- TODO: use skipping/restOfLine and fiddle with the last byte
+      return ()
+    multiLineComment = do
+      _ <- try $ string startStyle
+      inComment
+    inComment
+      | nestingStyle = inCommentMulti
+      | otherwise    = inCommentSingle
+    inCommentMulti
+      =   () <$ try (string endStyle)
+      <|> multiLineComment *> inCommentMulti
+      <|> skipSome (noneOf startEnd) *> inCommentMulti
+      <|> oneOf startEnd *> inCommentMulti
+      <?> "end of comment"
+    startEnd = nub (endStyle ++ startStyle)
+    inCommentSingle
+      =   () <$ try (string endStyle)
+      <|> skipSome (noneOf startEnd) *> inCommentSingle
+      <|> oneOf startEnd *> inCommentSingle
+      <?> "end of comment"

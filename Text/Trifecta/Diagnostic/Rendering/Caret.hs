@@ -1,6 +1,7 @@
-module Text.Trifecta.Render.Caret
+{-# LANGUAGE MultiParamTypeClasses #-}
+module Text.Trifecta.Diagnostic.Rendering.Caret
   ( Caret(..)
-  , HasCaret(..)
+  , caret
   , Careted(..)
   , careted
   -- * Internals
@@ -18,14 +19,15 @@ import Data.Hashable
 import Data.Semigroup
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
+import Data.Semigroup.Reducer
 import Data.Traversable
 import Prelude hiding (span)
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
-import Text.Trifecta.Bytes
-import Text.Trifecta.Delta
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Class
-import Text.Trifecta.Render.Prim
+import Text.Trifecta.Diagnostic.Rendering.Prim
 
 -- |
 -- > In file included from baz.c:9
@@ -44,14 +46,18 @@ caretEffects = [soft (Foreground Green), soft Bold]
 drawCaret :: Delta -> Delta -> Lines -> Lines
 drawCaret p = ifNear p $ draw caretEffects 1 (column p) "^"
 
-addCaret :: Delta -> Render -> Render
+addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
 
-class HasCaret t where
-  caret :: t -> Caret
-
-instance HasCaret Caret where
-  caret = id
+caret :: MonadParser m => m Caret
+caret = Caret <$> mark <*> line
+  
+careted :: MonadParser m => m a -> m (Careted a)
+careted p = do
+  m <- mark
+  l <- line
+  a <- p
+  return $ a :^ Caret m l
 
 instance HasBytes Caret where
   bytes = bytes . delta
@@ -60,7 +66,10 @@ instance HasDelta Caret where
   delta (Caret d _) = d
 
 instance Renderable Caret where
-  render (Caret d bs) = addCaret d $ surface d bs
+  render (Caret d bs) = addCaret d $ rendering d bs
+
+instance Reducer Caret Rendering where
+  unit = render
 
 instance Semigroup Caret where
   a <> _ = a
@@ -89,16 +98,10 @@ instance Traversable1 Careted where
   traverse1 f (a :^ s) = (:^ s) <$> f a
 
 instance Renderable (Careted a) where
-  render = render . caret
+  render (_ :^ a) = render a
 
-instance HasCaret (Careted a) where
-  caret (_ :^ c) = c
+instance Reducer (Careted a) Rendering where
+  unit = render
 
 instance Hashable a => Hashable (Careted a) where
-  
-careted :: MonadParser m => m a -> m (Careted a)
-careted p = do
-  m <- mark
-  l <- line
-  a <- p
-  return $ a :^ Caret m l
+

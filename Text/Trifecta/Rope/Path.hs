@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, BangPatterns #-}
-module Text.Trifecta.Path
+module Text.Trifecta.Rope.Path
   ( FileName
   , Path(..), History(..)
   , file

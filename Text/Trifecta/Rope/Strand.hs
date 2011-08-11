@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances #-}
-module Text.Trifecta.Strand
+module Text.Trifecta.Rope.Strand
   ( Strand(..)
   ) where
 
@@ -7,10 +7,10 @@ import Data.Interned
 import Data.Hashable
 import Data.ByteString as Strict
 import Data.FingerTree as FingerTree
-import Text.Trifecta.Hunk
-import Text.Trifecta.Path
-import Text.Trifecta.Bytes
-import Text.Trifecta.Delta
+import Text.Trifecta.Rope.Hunk
+import Text.Trifecta.Rope.Path
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Delta
 
 data Strand
   = HunkStrand !Hunk

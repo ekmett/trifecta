@@ -1,4 +1,4 @@
-module Text.Trifecta.Parser.Err
+module Text.Trifecta.Diagnostic.Err
   ( Err(..)
   , diagnose
   , knownErr
@@ -9,9 +9,9 @@ import Control.Comonad
 import Data.Semigroup
 import Data.Monoid
 import Data.Functor.Plus
-import Text.Trifecta.Render.Prim
-import Text.Trifecta.Diagnostic
+import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
+import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
 
@@ -21,7 +21,7 @@ data Err e
   | FailErr String 
   | UnexpectedErr String
   | EndOfFileErr
-  | RichErr (Render -> Diagnostic e)
+  | RichErr (Rendering -> Diagnostic e)
 
 instance Show (Err e) where
   showsPrec _ EmptyErr = showString "EmptyErr"
@@ -37,7 +37,7 @@ knownErr :: Err e -> Bool
 knownErr EmptyErr = False
 knownErr _ = True
 
-diagnose :: (t -> Doc e) -> Render -> Err t -> Diagnostic (Doc e)
+diagnose :: (t -> Doc e) -> Rendering -> Err t -> Diagnostic (Doc e)
 diagnose _ r EmptyErr          = Diagnostic r Error (text "unexpected") []
 diagnose _ r (FailErr m)       = Diagnostic r Error (fillSep $ text <$> words m) []
 diagnose _ r (UnexpectedErr s) = Diagnostic r Error (fillSep $ fmap text $ "unexpected" : words s) []
@@ -45,10 +45,10 @@ diagnose _ r EndOfFileErr      = Diagnostic r Error (text "unexpected EOF") []
 diagnose k r (RichErr f)       = fmap k (f r)
 
 diagnose0 :: Pretty t => Err t -> Diagnostic (Doc e)
-diagnose0 = diagnose pretty emptyRender
+diagnose0 = diagnose pretty emptyRendering
 
 diagnoseTerm0 :: PrettyTerm t => Err t -> Diagnostic TermDoc
-diagnoseTerm0 = diagnose prettyTerm emptyRender
+diagnoseTerm0 = diagnose prettyTerm emptyRendering
 
 instance Pretty t => Pretty (Err t) where
   pretty = pretty . extract . diagnose0

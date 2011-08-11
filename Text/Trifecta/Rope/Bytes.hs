@@ -1,4 +1,4 @@
-module Text.Trifecta.Bytes
+module Text.Trifecta.Rope.Bytes
   ( HasBytes(..)
   ) where
 

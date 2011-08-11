@@ -216,4 +216,3 @@ lookAhead p = try $ do
   m <- mark
   p <* release m
 
-

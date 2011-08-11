@@ -11,7 +11,7 @@ import Data.Functor.Plus
 import Data.Traversable
 import Data.Bifunctor
 import Data.Sequence
-import Text.Trifecta.Diagnostic
+import Text.Trifecta.Diagnostic.Prim
 import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
 

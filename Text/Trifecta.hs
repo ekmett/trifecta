@@ -1,57 +1,9 @@
 module Text.Trifecta 
-  ( module Text.Trifecta.Bytes
-  , module Text.Trifecta.Delta
-  , module Text.Trifecta.Diagnostic
-  , module Text.Trifecta.Diagnostic.Level
-  , module Text.Trifecta.Hunk
-  , module Text.Trifecta.Parser.Char
-  , module Text.Trifecta.Parser.Class
-  , module Text.Trifecta.Parser.Combinators
-  , module Text.Trifecta.Parser.Err
-  , module Text.Trifecta.Parser.Err.State
-  , module Text.Trifecta.Parser.It
-  , module Text.Trifecta.Parser.Prim
-  , module Text.Trifecta.Parser.Result
-  , module Text.Trifecta.Parser.Step
-  , module Text.Trifecta.Parser.Token.Class
-  , module Text.Trifecta.Parser.Token.Combinators
-  , module Text.Trifecta.Parser.Token.Prim
-  , module Text.Trifecta.Parser.Token.Style
-  , module Text.Trifecta.Parser.Expr
-  , module Text.Trifecta.Path
-  , module Text.Trifecta.Render.Caret
-  , module Text.Trifecta.Render.Fixit
-  , module Text.Trifecta.Render.Prim
-  , module Text.Trifecta.Render.Span
-  , module Text.Trifecta.Rope
-  , module Text.Trifecta.Strand
+  ( module Text.Trifecta.Diagnostic
+  , module Text.Trifecta.Parser
   , module System.Console.Terminfo.PrettyPrint
   ) where
 
-import Text.Trifecta.Bytes
-import Text.Trifecta.Delta
 import Text.Trifecta.Diagnostic
-import Text.Trifecta.Diagnostic.Level
-import Text.Trifecta.Hunk
-import Text.Trifecta.Parser.Char
-import Text.Trifecta.Parser.Class
-import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Err
-import Text.Trifecta.Parser.Err.State
-import Text.Trifecta.Parser.It
-import Text.Trifecta.Parser.Prim
-import Text.Trifecta.Parser.Result
-import Text.Trifecta.Parser.Step
-import Text.Trifecta.Parser.Token.Class
-import Text.Trifecta.Parser.Token.Combinators
-import Text.Trifecta.Parser.Token.Prim
-import Text.Trifecta.Parser.Token.Style
-import Text.Trifecta.Parser.Expr
-import Text.Trifecta.Path
-import Text.Trifecta.Render.Caret
-import Text.Trifecta.Render.Fixit
-import Text.Trifecta.Render.Prim
-import Text.Trifecta.Render.Span
-import Text.Trifecta.Rope
-import Text.Trifecta.Strand
+import Text.Trifecta.Parser
 import System.Console.Terminfo.PrettyPrint

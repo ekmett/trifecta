@@ -1,4 +1,4 @@
-module Text.Trifecta.Parser.Err.State 
+module Text.Trifecta.Diagnostic.Err.State 
   ( ErrState(..)
   ) where
 
@@ -7,7 +7,7 @@ import Data.Set as Set
 import Data.Sequence as Seq
 import Data.Semigroup
 import Data.Monoid
-import Text.Trifecta.Parser.Err
+import Text.Trifecta.Diagnostic.Err
 import Text.Trifecta.Diagnostic
 
 data ErrState e = ErrState

@@ -1,13 +1,14 @@
 {-# LANGUAGE TypeSynonymInstances #-}
+
 -- | Diagnostics rendering
-module Text.Trifecta.Render.Prim 
-  ( Render(..)
-  , Renderable(..)
+module Text.Trifecta.Diagnostic.Rendering.Prim 
+  ( Rendering(..)
+  , nullRendering
+  , emptyRendering
   , Source(..)
+  , rendering
+  , Renderable(..)
   , Rendered(..)
-  , surface
-  , nullRender
-  , emptyRender
   -- * Lower level drawing primitives
   , Lines
   , draw
@@ -33,8 +34,8 @@ import Prelude as P
 import Prelude hiding (span)
 import System.Console.Terminfo.PrettyPrint
 import Text.PrettyPrint.Free hiding (column)
-import Text.Trifecta.Bytes
-import Text.Trifecta.Delta
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Delta
 import qualified Data.ByteString.UTF8 as UTF8 
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
@@ -66,44 +67,44 @@ draw e y n xs a0
     gt | Prelude.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
        | otherwise = id
 
-data Render = Render 
-  { rDelta     :: !Delta                  -- focus, the render will keep this visible
-  , rLineLen   :: {-# UNPACK #-} !Int     -- actual line length
-  , rLine      :: Lines -> Lines
-  , rDraw      :: Delta -> Lines -> Lines
+data Rendering = Rendering
+  { renderingDelta    :: !Delta                  -- focus, the render will keep this visible
+  , renderingLineLen  :: {-# UNPACK #-} !Int     -- actual line length
+  , renderingLine     :: Lines -> Lines
+  , renderingOverlays :: Delta -> Lines -> Lines
   }
 
-instance Show Render where
-  showsPrec d (Render p ll _ _) = showParen (d > 10) $ 
-    showString "Render " . showsPrec 11 p . showChar ' ' . showsPrec 11 ll . showString " ... ..."
+instance Show Rendering where
+  showsPrec d (Rendering p ll _ _) = showParen (d > 10) $ 
+    showString "Rendering " . showsPrec 11 p . showChar ' ' . showsPrec 11 ll . showString " ... ..."
 
-nullRender :: Render -> Bool
-nullRender (Render (Columns 0 0) 0 _ _) = True
-nullRender _ = False
+nullRendering :: Rendering -> Bool
+nullRendering (Rendering (Columns 0 0) 0 _ _) = True
+nullRendering _ = False
 
-emptyRender :: Render 
-emptyRender = surface (Columns 0 0) ""
+emptyRendering :: Rendering
+emptyRendering = rendering (Columns 0 0) ""
 
-instance Semigroup Render where
+instance Semigroup Rendering where
   -- an unprincipled hack
-  Render (Columns 0 0) 0 _ f <> Render del len doc g = Render del len doc $ \d l -> f d (g d l)
-  Render del len doc f <> Render _ _ _ g = Render del len doc $ \d l -> f d (g d l)
+  Rendering (Columns 0 0) 0 _ f <> Rendering del len doc g = Rendering del len doc $ \d l -> f d (g d l)
+  Rendering del len doc f <> Rendering _ _ _ g = Rendering del len doc $ \d l -> f d (g d l)
 
-instance Monoid Render where
+instance Monoid Rendering where
   mappend = (<>) 
-  mempty = emptyRender
+  mempty = emptyRendering
   
 ifNear :: Delta -> (Lines -> Lines) -> Delta -> Lines -> Lines
 ifNear d f d' l | near d d' = f l 
                 | otherwise = l
 
-instance HasDelta Render where
-  delta = rDelta
+instance HasDelta Rendering where
+  delta = renderingDelta
 
 class Renderable t where
-  render :: t -> Render 
+  render :: t -> Rendering
 
-instance Renderable Render where
+instance Renderable Rendering where
   render = id
 
 class Source t where
@@ -121,18 +122,18 @@ instance Source ByteString where
   source = source . UTF8.toString
 
 -- | create a drawing surface
-surface :: Source s => Delta -> s -> Render
-surface del s = case source s of 
-  (len, doc) -> Render del len doc (\_ l -> l)
+rendering :: Source s => Delta -> s -> Rendering
+rendering del s = case source s of 
+  (len, doc) -> Rendering del len doc (\_ l -> l)
 
-(.#) :: (Delta -> Lines -> Lines) -> Render -> Render
-f .# Render d ll s g = Render d ll s $ \e l -> f e $ g e l 
+(.#) :: (Delta -> Lines -> Lines) -> Rendering -> Rendering
+f .# Rendering d ll s g = Rendering d ll s $ \e l -> f e $ g e l 
 
-instance Pretty Render where
+instance Pretty Rendering where
   pretty r = prettyTerm r >>= const empty
 
-instance PrettyTerm Render where
-  prettyTerm (Render d ll l f) = nesting $ \k -> columns $ \n -> go (n - k) where
+instance PrettyTerm Rendering where
+  prettyTerm (Rendering d ll l f) = nesting $ \k -> columns $ \n -> go (n - k) where
     go cols = align (vsep (P.map ln [t..b])) where 
       (lo, hi) = window (column d) ll (cols - 2)
       a = f d $ l $ array ((0,lo),(-1,hi)) []
@@ -149,9 +150,8 @@ window c l w
   | otherwise   = (c-w2,c + w2)
   where w2 = div w 2
 
-data Rendered a = a :@ Render
+data Rendered a = a :@ Rendering
   deriving Show
-
 
 instance Functor Rendered where
   fmap f (a :@ s) = f a :@ s
