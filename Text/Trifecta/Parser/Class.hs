@@ -35,7 +35,7 @@ import Text.Trifecta.Parser.It
 infix 0 <?>
 
 class ( Alternative m, MonadPlus m) => MonadParser m where
-  -- * non-committal actions
+  -- non-committal actions
   try        :: m a -> m a
   labels     :: m a -> Set String -> m a
   liftIt     :: It Rope a -> m a
@@ -43,7 +43,7 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   unexpected :: MonadParser m => String -> m a
   line       :: m ByteString
 
-  -- * actions that definitely commit
+  -- actions that definitely commit
   release    :: Delta -> m ()
   satisfy    :: (Char -> Bool) -> m Char
 
