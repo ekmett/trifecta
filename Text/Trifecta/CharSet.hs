@@ -9,11 +9,13 @@
 -- Stability   :  experimental
 -- Portability :  non-portable (Data, BangPatterns, MagicHash)
 --
--- Fast set membership tests for 'Char' values, optimized for ASCII. The
--- set representation is unboxed for efficiency. For small sets, we
--- test for membership using a binary search. For larger sets, we use
--- a lookup table. Characters above the ASCII range (0x00-0x7f) are maintained 
--- in an IntSet, providing nominal O(1) lookup. 
+-- Fast set membership tests for 'Char' values
+--
+-- Stored as a (possibly negated IntMap) and a fast set for the ASCII range.
+--
+-- The ASCII range is unboxed for efficiency. For small (complemented) sets, we
+-- test for membership using a binary search. For larger (complemented) sets
+-- we use a lookup table. 
 --
 -- Designed to be imported qualified:
 -- 
