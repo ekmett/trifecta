@@ -53,7 +53,6 @@ library
     Text.Trifecta.Render.Span
     Text.Trifecta.Rope
     Text.Trifecta.Strand
-    Text.Trifecta.Util.MaybePair
 
   other-modules:
     Text.Trifecta.Util

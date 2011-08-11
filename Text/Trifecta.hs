@@ -1,8 +1,5 @@
 module Text.Trifecta 
   ( module Text.Trifecta.Bytes
---  , module System.Console.Terminfo.Color
-  , module System.Console.Terminfo.PrettyPrint
---  , module Text.PrettyPrint.Free
   , module Text.Trifecta.Delta
   , module Text.Trifecta.Diagnostic
   , module Text.Trifecta.Diagnostic.Level
@@ -28,7 +25,7 @@ module Text.Trifecta
   , module Text.Trifecta.Render.Span
   , module Text.Trifecta.Rope
   , module Text.Trifecta.Strand
-  , module Text.Trifecta.Util.MaybePair
+  , module System.Console.Terminfo.PrettyPrint
   ) where
 
 import Text.Trifecta.Bytes
@@ -57,7 +54,4 @@ import Text.Trifecta.Render.Prim
 import Text.Trifecta.Render.Span
 import Text.Trifecta.Rope
 import Text.Trifecta.Strand
-import Text.Trifecta.Util.MaybePair
--- import Text.PrettyPrint.Free hiding (column, char, line, string, space)
 import System.Console.Terminfo.PrettyPrint
--- import System.Console.Terminfo.Color

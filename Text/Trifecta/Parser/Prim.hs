@@ -25,7 +25,7 @@ import Data.Functor.Plus
 import Data.Semigroup
 import Data.Foldable
 import Data.Monoid
-import Data.Functor.Bind
+import Data.Functor.Bind (Apply(..), Bind((>>-)))
 import Data.Set as Set hiding (empty, toList)
 import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
@@ -43,7 +43,6 @@ import Text.Trifecta.Parser.Err
 import Text.Trifecta.Parser.Err.State
 import Text.Trifecta.Parser.Step
 import Text.Trifecta.Parser.Result
-import Text.Trifecta.Util.MaybePair
 import System.Console.Terminfo.PrettyPrint
 
 data Parser e a = Parser 
@@ -164,9 +163,8 @@ instance MonadParser (Parser e) where
       Nothing             -> ee mempty { errMessage = EndOfFileErr } d bs
       Just (c, xs) 
         | not (f c)       -> ee mempty d bs
-        | Strict.null xs  -> fillIt (d <> delta c) >>= \dbs -> case dbs of
-          JustPair d' bs' -> co c mempty d' bs'
-          NothingPair     -> co c mempty (d <> delta c) bs -- END OF LINE
+        | Strict.null xs  -> let ddc = d <> delta c in
+                             join $ fillIt (co c mempty ddc bs) (co c mempty) ddc
         | otherwise       -> co c mempty (d <> delta c) bs 
   {-# INLINE satisfy #-}
   satisfyAscii f = Parser $ \ _ ee co _ d bs ->
@@ -174,9 +172,8 @@ instance MonadParser (Parser e) where
     if b >= 0 && b < Strict.length bs 
     then case toEnum $ fromEnum $ Strict.index bs b of
       c | not (f c)                 -> ee mempty d bs
-        | b == Strict.length bs - 1 -> fillIt (d <> delta c) >>= \dbs -> case dbs of
-          JustPair d' bs'           -> co c mempty d' bs'
-          NothingPair               -> co c mempty (d <> delta c) bs
+        | b == Strict.length bs - 1 -> let ddc = d <> delta c in 
+                                       join $ fillIt (co c mempty ddc bs) (co c mempty) ddc
         | otherwise                 -> co c mempty (d <> delta c) bs
     else ee mempty { errMessage = EndOfFileErr } d bs
   {-# INLINE satisfyAscii #-}

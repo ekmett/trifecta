@@ -26,7 +26,6 @@ import Text.Trifecta.Rope as Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Bytes
 import Text.Trifecta.Util as Util
-import Text.Trifecta.Util.MaybePair
 import Text.Trifecta.Parser.Step
 
 data It r a
@@ -113,10 +112,10 @@ runIt _ i (It a k) = i a k
 -- * Rope specifics
 
 -- | Given a position, go there, and grab the text forward from that point
-fillIt :: Delta -> It Rope (MaybePair Delta Strict.ByteString)
-fillIt n = wantIt NothingPair $ \r -> 
+fillIt :: r -> (Delta -> Strict.ByteString -> r) -> Delta -> It Rope r
+fillIt kf ks n = wantIt kf $ \r -> 
   (# bytes n < bytes (rewind (delta r))
-  ,  grabLine n r NothingPair JustPair #) 
+  ,  grabLine n r kf ks #) 
 
 stepIt :: It Rope a -> Step e a
 stepIt = go mempty where
@@ -136,4 +135,3 @@ sliceIt !i !j = wantIt mempty $ \r ->
   where
     bi = bytes i
     bj = bytes j
-
