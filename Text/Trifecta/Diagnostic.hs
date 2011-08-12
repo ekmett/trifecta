@@ -1,6 +1,7 @@
 module Text.Trifecta.Diagnostic 
   ( Diagnostic(..)
   , tellDiagnostic
+  , MonadDiagnostic(..)
   , DiagnosticLevel(..)
   , Renderable(..)
   , Source
@@ -11,5 +12,6 @@ module Text.Trifecta.Diagnostic
   ) where
 
 import Text.Trifecta.Diagnostic.Prim
+import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Rendering
