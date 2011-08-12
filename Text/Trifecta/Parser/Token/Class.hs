@@ -17,6 +17,13 @@ import Control.Applicative
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Lazy as Lazy
 import Control.Monad.Trans.State.Strict as Strict
+import Control.Monad.Trans.Writer.Lazy as Lazy
+import Control.Monad.Trans.Writer.Strict as Strict
+import Control.Monad.Trans.RWS.Lazy as Lazy
+import Control.Monad.Trans.RWS.Strict as Strict
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Identity
+import Data.Monoid
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadTokenParser m where
@@ -44,6 +51,10 @@ class MonadParser m => MonadTokenParser m where
   lexeme :: m a -> m a
   lexeme p = p <* whiteSpace
 
+instance MonadTokenParser m => MonadTokenParser (ReaderT r m) where
+  whiteSpace = lift whiteSpace
+  lexeme (ReaderT m) = ReaderT $ lexeme . m
+
 instance MonadTokenParser m => MonadTokenParser (Lazy.StateT s m) where
   whiteSpace = lift whiteSpace
   lexeme (Lazy.StateT m) = Lazy.StateT $ lexeme . m
@@ -51,3 +62,23 @@ instance MonadTokenParser m => MonadTokenParser (Lazy.StateT s m) where
 instance MonadTokenParser m => MonadTokenParser (Strict.StateT s m) where
   whiteSpace = lift whiteSpace
   lexeme (Strict.StateT m) = Strict.StateT $ lexeme . m
+
+instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Lazy.WriterT w m) where
+  whiteSpace = lift whiteSpace
+  lexeme (Lazy.WriterT m) = Lazy.WriterT $ lexeme m
+
+instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Strict.WriterT w m) where
+  whiteSpace = lift whiteSpace
+  lexeme (Strict.WriterT m) = Strict.WriterT $ lexeme m
+
+instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Lazy.RWST r w s m) where
+  whiteSpace = lift whiteSpace
+  lexeme (Lazy.RWST m) = Lazy.RWST $ \r s -> lexeme (m r s)
+
+instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Strict.RWST r w s m) where
+  whiteSpace = lift whiteSpace
+  lexeme (Strict.RWST m) = Strict.RWST $ \r s -> lexeme (m r s)
+
+instance MonadTokenParser m => MonadTokenParser (IdentityT m) where
+  whiteSpace = lift whiteSpace
+  lexeme = IdentityT . lexeme . runIdentityT
