@@ -9,7 +9,7 @@ import Control.Monad.Trans.State.Strict as Strict
 import Text.Trifecta.Diagnostic.Prim
 
 class Monad m => MonadDiagnostic e m | m -> e where
-  record  :: Diagnostic e -> m a
+  record  :: Diagnostic e -> m ()
   fatal   :: e -> m a -- consuming error
   err     :: e -> m a -- non-consuming error
   warn    :: e -> m ()

@@ -31,10 +31,12 @@ import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
 import Data.ByteString.UTF8 as UTF8
 import Data.Bifunctor
-import Text.PrettyPrint.Free
+import Text.PrettyPrint.Free hiding (line)
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
+import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Diagnostic.Prim
+import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Err
 import Text.Trifecta.Diagnostic.Err.State
 import Text.Trifecta.Diagnostic.Rendering.Prim
@@ -84,10 +86,7 @@ instance Alternative (Parser e) where
   {-# INLINE empty #-}
   -- Parser m <|> Parser n = Parser $ \ eo ee co ce -> m eo (n eo ee co ce) co ce
   Parser m <|> Parser n = Parser $ \ eo ee co ce -> 
-    m eo (\e -> n (\a e'-> eo a (e <> e')) 
-                  (\e' -> ee (e <> e')) 
-                  co 
-                  ce) 
+    m eo (\e -> n (\a e'-> eo a (e <> e')) (\e' -> ee (e <> e')) co ce) 
       co ce
   {-# INLINE (<|>) #-}
 instance Semigroup (Parser e a) where
@@ -124,6 +123,20 @@ instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
     m (\(a,p) e -> eo a e { errLog = p $ errLog e }) ee
       (\(a,p) e -> co a e { errLog = p $ errLog e }) ce
 
+logging :: DiagnosticLevel -> e -> Parser e ()
+logging level e = do
+  m <- mark
+  l <- line
+  tell $ return $ Diagnostic (rendering m l) level e []
+
+instance MonadDiagnostic e (Parser e) where
+  record = tell . return
+  fatal e = Parser $ \_ _ _ ce d bs -> ce mempty { errMessage = FatalErr (Diagnostic (rendering d bs) Fatal e []) } d bs
+  err e = throwError $ RichErr $ \r -> Diagnostic r Error e []
+  warn = logging Warning
+  note = logging Note
+  verbose = logging . Verbose
+
 instance MonadError (Err e) (Parser e) where
   throwError m = Parser $ \_ ee _ _ -> ee mempty { errMessage = m } 
   {-# INLINE throwError #-}
@@ -134,7 +147,8 @@ instance MonadError (Err e) (Parser e) where
 
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
-  try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co ee
+  try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
+    \e -> if fatalErr (errMessage e) then ce e else ee e
   {-# INLINE try #-}
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = UnexpectedErr s } 
 
