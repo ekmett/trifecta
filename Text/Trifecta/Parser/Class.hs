@@ -18,6 +18,7 @@ module Text.Trifecta.Parser.Class
   , (<?>)
   , slicedWith
   , sliced
+  , rend
   ) where
 
 import Control.Applicative
@@ -25,12 +26,22 @@ import Control.Monad (MonadPlus(..))
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Lazy as Lazy
 import Control.Monad.Trans.State.Strict as Strict
+import Control.Monad.Trans.Writer.Lazy as Lazy
+import Control.Monad.Trans.Writer.Strict as Strict
+import Control.Monad.Trans.RWS.Lazy as Lazy
+import Control.Monad.Trans.RWS.Strict as Strict
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Identity
+import Data.Monoid
+-- import Control.Monad.Trans.Maybe.Strict as Strict
+-- import Control.Monad.Trans.Either.Strict as Strict
 import Data.ByteString as Strict
 import Data.Semigroup
 import Data.Set as Set
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Parser.It
+import Text.Trifecta.Diagnostic.Rendering.Prim
 
 infix 0 <?>
 
@@ -72,6 +83,75 @@ instance MonadParser m => MonadParser (Strict.StateT s m) where
   unexpected = lift . unexpected
   satisfyAscii = lift . satisfyAscii
 
+instance MonadParser m => MonadParser (ReaderT e m) where
+  satisfy = lift . satisfy
+  try (ReaderT m) = ReaderT $ try . m
+  labels (ReaderT m) ss = ReaderT $ \s -> labels (m s) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance (MonadParser m, Monoid w) => MonadParser (Strict.WriterT w m) where
+  satisfy = lift . satisfy
+  try (Strict.WriterT m) = Strict.WriterT $ try m
+  labels (Strict.WriterT m) ss = Strict.WriterT $ labels m ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance (MonadParser m, Monoid w) => MonadParser (Lazy.WriterT w m) where
+  satisfy = lift . satisfy
+  try (Lazy.WriterT m) = Lazy.WriterT $ try m
+  labels (Lazy.WriterT m) ss = Lazy.WriterT $ labels m ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance (MonadParser m, Monoid w) => MonadParser (Lazy.RWST r w s m) where
+  satisfy = lift . satisfy
+  try (Lazy.RWST m) = Lazy.RWST $ \r s -> try (m r s)
+  labels (Lazy.RWST m) ss = Lazy.RWST $ \r s -> labels (m r s) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance (MonadParser m, Monoid w) => MonadParser (Strict.RWST r w s m) where
+  satisfy = lift . satisfy
+  try (Strict.RWST m) = Strict.RWST $ \r s -> try (m r s)
+  labels (Strict.RWST m) ss = Strict.RWST $ \r s -> labels (m r s) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+instance MonadParser m => MonadParser (IdentityT m) where
+  satisfy = lift . satisfy
+  try (IdentityT m) = IdentityT $ try m
+  labels (IdentityT m) = IdentityT . labels m
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfyAscii = lift . satisfyAscii
+
+-- instance (MonadParser m, Monoid w) => MonadParser (MaybeT m) where
+-- instance (Error e, MonadParser m, Monoid w) => MonadParser (ErrorT e m) where
+
 -- useful when we've just recognized something out of band using access to the current line 
 skipping :: (MonadParser m, HasDelta d) => d -> m d
 skipping d = do
@@ -100,3 +180,5 @@ slicedWith f pa = do
 sliced :: MonadParser m => m a -> m ByteString
 sliced = slicedWith (\_ bs -> bs)
   
+rend :: MonadParser m => m Rendering
+rend = rendering <$> mark <*> line
