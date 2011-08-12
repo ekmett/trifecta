@@ -126,9 +126,9 @@ instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
   {-# INLINE listen #-}
   pass (Parser m) = Parser $ \eo ee co ce l -> 
     m (\(a,p) e' l' -> eo a e' (l <> p l'))
-      (\      e' l' -> ee   e' (l <> l'))
+      (\      e' l' -> ee   e' (l <>   l'))
       (\(a,p) e' l' -> co a e' (l <> p l'))
-      (\      e' l' -> ce   e' (l <> l'))
+      (\      e' l' -> ce   e' (l <>   l'))
       mempty
   {-# INLINE pass #-}
 
