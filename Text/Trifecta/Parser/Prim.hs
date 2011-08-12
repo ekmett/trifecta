@@ -107,13 +107,12 @@ instance Monad (Parser e) where
   {-# INLINE (>>=) #-}
   (>>) = (*>) 
   {-# INLINE (>>) #-}
-  fail = throwError . FailErr
+  fail s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr s }
   {-# INLINE fail #-}
 
 instance MonadPlus (Parser e) where
   mzero = empty
   mplus = (<|>) 
-
 
 instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
   tell w = Parser $ \eo _ _ _ l -> eo () mempty (l <> w)
@@ -133,28 +132,19 @@ instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
       mempty
   {-# INLINE pass #-}
 
-logging :: DiagnosticLevel -> e -> Parser e ()
-logging level e = do
-  m <- mark
-  l <- line
-  tell $ return $ Diagnostic (addCaret m $ rendering m l) level e []
-
 instance MonadDiagnostic e (Parser e) where
-  record = tell . return
-  fatal e = Parser $ \_ _ _ ce l d bs -> ce mempty { errMessage = FatalErr (Diagnostic (addCaret d $ rendering d bs) Fatal e []) } l d bs
-  err e = do
-    m <- mark
-    throwError $ RichErr $ \r -> Diagnostic (addCaret m r) Error e [] -- showing the actual location
-  warn = logging Warning
-  note = logging Note
-  verbose = logging . Verbose
-
-instance MonadError (Err e) (Parser e) where
-  throwError m = Parser $ \_ ee _ _ -> ee mempty { errMessage = m } 
+  fatalWith ds rs e = Parser $ \_ _ _ ce -> 
+    ce mempty { errMessage = Err rs Fatal e ds }
+  errWith ds rs e = Parser $ \_ ee _ _ -> 
+    ee mempty { errMessage = Err rs Error e ds }
+  logWith v ds rs e = Parser $ \eo _ _ _ l d bs -> 
+    eo () mempty (l |> Diagnostic (addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) d bs
+    
+instance MonadError (ErrState e) (Parser e) where
+  throwError m = Parser $ \_ ee _ _ -> ee m
   {-# INLINE throwError #-}
   catchError (Parser m) k = Parser $ \ eo ee co ce -> 
-    m eo (\e -> unparser (k (errMessage e)) (\a e'-> eo a (e <> e')) (\e' -> ee (e <> e')) co ce) 
-      co ce
+    m eo (\e -> unparser (k e) eo ee co ce) co ce
   {-# INLINE catchError #-}
 
 instance MonadParser (Parser e) where
@@ -162,11 +152,11 @@ instance MonadParser (Parser e) where
   try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
     \e -> if fatalErr (errMessage e) then ce e else ee e
   {-# INLINE try #-}
-  unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = UnexpectedErr s } 
+  unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
 
   labels (Parser p) msgs = Parser $ \ eo ee -> p
-     (\a e -> eo a $ if knownErr (errMessage e) 
-                     then e { errExpected = errExpected e }
+     (\a e -> eo a $ if knownErr (errMessage e)
+                     then e { errExpected = msgs `union` errExpected e }
                      else e)
      (\e -> ee e { errExpected = msgs })
   {-# INLINE labels #-}
@@ -186,7 +176,7 @@ instance MonadParser (Parser e) where
   {-# INLINE line #-}
   satisfy f = Parser $ \ _ ee co _ l d bs ->
     case UTF8.uncons $ Strict.drop (columnByte d) bs of
-      Nothing             -> ee mempty { errMessage = EndOfFileErr } l d bs
+      Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
       Just (c, xs) 
         | not (f c)       -> ee mempty l d bs
         | Strict.null xs  -> let ddc = d <> delta c in
@@ -201,7 +191,7 @@ instance MonadParser (Parser e) where
         | b == Strict.length bs - 1 -> let ddc = d <> delta c in 
                                        join $ fillIt (co c mempty l ddc bs) (co c mempty l) ddc
         | otherwise                 -> co c mempty l (d <> delta c) bs
-    else ee mempty { errMessage = EndOfFileErr } l d bs
+    else ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
   {-# INLINE satisfyAscii #-}
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Delta !ByteString
@@ -225,14 +215,16 @@ stepParser yl y (Parser p) l0 d0 bs0 =
                                    NoSt e l d bs   -> Failure (yl <$> l) $ y e d bs) 
                                 (go <*> k)
 
-
--- explain an error in terms of the expected set, when we are running the step parser for pretty printing
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
 why pp (ErrState ss m) d bs 
-  | Set.null ss = diagnose pp (addCaret d $ rendering d bs) m
-  | otherwise   = expected <$> diagnose pp (addCaret d $ rendering d bs) m 
+  | Set.null ss = explicate m 
+  | otherwise   = expected <$> explicate m
   where
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
+    r = addCaret d $ rendering d bs
+    explicate EmptyErr        = Diagnostic r Error (text "error") []
+    explicate (FailErr s)     = Diagnostic r Error (fillSep $ text <$> words s) []
+    explicate (Err rs l e es) = Diagnostic (addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) l (pp e) (fmap (fmap pp) es)
 
 parseTest :: Show a => Parser String a -> String -> IO ()
 parseTest p s = case starve $ feed st $ UTF8.fromString s of
