@@ -53,16 +53,17 @@ instance Pretty Delta where
 
 instance PrettyTerm Delta where
   prettyTerm d = case d of
-    Columns c _ -> k "-" 1 c
-    Tab x y _ -> k "-" 1 (nextTab x + y)
-    Lines l c _ _ -> k "-" l c
-    Directed (Path _ _ _ fn _ _) l c _ _ -> k (maybeFileName "-" unintern fn) l c  -- TODO: add include path
+    Columns c _ -> k f 1 c
+    Tab x y _ -> k f 1 (nextTab x + y)
+    Lines l c _ _ -> k f l c
+    Directed (Path _ _ _ fn _ _) l c _ _ -> k (maybeFileName f unintern fn) l c  -- TODO: add include path
     where 
       k fn ln cn = bold (string fn)           
                 <> char ':' 
                 <> bold (int ln)         
                 <> char ':' 
                 <> bold (int (cn + 1))
+      f = "(interactive)"
 
 column :: HasDelta t => t -> Int
 column t = case delta t of 

@@ -10,7 +10,7 @@ import Data.Functor.Apply
 import Data.Functor.Plus
 import Data.Traversable
 import Data.Bifunctor
-import Data.Sequence
+import Data.Sequence as Seq
 import Text.Trifecta.Diagnostic.Prim
 import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
@@ -21,11 +21,15 @@ data Result e a
   deriving Show
 
 instance (Pretty e, Show a) => Pretty (Result e a) where
-  pretty (Success xs a) = prettyList (toList xs) `above` string (show a)
+  pretty (Success xs a) 
+    | Seq.null xs = string (show a)
+    | otherwise   = prettyList (toList xs) `above` string (show a)
   pretty (Failure xs e) = prettyList $ toList $ xs |> e
 
 instance (PrettyTerm e, Show a) => PrettyTerm (Result e a) where
-  prettyTerm (Success xs a) = prettyTermList (toList xs) `above` string (show a)
+  prettyTerm (Success xs a)
+    | Seq.null xs = string (show a)
+    | otherwise   = prettyTermList (toList xs) `above` string (show a)
   prettyTerm (Failure xs e) = prettyTermList $ toList $ xs |> e
 
 instance Functor (Result e) where

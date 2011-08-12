@@ -127,12 +127,14 @@ logging :: DiagnosticLevel -> e -> Parser e ()
 logging level e = do
   m <- mark
   l <- line
-  tell $ return $ Diagnostic (rendering m l) level e []
+  tell $ return $ Diagnostic (addCaret m $ rendering m l) level e []
 
 instance MonadDiagnostic e (Parser e) where
   record = tell . return
-  fatal e = Parser $ \_ _ _ ce d bs -> ce mempty { errMessage = FatalErr (Diagnostic (rendering d bs) Fatal e []) } d bs
-  err e = throwError $ RichErr $ \r -> Diagnostic r Error e []
+  fatal e = Parser $ \_ _ _ ce d bs -> ce mempty { errMessage = FatalErr (Diagnostic (addCaret d $ rendering d bs) Fatal e []) } d bs
+  err e = do
+    m <- mark
+    throwError $ RichErr $ \r -> Diagnostic (addCaret m r) Error e [] -- showing the actual location
   warn = logging Warning
   note = logging Note
   verbose = logging . Verbose
@@ -215,11 +217,10 @@ stepParser yl y (Parser p) d0 bs0 =
                                 (go <*> k)
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
-why pp (ErrState ss _m _) d bs 
+why pp (ErrState ss m _) d bs 
   | Set.null ss = diagnose pp (addCaret d $ rendering d bs) m
   | otherwise   = expected <$> diagnose pp (addCaret d $ rendering d bs) m 
   where
-    m = EmptyErr
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
 
 parseTest :: Show a => Parser TermDoc a -> String -> IO ()

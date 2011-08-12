@@ -75,8 +75,10 @@ instance Functor Err where
   fmap f (RichErr k) = RichErr (fmap f . k)
 
 instance Alt Err where
-  EmptyErr <!> a = a
-  a        <!> _ = a
+  EmptyErr     <!> a            = a
+  e@FatalErr{} <!> _            = e
+  _            <!> e@FatalErr{} = e
+  a            <!> _            = a 
   {-# INLINE (<!>) #-}
 
 instance Plus Err where

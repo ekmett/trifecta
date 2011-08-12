@@ -51,14 +51,14 @@ instance Pretty m => Pretty (Diagnostic m) where
      [ pretty (delta r) <> char ':' <+> pretty l <> char ':' <+> nest 4 (pretty m) ] 
      <> (pretty r <$ guard (not (nullRendering r)))
      <> (indent 2 (prettyList xs) <$ guard (not (null xs)))
-  prettyList = Prelude.foldr (above . pretty) empty
+  prettyList = vsep . Prelude.map pretty
 
 instance PrettyTerm m => PrettyTerm (Diagnostic m) where
   prettyTerm (Diagnostic r l m xs) = vsep $ 
      [ prettyTerm (delta r) <> char ':' <+> prettyTerm l <> char ':' <+> nest 4 (prettyTerm m) ]
      <> (prettyTerm r <$ guard (not (nullRendering r)))
      <> (indent 2 (prettyTermList xs) <$ guard (not (null xs)))
-  prettyTermList = Prelude.foldr (above . prettyTerm) empty
+  prettyTermList = vsep . Prelude.map prettyTerm
 
 instance Functor Diagnostic where
   fmap f (Diagnostic r l m xs) = Diagnostic r l (f m) $ map (fmap f) xs
