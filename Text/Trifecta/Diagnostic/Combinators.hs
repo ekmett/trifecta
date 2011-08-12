@@ -8,7 +8,12 @@ module Text.Trifecta.Diagnostic.Combinators
   , noteWith
   , verboseWith
   ) where
- 
+
+import Text.Trifecta.Diagnostic.Class
+import Text.Trifecta.Diagnostic.Prim
+import Text.Trifecta.Diagnostic.Level
+import Text.Trifecta.Diagnostic.Rendering.Prim
+
 fatal :: MonadDiagnostic e m => e -> m a
 fatal = fatalWith [] []
 
@@ -22,15 +27,15 @@ note :: MonadDiagnostic e m => e -> m ()
 note = noteWith [] []
 
 verbose :: MonadDiagnostic e m => Int -> e -> m ()
-verbose n = verboseWith [] []
+verbose n = verboseWith n [] []
 
-warnWith :: MonadDiagnostic e m => [Diagnostic] -> [Rendering] -> e -> m ()
+warnWith :: MonadDiagnostic e m => [Diagnostic e] -> [Rendering] -> e -> m ()
 warnWith = logWith Warning
 
-noteWith :: MonadDiagnostic e m => [Diagnostic] -> [Rendering] -> e -> m ()
+noteWith :: MonadDiagnostic e m => [Diagnostic e] -> [Rendering] -> e -> m ()
 noteWith = logWith Note
 
-verboseWith :: MonadDiagnostic e m => [Diagnostic] -> [Rendering] -> e -> m ()
+verboseWith :: MonadDiagnostic e m => Int -> [Diagnostic e] -> [Rendering] -> e -> m ()
 verboseWith n = logWith (Verbose n)
 
 -- sublimate :: MonadDiagnostic e m => m a -> m a

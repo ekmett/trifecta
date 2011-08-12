@@ -34,7 +34,7 @@ instance Pretty DiagnosticLevel where
 
 instance PrettyTerm DiagnosticLevel where
   prettyTerm (Verbose n) = blue $ text "verbose (" <> int n <> char ')'
-  prettyTerm Note        = text "note"
+  prettyTerm Note        = black $ text "note"
   prettyTerm Warning     = magenta $ text "warning"
   prettyTerm Error       = red $ text "error"
-  prettyTerm Fatal       = blink $ red $ text "fatal"
+  prettyTerm Fatal       = standout $ red $ text "fatal"
