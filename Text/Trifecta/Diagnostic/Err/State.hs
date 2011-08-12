@@ -4,27 +4,24 @@ module Text.Trifecta.Diagnostic.Err.State
 
 import Data.Functor.Plus
 import Data.Set as Set
-import Data.Sequence as Seq
 import Data.Semigroup
 import Data.Monoid
 import Text.Trifecta.Diagnostic.Err
-import Text.Trifecta.Diagnostic
 
 data ErrState e = ErrState
  { errExpected :: !(Set String)
  , errMessage  :: !(Err e)
- , errLog      :: !(Seq (Diagnostic e))
  }
 
 instance Functor ErrState where
-  fmap f (ErrState a b c) = ErrState a (fmap f b) (fmap (fmap f) c)
+  fmap f (ErrState a b) = ErrState a (fmap f b)
 
 instance Alt ErrState where
-  ErrState a b c <!> ErrState a' b' c' = ErrState (a <> a') (b <!> b') (c <!> c')
+  ErrState a b <!> ErrState a' b' = ErrState (a <> a') (b <!> b')
   {-# INLINE (<!>) #-}
 
 instance Plus ErrState where
-  zero = ErrState mempty zero zero
+  zero = ErrState mempty zero
  
 instance Semigroup (ErrState e) where
   (<>) = (<!>) 
