@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.26
+version:       0.27
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -31,10 +31,7 @@ library
     Text.Trifecta.Rope
     Text.Trifecta.Rope.Bytes
     Text.Trifecta.Rope.Delta
-    Text.Trifecta.Rope.Hunk
-    Text.Trifecta.Rope.Path
     Text.Trifecta.Rope.Prim
-    Text.Trifecta.Rope.Strand
     Text.Trifecta.Diagnostic
     Text.Trifecta.Diagnostic.Prim
     Text.Trifecta.Diagnostic.Class
@@ -76,7 +73,6 @@ library
     containers           >= 0.3     && < 0.5,
     unordered-containers >= 0.1.4   && < 0.2,
     bifunctors           >= 0.1.1.3 && < 0.2,
-    intern               >= 0.5.1.1 && < 0.6,
     hashable             >= 1.1.2.1 && < 1.2,
     bytestring           >= 0.9.1   && < 0.10,
     mtl                  >= 2.0.1   && < 2.1,

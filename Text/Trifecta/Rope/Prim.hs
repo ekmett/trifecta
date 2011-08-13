@@ -2,6 +2,8 @@
 module Text.Trifecta.Rope.Prim
   ( Rope(..)
   , rope
+  , Strand(..)
+  , strand
   , strands
   , grabRest
   , grabLine
@@ -10,16 +12,39 @@ module Text.Trifecta.Rope.Prim
 import Data.Monoid
 import Data.Semigroup
 import Data.Semigroup.Reducer
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as Strict
 import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.ByteString.UTF8 as UTF8
 import Data.FingerTree as FingerTree
 import Data.Foldable (toList)
-import Text.Trifecta.Rope.Hunk
-import Text.Trifecta.Rope.Path
-import Text.Trifecta.Rope.Delta
-import Text.Trifecta.Rope.Bytes
-import Text.Trifecta.Rope.Strand
+import Data.Hashable
 import Text.Trifecta.Util as Util
+import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Delta
+
+data Strand
+  = Strand        {-# UNPACK #-} !ByteString !Delta
+  | LineDirective {-# UNPACK #-} !ByteString {-# UNPACK #-} !Int
+  deriving Show
+
+strand :: ByteString -> Strand
+strand bs = Strand bs (delta bs)
+
+instance Measured Delta Strand where
+  measure (Strand _ s) = delta s
+  measure (LineDirective p l) = delta (Directed p l 0 0 0)
+
+instance Hashable Strand where
+  hash (Strand h _) = hashWithSalt 0 h
+  hash (LineDirective p l)   = l `hashWithSalt` p
+
+instance HasDelta Strand where
+  delta = measure
+
+instance HasBytes Strand where
+  bytes (Strand _ d) = bytes d
+  bytes _            = 0
 
 data Rope = Rope !Delta !(FingerTree Delta Strand) deriving Show
 
@@ -32,11 +57,11 @@ strands (Rope _ r) = r
 -- | grab a the contents of a rope from a given location up to a newline
 grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
 grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
-  trim (PathStrand p            : xs) j k = trim xs (j <> delta p) k
-  trim (HunkStrand (Hunk _ _ h) : xs) j 0 = go j h xs
-  trim (HunkStrand (Hunk _ _ h) : xs) _ k = go i (Strict.drop k h) xs
+  trim (p@LineDirective{} : xs) j k = trim xs (j <> delta p) k
+  trim (Strand h _ : xs) j 0 = go j h xs
+  trim (Strand h _ : xs) _ k = go i (Strict.drop k h) xs
   trim [] _ _ = kf
-  go j h s = ks j $ Lazy.fromChunks $ h : [ a | HunkStrand (Hunk _ _ a) <- s ]
+  go j h s = ks j $ Lazy.fromChunks $ h : [ a | Strand a _ <- s ]
   (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
 
 -- | grab a the contents of a rope from a given location up to a newline
@@ -63,21 +88,18 @@ instance Reducer Rope Rope where
   unit = id
 
 instance Reducer Strand Rope where
-  unit s = rope (singleton s)
+  unit s = rope (FingerTree.singleton s)
   cons s (Rope mt t) = Rope (delta s `mappend` mt) (s <| t)
   snoc (Rope mt t) !s = Rope (mt `mappend` delta s) (t |> s)
 
-instance Reducer Hunk Rope where
-  unit s = Rope (delta s) (singleton (HunkStrand s))
-  cons s (Rope mt t) = Rope (delta s `mappend` mt) (HunkStrand s <| t)
-  snoc (Rope mt t) s = Rope (mt `mappend` delta s) (t |> HunkStrand s)
-  
-instance Reducer Path Rope where
-  unit s = Rope (delta s) (singleton (PathStrand s))
-  cons s (Rope mt t) = Rope (delta s `mappend` mt) (PathStrand s <| t)
-  snoc (Rope mt t) s = Rope (mt `mappend` delta s) (t |> PathStrand s)
-
 instance Reducer Strict.ByteString Rope where
-  unit = unit . hunk
-  cons = cons . hunk 
-  snoc r = snoc r . hunk
+  unit = unit . strand
+  cons = cons . strand
+  snoc r = snoc r . strand
+
+instance Reducer [Char] Rope where
+  unit = unit . strand . UTF8.fromString
+  cons = cons . strand . UTF8.fromString
+  snoc r = snoc r . strand . UTF8.fromString
+
+

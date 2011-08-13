@@ -191,15 +191,6 @@ instance MonadParser (Parser e) where
         | bytes d' == bytes (rewind d) + Strict.length bs -> co () mempty l d' $ 
                                                              if near d d' then bs else mempty
         | otherwise -> ee mempty l d bs
-  skipping d' = Parser $ \_ ee co _ l d bs -> do
-    let d'' = d <> d'
-    mbs <- rewindIt d''
-    case mbs of
-      Just bs' -> co () mempty l d'' bs'
-      Nothing 
-        | bytes d'' == bytes (rewind d) + Strict.length bs -> co () mempty l d'' $
-                                                              if near d d'' then bs else mempty
-        | otherwise -> ee mempty l d bs
   {-# INLINE release #-}
   line = Parser $ \eo _ _ _ l d bs -> eo bs mempty l d bs
   {-# INLINE line #-}

@@ -5,15 +5,15 @@ module Text.Trifecta.Parser
   , module Text.Trifecta.Parser.Combinators
   , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Result
-  -- * traditional numeric literals that would be in Token
-  , decimal
-  , hexadecimal
-  , octal
-  -- * expressive diagnostics
+  , module Text.Trifecta.Parser.Literals
+  -- * Expressive Diagnostics
+  -- ** Text.Trifecta.Diagnostic.Rendering.Caret
   , caret
   , careted
+  -- ** Text.Trifecta.Diagnostic.Rendering.Span
   , span
   , spanned
+  -- ** Text.Trifecta.Diagnostic.Rendering.Fixit
   , fixit
   ) where
 

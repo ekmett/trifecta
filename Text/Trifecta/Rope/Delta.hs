@@ -13,11 +13,10 @@ import Data.Monoid
 import Data.Semigroup
 import Data.Hashable
 import Data.Word
-import Data.Interned
 import Data.Foldable
 import Data.FingerTree hiding (empty)
 import Data.ByteString hiding (empty)
-import Text.Trifecta.Rope.Path
+import qualified Data.ByteString.UTF8 as UTF8
 import Text.Trifecta.Rope.Bytes
 import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
@@ -32,7 +31,7 @@ data Delta
               {-# UNPACK #-} !Int  -- the number of characters since the last newline
               {-# UNPACK #-} !Int  -- number of bytes
               {-# UNPACK #-} !Int  -- the number of bytes since the last newline
-  | Directed                 !Path -- the sequence of #line directives since the start of the file
+  | Directed  !ByteString          -- current file name
               {-# UNPACK #-} !Int  -- the number of lines since the last line directive
               {-# UNPACK #-} !Int  -- the number of characters since the last newline
               {-# UNPACK #-} !Int  -- number of bytes
@@ -56,7 +55,7 @@ instance PrettyTerm Delta where
     Columns c _ -> k f 0 c
     Tab x y _ -> k f 0 (nextTab x + y)
     Lines l c _ _ -> k f l c
-    Directed (Path _ _ _ fn _ _) l c _ _ -> k (maybeFileName f unintern fn) l c  -- TODO: add include path
+    Directed fn l c _ _ -> k (UTF8.toString fn) l c
     where 
       k fn ln cn = bold (string fn)           
                 <> char ':' 
@@ -104,7 +103,7 @@ instance Semigroup Delta where
   Directed p l c t a <> Columns d b            = Directed p l (c + d) (t + b) (a + b)
   Directed p l c t a <> Tab x y b              = Directed p l (nextTab (c + x) + y) (t + b) (a + b)
   Directed p l _ t a <> Lines m d t' b         = Directed p (l + m) d (t + t') (a + b)
-  Directed p l _ t _ <> Directed p' l' c' t' b = Directed (appendPath p l p') l' c' (t + t') b
+  Directed _ _ _ t _ <> Directed p' l' c' t' b = Directed {- p + l + -} p' l' c' (t + t') b
   
 nextTab :: Int -> Int
 nextTab x = x + (8 - mod x 8)
@@ -148,9 +147,6 @@ instance HasDelta Word8 where
 
 instance HasDelta ByteString where
   delta = foldMap delta . unpack
-
-instance HasDelta Path where
-  delta p = Directed p 0 0 0 0
 
 instance (Measured v a, HasDelta v) => HasDelta (FingerTree v a) where
   delta = delta . measure

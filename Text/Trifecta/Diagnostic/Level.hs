@@ -43,8 +43,9 @@ instance Pretty DiagnosticLevel where
   pretty p = prettyTerm p *> empty
 
 instance PrettyTerm DiagnosticLevel where
-  prettyTerm (Verbose n) = blue $ text "verbose (" <> int n <> char ')'
-  prettyTerm Note        = black $ text "note"
+  prettyTerm (Verbose n) = blue    $ text "verbose (" <> int n <> char ')'
+  prettyTerm Note        = black   $ text "note"
   prettyTerm Warning     = magenta $ text "warning"
-  prettyTerm Error       = red $ text "error"
+  prettyTerm Error       = red            $ text "error"
   prettyTerm Fatal       = standout $ red $ text "fatal"
+  prettyTerm Panic       = standout $ red $ text "panic"
