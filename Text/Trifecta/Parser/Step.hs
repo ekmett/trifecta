@@ -36,10 +36,10 @@ instance Bifunctor Step where
   bimap f _ (StepFail r xs e) = StepFail r (fmap (fmap f) xs) (fmap f e)
   bimap f g (StepCont r z k)  = StepCont r (bimap f g z) (bimap f g . k)
 
-feed :: Reducer t Rope => Step e r -> t -> Step e r
-feed (StepDone r xs a) t = StepDone (snoc r t) xs a
-feed (StepFail r xs e) t = StepFail (snoc r t) xs e
-feed (StepCont r _ k) t = k (snoc r t)
+feed :: Reducer t Rope => t -> Step e r -> Step e r
+feed t (StepDone r xs a) = StepDone (snoc r t) xs a
+feed t (StepFail r xs e) = StepFail (snoc r t) xs e
+feed t (StepCont r _ k) = k (snoc r t)
 
 starve :: Step e a -> Result e a
 starve (StepDone _ xs a) = Success xs a

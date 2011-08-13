@@ -40,6 +40,8 @@ module Text.Trifecta.Parser.Combinators
 
 import Data.Traversable
 import Control.Applicative
+import Control.Monad
+import qualified Data.ByteString as B
 import Text.Trifecta.Parser.Class
 
 -- | @choice ps@ tries to apply the parsers in the list @ps@ in order,
@@ -188,7 +190,10 @@ manyTill p end = go where go = ([] <$ end) <|> ((:) <$> p <*> go)
 --
 -- >  eof  = notFollowedBy anyChar <?> "end of input"
 eof :: MonadParser m => m ()
-eof = notFollowedBy (satisfy (const True)) <?> "end of input"
+eof = do
+   l <- restOfLine 
+   guard $ B.null l
+ <?> "end of input"
 
 -- | @notFollowedBy p@ only succeeds when parser @p@ fails. This parser
 -- does not consume any input. This parser can be used to implement the

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, Rank2Types, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleContexts, Rank2Types, FlexibleInstances, BangPatterns #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Parser.Prim
@@ -17,6 +17,7 @@ module Text.Trifecta.Parser.Prim
   , parseTest
   , manyAccum
   ) where
+
 
 import Control.Applicative
 import Control.Monad.Error.Class
@@ -155,7 +156,7 @@ instance MonadDiagnostic e (Parser e) where
   errWith ds rs e = Parser $ \_ ee _ _ -> 
     ee mempty { errMessage = Err rs Error e ds }
   logWith v ds rs e = Parser $ \eo _ _ _ l d bs -> 
-    eo () mempty (l |> Diagnostic (addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) d bs
+    eo () mempty (l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) d bs
     
 instance MonadError (ErrState e) (Parser e) where
   throwError m = Parser $ \_ ee _ _ -> ee m
@@ -201,8 +202,9 @@ instance MonadParser (Parser e) where
       Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
       Just (c, xs) 
         | not (f c)       -> ee mempty l d bs
-        | Strict.null xs  -> let ddc = d <> delta c in
-                             join $ fillIt (co c mempty l ddc bs) (co c mempty l) ddc
+        | Strict.null xs  -> let !ddc = d <> delta c 
+                                 !bs' = if c == '\n' then mempty else bs
+                             in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
         | otherwise       -> co c mempty l (d <> delta c) bs 
   {-# INLINE satisfy #-}
   satisfyAscii f = Parser $ \ _ ee co _ l d bs ->
@@ -210,8 +212,9 @@ instance MonadParser (Parser e) where
     if b >= 0 && b < Strict.length bs 
     then case toEnum $ fromEnum $ Strict.index bs b of
       c | not (f c)                 -> ee mempty l d bs
-        | b == Strict.length bs - 1 -> let ddc = d <> delta c in 
-                                       join $ fillIt (co c mempty l ddc bs) (co c mempty l) ddc
+        | b == Strict.length bs - 1 -> let !ddc = d <> delta c
+                                           !bs' = if c == '\n' then mempty else bs
+                                       in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
         | otherwise                 -> co c mempty l (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
   {-# INLINE satisfyAscii #-}
@@ -236,20 +239,23 @@ stepParser yl y (Parser p) l0 d0 bs0 =
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
 why pp (ErrState ss m) d bs 
-  | Set.null ss = explicate m 
-  | otherwise   = expected <$> explicate m
+  | Set.null ss = explicateWith empty m 
+  | knownErr m  = explicateWith (char ',' <+> ex) m
+  | otherwise   = Diagnostic r Error ex []
   where
-    expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
-    r = addCaret d $ rendering d bs
-    explicate EmptyErr        = Diagnostic r Error (text "unspecified error") []
-    explicate (FailErr s)     = Diagnostic r Error (fillSep $ text <$> words s) []
-    explicate (PanicErr s)    = Diagnostic r Fatal (fillSep $ text <$> words s) []
-    explicate (Err rs l e es) = Diagnostic (addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) l (pp e) (fmap (fmap pp) es)
+    ex = text "expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- for once I wish I was writing this in Inform 7
+    r = Right $ addCaret d $ rendering d bs
+    explicateWith x EmptyErr        = Diagnostic r  Error ((text "unspecified error") <> x)  []
+    explicateWith x (FailErr s)     = Diagnostic r  Error ((fillSep $ text <$> words s) <> x) []
+    explicateWith x (PanicErr s)    = Diagnostic r  Panic ((fillSep $ text <$> words s) <> x) []
+    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (fmap (fmap pp) es)
+      where r' = Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs
 
 parseTest :: Show a => Parser String a -> String -> IO ()
-parseTest p s = case starve $ feed st $ UTF8.fromString s of
+parseTest p s = case starve 
+                   $ feed (UTF8.fromString s) 
+                   $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty mempty mempty of
   Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
   Success xs a -> do
     unless (Seq.null xs) $ displayLn $ prettyTerm $ toList xs
     print a
-  where st = stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty mempty mempty

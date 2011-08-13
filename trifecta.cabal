@@ -45,6 +45,7 @@ library
     Text.Trifecta.Diagnostic.Rendering.Fixit
     Text.Trifecta.Diagnostic.Rendering.Span
     Text.Trifecta.Parser
+    Text.Trifecta.Parser.ByteString
     Text.Trifecta.Parser.Char
     Text.Trifecta.Parser.Class
     Text.Trifecta.Parser.Combinators

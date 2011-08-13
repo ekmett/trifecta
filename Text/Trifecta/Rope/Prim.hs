@@ -56,11 +56,11 @@ strands (Rope _ r) = r
 
 -- | grab a the contents of a rope from a given location up to a newline
 grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
-grabRest i t kf ks = trim (toList r) (delta l) (bytes i - bytes l) where
-  trim (p@LineDirective{} : xs) j k = trim xs (j <> delta p) k
-  trim (Strand h _ : xs) j 0 = go j h xs
-  trim (Strand h _ : xs) _ k = go i (Strict.drop k h) xs
-  trim [] _ _ = kf
+grabRest i t kf ks = trim (delta l) (bytes i - bytes l) (toList r) where
+  trim j 0 (Strand h _ : xs) = go j h xs
+  trim _ k (Strand h _ : xs) = go i (Strict.drop k h) xs
+  trim j k (p          : xs) = trim (j <> delta p) k xs 
+  trim _ _ []                = kf
   go j h s = ks j $ Lazy.fromChunks $ h : [ a | Strand a _ <- s ]
   (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
 

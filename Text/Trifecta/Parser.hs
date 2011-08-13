@@ -1,5 +1,6 @@
 module Text.Trifecta.Parser
   ( module Text.Trifecta.Parser.Prim
+  , module Text.Trifecta.Parser.ByteString
   , module Text.Trifecta.Parser.Class
   , module Text.Trifecta.Parser.Char
   , module Text.Trifecta.Parser.Combinators
@@ -17,6 +18,7 @@ module Text.Trifecta.Parser
   ) where
 
 import Text.Trifecta.Parser.Prim
+import Text.Trifecta.Parser.ByteString
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators

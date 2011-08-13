@@ -117,7 +117,7 @@ anyChar = satisfy (const True)
 -- >  divOrMod    =   string "div" 
 -- >              <|> string "mod"
 string :: MonadParser m => String -> m String
-string s = s <$ byteString (UTF8.fromString s)
+string s = s <$ byteString (UTF8.fromString s) <?> show s
 
 -- | @byteString s@ parses a sequence of bytes given by @s@. Returns
 -- the parsed byteString (i.e. @s@).
@@ -137,4 +137,4 @@ byteString bs = do
         | otherwise -> empty
      GT | r `isPrefixOf` bs -> bs <$ skipping (delta r) *> byteString (Strict.drop lr bs)
         | otherwise -> empty
- <?> UTF8.toString bs
+ <?> show (UTF8.toString bs)

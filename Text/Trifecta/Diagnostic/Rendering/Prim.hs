@@ -32,6 +32,7 @@ import Data.Semigroup.Traversable
 import Data.Traversable
 import Prelude as P
 import Prelude hiding (span)
+import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Text.PrettyPrint.Free hiding (column)
 import Text.Trifecta.Rope.Bytes
@@ -108,15 +109,21 @@ instance Renderable Rendering where
   render = id
 
 class Source t where
-  source :: t -> (Int, Lines -> Lines)
+  source :: t -> (Int, Lines -> Lines) {- return whether to append EOF, the number of bytes, and the the line -}
 
 instance Source String where
-  source s = (P.length s', draw [] 0 0 s') where 
-    s' = go 0 s
-    go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
-    go _ ('\n':_)  = []
-    go n (x:xs)    = x : go (n + 1) xs
-    go _ []        = []
+  source s 
+    | Prelude.elem '\n' s = ( ls, draw [] 0 0 s') 
+    | otherwise           = ( ls + Prelude.length end, draw [soft (Foreground Blue), soft Bold] 0 ls end . draw [] 0 0 s') 
+    where
+      end = "<EOF>" 
+      -- end = "\xabEOF\bb"
+      s' = go 0 s
+      ls = Prelude.length s' 
+      go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
+      go _ ('\n':_)  = []
+      go n (x:xs)    = x : go (n + 1) xs
+      go _ []        = []
 
 instance Source ByteString where
   source = source . UTF8.toString
