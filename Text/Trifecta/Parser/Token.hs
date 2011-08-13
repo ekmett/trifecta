@@ -4,9 +4,13 @@ module Text.Trifecta.Parser.Token
   ( module Text.Trifecta.Parser.Token.Class
   , module Text.Trifecta.Parser.Token.Combinators
   , module Text.Trifecta.Parser.Token.Identifier
+  , decimal
+  , hexadecimal
+  , octal
   ) where
 
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Token.Prim
 import Text.Trifecta.Parser.Token.Combinators
 import Text.Trifecta.Parser.Token.Identifier
 

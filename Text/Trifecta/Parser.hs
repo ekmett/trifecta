@@ -5,7 +5,6 @@ module Text.Trifecta.Parser
   , module Text.Trifecta.Parser.Combinators
   , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Result
-  , module Text.Trifecta.Parser.Literals
   -- * Expressive Diagnostics
   -- ** Text.Trifecta.Diagnostic.Rendering.Caret
   , caret
@@ -21,7 +20,6 @@ import Text.Trifecta.Parser.Prim
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Literals
 import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Result
 

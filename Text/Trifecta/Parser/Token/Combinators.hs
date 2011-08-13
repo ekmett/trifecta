@@ -37,9 +37,9 @@ import Data.ByteString as Strict hiding (map, zip, foldl, foldr)
 import Control.Applicative
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
-import Text.Trifecta.Parser.Literals
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Token.Prim
 
 -- | This lexeme parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape

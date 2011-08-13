@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Literals
+-- Module      :  Text.Trifecta.Parser.Token.Prim
 -- Copyright   :  (c) Edward Kmett 2011,
 --                (c) Daan Leijen 1999-2001
 -- License     :  BSD3
@@ -10,8 +10,9 @@
 -- Portability :  non-portable
 -- 
 -----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Literals
+module Text.Trifecta.Parser.Token.Prim
   ( charLiteral'
+  , characterChar
   , stringLiteral'
   , natural'
   , integer'
