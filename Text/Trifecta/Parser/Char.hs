@@ -23,6 +23,7 @@ import Data.Char
 import Control.Applicative
 import Control.Monad (guard)
 import Text.Trifecta.Parser.Class
+import Text.Trifecta.Rope.Delta
 import Data.ByteString as Strict hiding (empty, all, elem)
 import Data.ByteString.UTF8 as UTF8
 
@@ -130,10 +131,10 @@ byteString bs = do
        lbs = Strict.length bs
    guard $ lr > 0
    case compare lbs lr of
-     LT | bs `isPrefixOf` r -> bs <$ skipping bs
+     LT | bs `isPrefixOf` r -> bs <$ skipping (delta bs)
         | otherwise -> empty
-     EQ | bs == r -> bs <$ skipping bs
+     EQ | bs == r -> bs <$ skipping (delta bs)
         | otherwise -> empty
-     GT | r `isPrefixOf` bs -> bs <$ skipping r *> byteString (Strict.drop lr bs)
+     GT | r `isPrefixOf` bs -> bs <$ skipping (delta r) *> byteString (Strict.drop lr bs)
         | otherwise -> empty
  <?> UTF8.toString bs

@@ -15,13 +15,15 @@ module Text.Trifecta.Parser.Prim
   , why
   , stepParser
   , parseTest
+  , manyAccum
   ) where
 
 import Control.Applicative
 import Control.Monad.Error.Class
 import Control.Monad.Writer.Class
 import Control.Monad
-import Data.Functor.Plus
+import qualified Data.Functor.Plus as Plus
+import Data.Functor.Plus hiding (some, many)
 import Data.Semigroup
 import Data.Foldable
 import Data.Monoid
@@ -33,6 +35,7 @@ import Data.ByteString.UTF8 as UTF8
 import Text.PrettyPrint.Free hiding (line)
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
+import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
@@ -80,7 +83,10 @@ instance Applicative (Parser e) where
       (\_ e -> n (\a e' -> co a (e <> e')) ce (\a e' -> co a (e <> e')) ce) ce
   {-# INLINE (*>) #-}
 
-instance Alt (Parser e) where (<!>) = (<|>)
+instance Alt (Parser e) where 
+  (<!>) = (<|>)
+  many p = Prelude.reverse <$> manyAccum (:) p
+  some p = p *> many p
 instance Plus (Parser e) where zero = empty
 instance Alternative (Parser e) where
   empty = Parser $ \_ ee _ _ -> ee mempty
@@ -90,6 +96,10 @@ instance Alternative (Parser e) where
     m eo (\e -> n (\a e'-> eo a (e <> e')) (\e' -> ee (e <> e')) co ce) 
       co ce
   {-# INLINE (<|>) #-}
+  many p = Prelude.reverse <$> manyAccum (:) p
+  {-# INLINE many #-}
+  some p = (:) <$> p <*> many p
+
 instance Semigroup (Parser e a) where
   (<>) = (<|>) 
 
@@ -131,7 +141,14 @@ instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
       (\      e' l' -> ce   e' (l <>   l'))
       mempty
   {-# INLINE pass #-}
-
+manyAccum :: (a -> [a] -> [a]) -> Parser e a -> Parser e [a]
+manyAccum acc (Parser p) = Parser $ \eo _ co ce -> 
+  let walk xs x _ = p manyErr (\_ -> co (acc x xs) mempty) (walk (acc x xs)) ce
+      -- NB: to squelch this error you can change your grammar to add a commit, if you are progressing
+      -- in some other fashion
+      manyErr _ e = ce e { errMessage = PanicErr "'many' applied to a parser that accepted an empty string" }
+  in p manyErr (eo []) (walk []) ce
+   
 instance MonadDiagnostic e (Parser e) where
   fatalWith ds rs e = Parser $ \_ _ _ ce -> 
     ce mempty { errMessage = Err rs Fatal e ds }
@@ -170,10 +187,24 @@ instance MonadParser (Parser e) where
     mbs <- rewindIt d'
     case mbs of
       Just bs' -> co () mempty l d' bs'
-      Nothing -> ee mempty l d bs
+      Nothing 
+        | bytes d' == bytes (rewind d) + Strict.length bs -> co () mempty l d' $ 
+                                                             if near d d' then bs else mempty
+        | otherwise -> ee mempty l d bs
+  skipping d' = Parser $ \_ ee co _ l d bs -> do
+    let d'' = d <> d'
+    mbs <- rewindIt d''
+    case mbs of
+      Just bs' -> co () mempty l d'' bs'
+      Nothing 
+        | bytes d'' == bytes (rewind d) + Strict.length bs -> co () mempty l d'' $
+                                                              if near d d'' then bs else mempty
+        | otherwise -> ee mempty l d bs
   {-# INLINE release #-}
   line = Parser $ \eo _ _ _ l d bs -> eo bs mempty l d bs
   {-# INLINE line #-}
+  skipMany p = () <$ manyAccum (\_ _ -> []) p
+  {-# INLINE skipMany #-}
   satisfy f = Parser $ \ _ ee co _ l d bs ->
     case UTF8.uncons $ Strict.drop (columnByte d) bs of
       Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
@@ -205,13 +236,10 @@ stepParser yl y (Parser p) l0 d0 bs0 =
   where
     ju a e l d bs = Pure (JuSt a e l d bs)
     no e l d bs = Pure (NoSt e l d bs)
-    extendLog e l d bs 
-      | knownErr (errMessage e) = l |> y e d bs
-      | otherwise = l
-    go r (Pure (JuSt a e l d bs)) = StepDone r (extendLog e (yl <$> l) d bs) a
+    go r (Pure (JuSt a _ l _ _)) = StepDone r (yl <$> l) a
     go r (Pure (NoSt e l d bs))   = StepFail r (yl <$> l) $ y e d bs
     go r (It ma k) = StepCont r (case ma of
-                                   JuSt a e l d bs -> Success (extendLog e (yl <$> l) d bs) a
+                                   JuSt a _ l _ _  -> Success (yl <$> l) a
                                    NoSt e l d bs   -> Failure (yl <$> l) $ y e d bs) 
                                 (go <*> k)
 
@@ -222,8 +250,9 @@ why pp (ErrState ss m) d bs
   where
     expected doc = doc <> text ", expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss)
     r = addCaret d $ rendering d bs
-    explicate EmptyErr        = Diagnostic r Error (text "error") []
+    explicate EmptyErr        = Diagnostic r Error (text "unspecified error") []
     explicate (FailErr s)     = Diagnostic r Error (fillSep $ text <$> words s) []
+    explicate (PanicErr s)    = Diagnostic r Fatal (fillSep $ text <$> words s) []
     explicate (Err rs l e es) = Diagnostic (addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) l (pp e) (fmap (fmap pp) es)
 
 parseTest :: Show a => Parser String a -> String -> IO ()

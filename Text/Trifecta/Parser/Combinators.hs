@@ -19,9 +19,8 @@ module Text.Trifecta.Parser.Combinators
   , skipOptional -- parsec optional
   , between
   , skipSome -- parsec skipMany1
-  , skipMany
-  , some -- from Control.Applicative, parsec many1
-  , many -- from Control.Applicative
+  , some     -- from Control.Applicative, parsec many1
+  , many     -- from Control.Applicative
   , sepBy
   , sepBy1
   , sepEndBy1
@@ -74,13 +73,8 @@ between bra ket p = bra *> p <* ket
 
 -- | @skipSome p@ applies the parser @p@ /one/ or more times, skipping
 -- its result. (aka skipMany1 in parsec)
-skipSome :: Alternative m => m a -> m ()
+skipSome :: MonadParser m => m a -> m ()
 skipSome p = p *> skipMany p
-
--- | @skipMany1 p@ applies the parser @p@ /one/ or more times, skipping
--- its result. 
-skipMany :: Alternative m => m a -> m ()
-skipMany p = ps where ps = (p *> ps) <|> pure ()
 
 -- | @sepBy p sep@ parses /zero/ or more occurrences of @p@, separated
 -- by @sep@. Returns a list of values returned by @p@.

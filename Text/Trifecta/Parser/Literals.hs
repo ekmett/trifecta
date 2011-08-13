@@ -23,6 +23,7 @@ module Text.Trifecta.Parser.Literals
   ) where
 
 import Data.Char (digitToInt)
+import Data.Foldable
 import Control.Applicative
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
@@ -54,7 +55,7 @@ charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 -- This parser does NOT swallow trailing whitespace
 stringLiteral' :: MonadParser m => m String
 stringLiteral' = lit where
-  lit = foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar) 
+  lit = Prelude.foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar) 
     <?> "literal string"
   stringChar = Just <$> stringLetter 
            <|> stringEscape 
@@ -110,7 +111,7 @@ natural' = nat <?> "natural"
 number :: MonadParser m => Integer -> m Char -> m Integer
 number base baseDigit = do
   digits <- some baseDigit
-  return $! foldl (\x d -> base*x + toInteger (digitToInt d)) 0 digits
+  return $! foldl' (\x d -> base*x + toInteger (digitToInt d)) 0 digits
 
 -- | This lexeme parser parses an integer (a whole number). This parser
 -- is like 'natural' except that it can be prefixed with
@@ -153,7 +154,7 @@ floating = decimal >>= fractExponent
 fractExponent :: MonadParser m => Integer -> m Double
 fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <*> option 1.0 exponent'
               <|> (fromInteger n *) <$> exponent' where
-  fraction = foldr op 0.0 <$> (char '.' *> (some digit <?> "fraction"))
+  fraction = Prelude.foldr op 0.0 <$> (char '.' *> (some digit <?> "fraction"))
   op d f = (f + fromIntegral (digitToInt d))/10.0
   exponent' = do
        _ <- oneOf "eE"

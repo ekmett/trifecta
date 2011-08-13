@@ -14,7 +14,6 @@
 module Text.Trifecta.Parser.Class 
   ( MonadParser(..)
   , restOfLine
-  , skipping
   , (<?>)
   , slicedWith
   , sliced
@@ -53,6 +52,11 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   mark       :: m Delta
   unexpected :: MonadParser m => String -> m a
   line       :: m ByteString
+  skipMany   :: m a -> m ()
+  skipMany p = () <$ many p 
+
+  -- useful when we've just recognized something out of band using access to the current line 
+  skipping :: Delta -> m ()
 
   -- actions that definitely commit
   release    :: Delta -> m ()
@@ -152,11 +156,6 @@ instance MonadParser m => MonadParser (IdentityT m) where
 -- instance (MonadParser m, Monoid w) => MonadParser (MaybeT m) where
 -- instance (Error e, MonadParser m, Monoid w) => MonadParser (ErrorT e m) where
 
--- useful when we've just recognized something out of band using access to the current line 
-skipping :: (MonadParser m, HasDelta d) => d -> m d
-skipping d = do
-  m <- mark
-  d <$ release (m <> delta d)
 
 -- | grab the remainder of the current line
 restOfLine :: MonadParser m => m ByteString

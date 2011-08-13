@@ -14,8 +14,9 @@ import Text.PrettyPrint.Free
 
 -- | unlocated error
 data Err e
-  = EmptyErr
-  | FailErr String
+  = EmptyErr         -- empty, no error specified
+  | FailErr String   -- a recoverable error caused by fail
+  | PanicErr String  -- something is bad with the grammar, fail fast
   | Err     [Rendering] !DiagnosticLevel e [Diagnostic e]
   deriving Show
 
@@ -25,17 +26,21 @@ knownErr _ = True
 
 fatalErr :: Err e -> Bool
 fatalErr (Err _ Fatal _ _) = True
+fatalErr (PanicErr _) = True
 fatalErr _ = False
 
 instance Functor Err where
   fmap _ EmptyErr = EmptyErr
   fmap _ (FailErr s) = FailErr s
+  fmap _ (PanicErr s) = PanicErr s
   fmap f (Err rs l e es) = Err rs l (f e) (fmap (fmap f) es)
 
 instance Alt Err where
   a                   <!> EmptyErr            = a
   _                   <!> a@(Err _ Fatal _ _) = a
   a@(Err _ Fatal _ _) <!> _                   = a
+  _                   <!> a@PanicErr{}        = a
+  a@PanicErr{}        <!> _                   = a
   _                   <!> b                   = b
   {-# INLINE (<!>) #-}
 
