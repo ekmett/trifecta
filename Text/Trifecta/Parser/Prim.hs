@@ -207,17 +207,17 @@ instance MonadParser (Parser e) where
                              in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
         | otherwise       -> co c mempty l (d <> delta c) bs 
   {-# INLINE satisfy #-}
-  satisfyAscii f = Parser $ \ _ ee co _ l d bs ->
+  satisfy8 f = Parser $ \ _ ee co _ l d bs ->
     let b = columnByte d in
     if b >= 0 && b < Strict.length bs 
     then case toEnum $ fromEnum $ Strict.index bs b of
       c | not (f c)                 -> ee mempty l d bs
         | b == Strict.length bs - 1 -> let !ddc = d <> delta c
-                                           !bs' = if c == '\n' then mempty else bs
+                                           !bs' = if c == 10 then mempty else bs
                                        in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
         | otherwise                 -> co c mempty l (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
-  {-# INLINE satisfyAscii #-}
+  {-# INLINE satisfy8 #-}
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Delta !ByteString
             | NoSt !(ErrState e) !(ErrLog e) !Delta !ByteString

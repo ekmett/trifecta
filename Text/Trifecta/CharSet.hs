@@ -18,15 +18,17 @@
 --
 -- Designed to be imported qualified:
 -- 
--- > import Text.Trifecta.CharSet.Prim (CharSet)
--- > import qualified Text.Trifecta.CharSet.Prim as CharSet
+-- > import Text.Trifecta.CharSet (CharSet)
+-- > import qualified Text.Trifecta.CharSet as CharSet
+--
+ -------------------------------------------------------------------------------
 --
 -------------------------------------------------------------------------------
 
 module Text.Trifecta.CharSet
     ( 
     -- * Set type
-      CharSet
+      CharSet(..)
     -- * Operators
     , (\\)
     -- * Query
@@ -75,8 +77,11 @@ import Data.Array.Unboxed hiding (range)
 import Data.Data
 import Data.Function (on)
 import Data.IntSet (IntSet)
-import Text.Trifecta.CharSet.AsciiSet (AsciiSet)
-import qualified Text.Trifecta.CharSet.AsciiSet as AsciiSet
+import Text.Trifecta.ByteSet (ByteSet)
+import qualified Text.Trifecta.ByteSet as ByteSet
+import Data.Bits hiding (complement)
+import Data.Word
+import Data.ByteString.Internal (c2w)
 import Data.Monoid (Monoid(..))
 import qualified Data.IntSet as I
 import qualified Data.List as L
@@ -84,10 +89,17 @@ import Prelude hiding (filter, map, null)
 import qualified Prelude as P
 import Text.Read
 
-data CharSet = S !Bool AsciiSet !IntSet 
+data CharSet = CharSet !Bool {-# UNPACK #-} !ByteSet !IntSet 
 
 charSet :: Bool -> IntSet -> CharSet
-charSet b s = S b (AsciiSet.fromList (fmap toEnum (takeWhile (<= 0x7f) (I.toAscList s)))) s
+charSet b s = CharSet b (ByteSet.fromList (fmap headByte (I.toAscList s))) s
+
+headByte :: Int -> Word8
+headByte i 
+  | i <= 0x7f   = toEnum i 
+  | i <= 0x7ff  = toEnum $ 0x80 + (i `shiftR` 6)
+  | i <= 0xffff = toEnum $ 0xe0 + (i `shiftR` 12)
+  | otherwise   = toEnum $ 0xf0 + (i `shiftR` 18)
 
 pos :: IntSet -> CharSet
 pos = charSet True
@@ -103,23 +115,23 @@ build p = fromDistinctAscList $ P.filter p [minBound .. maxBound]
 {-# INLINE build #-}
 
 map :: (Char -> Char) -> CharSet -> CharSet
-map f (S True _ i) = pos (I.map (fromEnum . f . toEnum) i)
-map f (S False _ i) = fromList $ P.map f $ P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh] 
+map f (CharSet True _ i) = pos (I.map (fromEnum . f . toEnum) i)
+map f (CharSet False _ i) = fromList $ P.map f $ P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh] 
 {-# INLINE map #-}
 
 isComplemented :: CharSet -> Bool
-isComplemented (S True _ _) = False
-isComplemented (S False _ _) = True
+isComplemented (CharSet True _ _) = False
+isComplemented (CharSet False _ _) = True
 {-# INLINE isComplemented #-}
 
 toList :: CharSet -> String
-toList (S True _ i) = P.map toEnum (I.toList i)
-toList (S False _ i) = P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
+toList (CharSet True _ i) = P.map toEnum (I.toList i)
+toList (CharSet False _ i) = P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
 {-# INLINE toList #-}
 
 toAscList :: CharSet -> String
-toAscList (S True _ i) = P.map toEnum (I.toAscList i)
-toAscList (S False _ i) = P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
+toAscList (CharSet True _ i) = P.map toEnum (I.toAscList i)
+toAscList (CharSet False _ i) = P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
 {-# INLINE toAscList #-}
     
 empty :: CharSet
@@ -134,19 +146,19 @@ full = neg I.empty
 
 -- | /O(n)/ worst case
 null :: CharSet -> Bool
-null (S True _ i) = I.null i
-null (S False _ i) = I.size i == numChars
+null (CharSet True _ i) = I.null i
+null (CharSet False _ i) = I.size i == numChars
 {-# INLINE null #-}
 
 -- | /O(n)/
 size :: CharSet -> Int
-size (S True _ i) = I.size i
-size (S False _ i) = numChars - I.size i
+size (CharSet True _ i) = I.size i
+size (CharSet False _ i) = numChars - I.size i
 {-# INLINE size #-}
 
 insert :: Char -> CharSet -> CharSet
-insert c (S True _ i) = pos (I.insert (fromEnum c) i)
-insert c (S False _ i) = neg (I.delete (fromEnum c) i)
+insert c (CharSet True _ i) = pos (I.insert (fromEnum c) i)
+insert c (CharSet False _ i) = neg (I.delete (fromEnum c) i)
 {-# INLINE insert #-}
 
 range :: Char -> Char -> CharSet
@@ -155,42 +167,42 @@ range a b
   | otherwise = empty
 
 delete :: Char -> CharSet -> CharSet
-delete c (S True _ i) = pos (I.delete (fromEnum c) i)
-delete c (S False _ i) = neg (I.insert (fromEnum c) i)
+delete c (CharSet True _ i) = pos (I.delete (fromEnum c) i)
+delete c (CharSet False _ i) = neg (I.insert (fromEnum c) i)
 {-# INLINE delete #-}
 
 complement :: CharSet -> CharSet
-complement (S True s i) = S False s i
-complement (S False s i) = S True s i
+complement (CharSet True s i) = CharSet False s i
+complement (CharSet False s i) = CharSet True s i
 {-# INLINE complement #-}
 
 union :: CharSet -> CharSet -> CharSet
-union (S True _ i) (S True _ j) = pos (I.union i j)
-union (S True _ i) (S False _ j) = neg (I.difference j i)
-union (S False _ i) (S True _ j) = neg (I.difference i j)
-union (S False _ i) (S False _ j) = neg (I.intersection i j)
+union (CharSet True _ i) (CharSet True _ j) = pos (I.union i j)
+union (CharSet True _ i) (CharSet False _ j) = neg (I.difference j i)
+union (CharSet False _ i) (CharSet True _ j) = neg (I.difference i j)
+union (CharSet False _ i) (CharSet False _ j) = neg (I.intersection i j)
 {-# INLINE union #-}
 
 intersection :: CharSet -> CharSet -> CharSet
-intersection (S True _ i) (S True _ j) = pos (I.intersection i j)
-intersection (S True _ i) (S False _ j) = pos (I.difference i j)
-intersection (S False _ i) (S True _ j) = pos (I.difference j i)
-intersection (S False _ i) (S False _ j) = neg (I.union i j)
+intersection (CharSet True _ i) (CharSet True _ j) = pos (I.intersection i j)
+intersection (CharSet True _ i) (CharSet False _ j) = pos (I.difference i j)
+intersection (CharSet False _ i) (CharSet True _ j) = pos (I.difference j i)
+intersection (CharSet False _ i) (CharSet False _ j) = neg (I.union i j)
 {-# INLINE intersection #-}
 
 difference :: CharSet -> CharSet -> CharSet 
-difference (S True _ i) (S True _ j) = pos (I.difference i j)
-difference (S True _ i) (S False _ j) = pos (I.intersection i j)
-difference (S False _ i) (S True _ j) = neg (I.union i j)
-difference (S False _ i) (S False _ j) = pos (I.difference j i)
+difference (CharSet True _ i) (CharSet True _ j) = pos (I.difference i j)
+difference (CharSet True _ i) (CharSet False _ j) = pos (I.intersection i j)
+difference (CharSet False _ i) (CharSet True _ j) = neg (I.union i j)
+difference (CharSet False _ i) (CharSet False _ j) = pos (I.difference j i)
 {-# INLINE difference #-}
 
 member :: Char -> CharSet -> Bool
-member c (S True b i)
-  | c <= toEnum 0x7f = AsciiSet.member c b
+member c (CharSet True b i)
+  | c <= toEnum 0x7f = ByteSet.member (c2w c) b
   | otherwise        = I.member (fromEnum c) i
-member c (S False b i) 
-  | c <= toEnum 0x7f = not (AsciiSet.member c b)
+member c (CharSet False b i) 
+  | c <= toEnum 0x7f = not (ByteSet.member (c2w c) b)
   | otherwise        = I.notMember (fromEnum c) i
 {-# INLINE member #-}
 
@@ -199,34 +211,34 @@ notMember c s = not (member c s)
 {-# INLINE notMember #-}
 
 fold :: (Char -> b -> b) -> b -> CharSet -> b
-fold f z (S True _ i) = I.fold (f . toEnum) z i
-fold f z (S False _ i) = foldr f z $ P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
+fold f z (CharSet True _ i) = I.fold (f . toEnum) z i
+fold f z (CharSet False _ i) = foldr f z $ P.filter (\x -> fromEnum x `I.notMember` i) [ul..uh]
 {-# INLINE fold #-}
 
 filter :: (Char -> Bool) -> CharSet -> CharSet 
-filter p (S True _ i) = pos (I.filter (p . toEnum) i)
-filter p (S False _ i) = neg $ foldr (I.insert) i $ P.filter (\x -> (x `I.notMember` i) && not (p (toEnum x))) [ol..oh]
+filter p (CharSet True _ i) = pos (I.filter (p . toEnum) i)
+filter p (CharSet False _ i) = neg $ foldr (I.insert) i $ P.filter (\x -> (x `I.notMember` i) && not (p (toEnum x))) [ol..oh]
 {-# INLINE filter #-}
 
 partition :: (Char -> Bool) -> CharSet -> (CharSet, CharSet)
-partition p (S True _ i) = (pos l, pos r)
+partition p (CharSet True _ i) = (pos l, pos r)
     where (l,r) = I.partition (p . toEnum) i
-partition p (S False _ i) = (neg (foldr I.insert i l), neg (foldr I.insert i r))
+partition p (CharSet False _ i) = (neg (foldr I.insert i l), neg (foldr I.insert i r))
     where (l,r) = L.partition (p . toEnum) $ P.filter (\x -> x `I.notMember` i) [ol..oh]
 {-# INLINE partition #-}
 
 overlaps :: CharSet -> CharSet -> Bool
-overlaps (S True _ i) (S True _ j) = not (I.null (I.intersection i j))
-overlaps (S True _ i) (S False _ j) = not (I.isSubsetOf j i)
-overlaps (S False _ i) (S True _ j) = not (I.isSubsetOf i j)
-overlaps (S False _ i) (S False _ j) = any (\x -> I.notMember x i && I.notMember x j) [ol..oh] -- not likely
+overlaps (CharSet True _ i) (CharSet True _ j) = not (I.null (I.intersection i j))
+overlaps (CharSet True _ i) (CharSet False _ j) = not (I.isSubsetOf j i)
+overlaps (CharSet False _ i) (CharSet True _ j) = not (I.isSubsetOf i j)
+overlaps (CharSet False _ i) (CharSet False _ j) = any (\x -> I.notMember x i && I.notMember x j) [ol..oh] -- not likely
 {-# INLINE overlaps #-}
 
 isSubsetOf :: CharSet -> CharSet -> Bool
-isSubsetOf (S True _ i) (S True _ j) = I.isSubsetOf i j
-isSubsetOf (S True _ i) (S False _ j) = I.null (I.intersection i j)
-isSubsetOf (S False _ i) (S True _ j) = all (\x -> I.member x i && I.member x j) [ol..oh] -- not bloody likely
-isSubsetOf (S False _ i) (S False _ j) = I.isSubsetOf j i
+isSubsetOf (CharSet True _ i) (CharSet True _ j) = I.isSubsetOf i j
+isSubsetOf (CharSet True _ i) (CharSet False _ j) = I.null (I.intersection i j)
+isSubsetOf (CharSet False _ i) (CharSet True _ j) = all (\x -> I.member x i && I.member x j) [ol..oh] -- not bloody likely
+isSubsetOf (CharSet False _ i) (CharSet False _ j) = I.isSubsetOf j i
 {-# INLINE isSubsetOf #-}
 
 fromList :: String -> CharSet 
@@ -299,7 +311,7 @@ charSetDataType  = mkDataType "Text.Trifecta.CharSet.CharSet" [fromListConstr, c
 
 -- returns an intset and if the charSet is positive
 fromCharSet :: CharSet -> (Bool, IntSet)
-fromCharSet (S b _ i) = (b, i)
+fromCharSet (CharSet b _ i) = (b, i)
 {-# INLINE fromCharSet #-}
 
 toCharSet :: IntSet -> CharSet
