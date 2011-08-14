@@ -1,6 +1,10 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 -- | Diagnostics rendering
+--
+-- The type for Lines will very likely change over time, so we can draw lit up control 
+-- characters for ^Z, ^[, <0xff>, etc. this will make for much nicer diagnostics when 
+-- working with protocols!
 module Text.Trifecta.Diagnostic.Rendering.Prim 
   ( Rendering(..)
   , nullRendering
@@ -117,13 +121,13 @@ instance Source String where
     | otherwise           = ( ls + Prelude.length end, draw [soft (Foreground Blue), soft Bold] 0 ls end . draw [] 0 0 s') 
     where
       end = "<EOF>" 
-      -- end = "\xabEOF\bb"
       s' = go 0 s
       ls = Prelude.length s' 
       go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
       go _ ('\n':_)  = []
       go n (x:xs)    = x : go (n + 1) xs
       go _ []        = []
+      
 
 instance Source ByteString where
   source = source . UTF8.toString
