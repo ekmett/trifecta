@@ -71,6 +71,9 @@ instance Apply (Parser e) where (<.>) = (<*>)
 instance Applicative (Parser e) where
   pure a = Parser $ \ eo _ _ _ -> eo a mempty
   {-# INLINE pure #-}
+  (<*>) = ap
+  {-# INLINE (<*>) #-}
+{-
   Parser m <*> Parser n = Parser $ \ eo ee co ce -> 
     m (\f e -> n (\a e' -> eo (f a) (e <> e')) ee (\a e' -> co (f a) (e <> e')) ce) ee
       (\f e -> n (\a e' -> co (f a) (e <> e')) ce (\a e' -> co (f a) (e <> e')) ce) ce
@@ -83,6 +86,7 @@ instance Applicative (Parser e) where
     m (\_ e -> n (\a e' -> eo a (e <> e')) ee (\a e' -> co a (e <> e')) ce) ee
       (\_ e -> n (\a e' -> co a (e <> e')) ce (\a e' -> co a (e <> e')) ce) ce
   {-# INLINE (*>) #-}
+-}
 
 instance Alt (Parser e) where 
   (<!>) = (<|>)

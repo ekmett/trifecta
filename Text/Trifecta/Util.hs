@@ -5,6 +5,7 @@ module Text.Trifecta.Util
   , fromLazy
   , toLazy
   , takeLine
+  , (<$!>) 
   ) where
 
 import Data.ByteString.Lazy as Lazy
@@ -33,3 +34,8 @@ takeLine s = case Lazy.elemIndex 10 s of
   Just i -> Lazy.take (i + 1) s
   Nothing -> s
 
+infixl 4 <$!>
+(<$!>) :: Monad m => (a -> b) -> m a -> m b
+f <$!> m = do
+  a <- m 
+  return $! f a

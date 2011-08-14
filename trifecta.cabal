@@ -12,6 +12,8 @@ copyright:     Copyright (C) 2010-2011 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
 description:   A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
 build-type:    Simple  
+extra-source-files:
+  examples/RFC2616.hs
 
 source-repository head
   type: git
