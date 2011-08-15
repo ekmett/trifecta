@@ -33,10 +33,9 @@ import Control.Monad.Trans.RWS.Lazy as Lazy
 import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
+import Data.Functor.Yoneda
 import Data.Monoid
 import Data.Word
--- import Control.Monad.Trans.Maybe.Strict as Strict
--- import Control.Monad.Trans.Either.Strict as Strict
 import Data.ByteString as Strict
 import Data.ByteString.Internal (w2c)
 import Data.Semigroup
@@ -45,6 +44,9 @@ import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Parser.It
 import Text.Trifecta.Diagnostic.Rendering.Prim
+-- import Control.Monad.Trans.Maybe.Strict as Strict
+-- import Control.Monad.Trans.Either.Strict as Strict
+-- import Control.Monad.Codensity
 
 infix 0 <?>
 
@@ -152,14 +154,38 @@ instance MonadParser m => MonadParser (IdentityT m) where
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
 
+instance MonadParser m => MonadParser (Yoneda m) where
+  try = lift . try . lowerYoneda
+  labels m ss = lift $ labels (lowerYoneda m) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfy = lift . satisfy
+  satisfy8 = lift . satisfy8
+
+{-
+instance MonadParser m => MonadParser (Codensity m) where
+  try = lift . try . lowerCodensity
+  labels m ss = lift $ labels (lowerCodensity m) ss
+  line = lift line
+  liftIt = lift . liftIt
+  mark = lift mark 
+  release = lift . release
+  unexpected = lift . unexpected
+  satisfy = lift . satisfy
+  satisfy8 = lift . satisfy8
+-}
+-- instance (MonadParser m, Monoid w) => MonadParser (MaybeT m) where
+-- instance (Error e, MonadParser m, Monoid w) => MonadParser (ErrorT e m) where
+
 satisfyAscii :: MonadParser m => (Char -> Bool) -> m Char
 satisfyAscii p = w2c <$> satisfy8 (\w -> w <= 0x7f && p (w2c w))
 {-# INLINE satisfyAscii #-}
 
--- instance (MonadParser m, Monoid w) => MonadParser (MaybeT m) where
--- instance (Error e, MonadParser m, Monoid w) => MonadParser (ErrorT e m) where
 
-  -- useful when we've just recognized something out of band using access to the current line 
+-- useful when we've just recognized something out of band using access to the current line 
 skipping :: MonadParser m => Delta -> m ()
 skipping d = do
   m <- mark

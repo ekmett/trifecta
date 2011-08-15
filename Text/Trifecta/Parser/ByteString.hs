@@ -70,7 +70,7 @@ parseFromFileEx p fn = do
   i <- B.readFile fn
   case starve
      $ feed (rope (F.fromList [LineDirective (UTF8.fromString fn) 0, strand i]))
-     $ stepParser (fmap prettyTerm) (why prettyTerm) (release (Directed n 0 0 0 0) *> p) mempty mempty mempty of
+     $ stepParser (fmap prettyTerm) (why prettyTerm) (release (Directed n 0 0 0 0) *> p) mempty True mempty mempty of
      Success xs a -> return (xs,      Just a )
      Failure xs e -> return (xs |> e, Nothing)
   where n = UTF8.fromString fn

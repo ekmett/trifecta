@@ -54,11 +54,11 @@ type ErrLog e = Seq (Diagnostic e) -- use a fingertree to sort them?
 
 data Parser e a = Parser 
   { unparser :: forall r.
-    (a -> ErrState e -> ErrLog e -> Delta -> ByteString -> It Rope r) -> -- uncommitted ok
-    (     ErrState e -> ErrLog e -> Delta -> ByteString -> It Rope r) -> -- uncommitted err
-    (a -> ErrState e -> ErrLog e -> Delta -> ByteString -> It Rope r) -> -- committed ok
-    (     ErrState e -> ErrLog e -> Delta -> ByteString -> It Rope r) -> -- committed err
-                        ErrLog e -> Delta -> ByteString -> It Rope r
+    (a -> ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- uncommitted ok
+    (     ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- uncommitted err
+    (a -> ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- committed ok
+    (     ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- committed err
+                        ErrLog e -> Bool -> Delta -> ByteString -> It Rope r
   } 
 
 instance Functor (Parser e) where
@@ -159,8 +159,8 @@ instance MonadDiagnostic e (Parser e) where
     ce mempty { errMessage = Err rs Fatal e ds }
   errWith ds rs e = Parser $ \_ ee _ _ -> 
     ee mempty { errMessage = Err rs Error e ds }
-  logWith v ds rs e = Parser $ \eo _ _ _ l d bs -> 
-    eo () mempty (l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) d bs
+  logWith v ds rs e = Parser $ \eo _ _ _ l b8 d bs -> 
+    eo () mempty (l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) b8 d bs
     
 instance MonadError (ErrState e) (Parser e) where
   throwError m = Parser $ \_ ee _ _ -> ee m
@@ -168,6 +168,9 @@ instance MonadError (ErrState e) (Parser e) where
   catchError (Parser m) k = Parser $ \ eo ee co ce -> 
     m eo (\e -> unparser (k e) eo ee co ce) co ce
   {-# INLINE catchError #-}
+
+ascii :: ByteString -> Bool
+ascii = Strict.all (<=0x7f) 
 
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
@@ -182,72 +185,92 @@ instance MonadParser (Parser e) where
                      else e)
      (\e -> ee e { errExpected = msgs })
   {-# INLINE labels #-}
-  liftIt m = Parser $ \ eo _ _ _ l d bs -> do 
+  liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do 
      a <- m
-     eo a mempty l d bs
+     eo a mempty l b8 d bs
   {-# INLINE liftIt #-}
-  mark = Parser $ \eo _ _ _ l d -> eo d mempty l d
+  mark = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
   {-# INLINE mark #-}
-  release d' = Parser $ \_ ee co _ l d bs -> do
+  release d' = Parser $ \_ ee co _ l b8 d bs -> do
     mbs <- rewindIt d'
     case mbs of
-      Just bs' -> co () mempty l d' bs'
+      Just bs' -> co () mempty l (ascii bs') d' bs'
       Nothing 
-        | bytes d' == bytes (rewind d) + Strict.length bs -> co () mempty l d' $ 
-                                                             if near d d' then bs else mempty
-        | otherwise -> ee mempty l d bs
+        | bytes d' == bytes (rewind d) + Strict.length bs -> if near d d' 
+            then co () mempty l (ascii bs) d' bs
+            else co () mempty l True d' mempty
+        | otherwise -> ee mempty l b8 d bs
   {-# INLINE release #-}
-  line = Parser $ \eo _ _ _ l d bs -> eo bs mempty l d bs
+  line = Parser $ \eo _ _ _ l b8 d bs -> eo bs mempty l b8 d bs
   {-# INLINE line #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
   {-# INLINE skipMany #-}
-  satisfy f = Parser $ \ _ ee co _ l d bs ->
-    case UTF8.uncons $ Strict.drop (columnByte d) bs of
-      Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
+  satisfy f = Parser $ \ _ ee co _ l b8 d bs ->
+    if b8 -- fast path
+    then let b = columnByte d in (
+         if b >= 0 && b < Strict.length bs 
+         then case toEnum $ fromEnum $ Strict.index bs b of
+           c | not (f c)                 -> ee mempty l b8 d bs
+             | b == Strict.length bs - 1 -> let !ddc = d <> delta c
+                                            in join $ fillIt ( if c == '\n'
+                                                               then co c mempty l True ddc mempty 
+                                                               else co c mempty l b8 ddc bs )
+                                                             (\d' bs' -> co c mempty l (ascii bs') d' bs') 
+                                                             ddc
+             | otherwise                 -> co c mempty l b8 (d <> delta c) bs
+         else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs)
+    else case UTF8.uncons $ Strict.drop (columnByte d) bs of
+      Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
       Just (c, xs) 
-        | not (f c)       -> ee mempty l d bs
+        | not (f c)       -> ee mempty l b8 d bs
         | Strict.null xs  -> let !ddc = d <> delta c 
-                                 !bs' = if c == '\n' then mempty else bs
-                             in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
-        | otherwise       -> co c mempty l (d <> delta c) bs 
+                             in join $ fillIt ( if c == '\n'
+                                                then co c mempty l True ddc mempty 
+                                                else co c mempty l b8 ddc bs) 
+                                              (\d' bs' -> co c mempty l (ascii bs') d' bs') 
+                                              ddc
+        | otherwise       -> co c mempty l b8 (d <> delta c) bs 
   {-# INLINE satisfy #-}
-  satisfy8 f = Parser $ \ _ ee co _ l d bs ->
+  satisfy8 f = Parser $ \ _ ee co _ l b8 d bs ->
     let b = columnByte d in
     if b >= 0 && b < Strict.length bs 
     then case toEnum $ fromEnum $ Strict.index bs b of
-      c | not (f c)                 -> ee mempty l d bs
+      c | not (f c)                 -> ee mempty l b8 d bs
         | b == Strict.length bs - 1 -> let !ddc = d <> delta c
-                                           !bs' = if c == 10 then mempty else bs
-                                       in join $ fillIt (co c mempty l ddc bs') (co c mempty l) ddc
-        | otherwise                 -> co c mempty l (d <> delta c) bs
-    else ee mempty { errMessage = FailErr "unexpected EOF" } l d bs
+                                       in join $ fillIt ( if c == 10
+                                                          then co c mempty l True ddc mempty
+                                                          else co c mempty l b8 ddc bs )
+                                                        (\d' bs' -> co c mempty l (ascii bs') d' bs') 
+                                                        ddc
+        | otherwise                 -> co c mempty l b8 (d <> delta c) bs
+    else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
   {-# INLINE satisfy8 #-}
 
-data St e a = JuSt a !(ErrState e) !(ErrLog e) !Delta !ByteString
-            | NoSt !(ErrState e) !(ErrLog e) !Delta !ByteString
+data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
+            | NoSt !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
 
 stepParser :: (Diagnostic e -> Diagnostic t) -> 
-              (ErrState e -> Delta -> ByteString -> Diagnostic t) ->
-              Parser e a -> ErrLog e -> Delta -> ByteString -> Step t a
-stepParser yl y (Parser p) l0 d0 bs0 = 
-  go mempty $ p ju no ju no l0 d0 bs0
+              (ErrState e -> Bool -> Delta -> ByteString -> Diagnostic t) ->
+              Parser e a -> ErrLog e -> Bool -> Delta -> ByteString -> Step t a
+stepParser yl y (Parser p) l0 b80 d0 bs0 = 
+  go mempty $ p ju no ju no l0 b80 d0 bs0
   where
-    ju a e l d bs = Pure (JuSt a e l d bs)
-    no e l d bs = Pure (NoSt e l d bs)
-    go r (Pure (JuSt a _ l _ _)) = StepDone r (yl <$> l) a
-    go r (Pure (NoSt e l d bs))   = StepFail r (yl <$> l) $ y e d bs
+    ju a e l b8 d bs = Pure (JuSt a e l b8 d bs)
+    no e l b8 d bs = Pure (NoSt e l b8 d bs)
+    go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl <$> l) a
+    go r (Pure (NoSt e l b8 d bs))   = StepFail r (yl <$> l) $ y e b8 d bs
     go r (It ma k) = StepCont r (case ma of
-                                   JuSt a _ l _ _  -> Success (yl <$> l) a
-                                   NoSt e l d bs   -> Failure (yl <$> l) $ y e d bs) 
+                                   JuSt a _ l _ _ _  -> Success (yl <$> l) a
+                                   NoSt e l b8 d bs  -> Failure (yl <$> l) $ y e b8 d bs) 
                                 (go <*> k)
 
-why :: Pretty e => (e -> Doc t) -> ErrState e -> Delta -> ByteString -> Diagnostic (Doc t)
-why pp (ErrState ss m) d bs 
+why :: Pretty e => (e -> Doc t) -> ErrState e -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
+why pp (ErrState ss m) _ d bs 
   | Set.null ss = explicateWith empty m 
   | knownErr m  = explicateWith (char ',' <+> ex) m
   | otherwise   = Diagnostic r Error ex []
   where
-    ex = text "expected" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- for once I wish I was writing this in Inform 7
+    ex = text "expected:" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- todo, oxford comma, "or" etc...
     r = Right $ addCaret d $ rendering d bs
     explicateWith x EmptyErr        = Diagnostic r  Error ((text "unspecified error") <> x)  []
     explicateWith x (FailErr s)     = Diagnostic r  Error ((fillSep $ text <$> words s) <> x) []
@@ -258,7 +281,7 @@ why pp (ErrState ss m) d bs
 parseTest :: Show a => Parser String a -> String -> IO ()
 parseTest p s = case starve 
                    $ feed (UTF8.fromString s) 
-                   $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty mempty mempty of
+                   $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty True mempty mempty of
   Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
   Success xs a -> do
     unless (Seq.null xs) $ displayLn $ prettyTerm $ toList xs

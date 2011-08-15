@@ -10,11 +10,10 @@
 --
 -- Fast set membership tests for 'Char' values
 --
--- Stored as a (possibly negated IntMap) and a fast set for the ASCII range.
+-- Stored as a (possibly negated) IntMap and a fast set used for the head byte.
 --
--- The ASCII range is unboxed for efficiency. For small (complemented) sets, we
--- test for membership using a binary search. For larger (complemented) sets
--- we use a lookup table. 
+-- The set of valid (possibly negated) head bytes is stored unboxed as a 32-byte
+-- bytestring-based lookup table.
 --
 -- Designed to be imported qualified:
 -- 
