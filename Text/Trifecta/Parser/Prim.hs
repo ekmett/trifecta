@@ -29,12 +29,14 @@ import Data.Semigroup
 import Data.Foldable
 import Data.Monoid
 import Data.Functor.Bind (Apply(..), Bind((>>-)))
+import Data.IntervalMap.FingerTree (Interval(..))
+import qualified Data.IntervalMap.FingerTree as IntervalMap
 import Data.Set as Set hiding (empty, toList)
 import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
 import Data.ByteString.UTF8 as UTF8
 import Text.PrettyPrint.Free hiding (line)
-import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Rope.Delta as Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Diagnostic.Class
@@ -42,6 +44,7 @@ import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Err
 import Text.Trifecta.Diagnostic.Err.State
+import Text.Trifecta.Diagnostic.Err.Log
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Rendering.Caret
 import Text.Trifecta.Parser.Class
@@ -49,8 +52,6 @@ import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Step
 import Text.Trifecta.Parser.Result
 import System.Console.Terminfo.PrettyPrint
-
-type ErrLog e = Seq (Diagnostic e) -- use a fingertree to sort them?
 
 data Parser e a = Parser 
   { unparser :: forall r.
@@ -129,7 +130,7 @@ instance MonadPlus (Parser e) where
   mzero = empty
   mplus = (<|>) 
 
-instance MonadWriter (Seq (Diagnostic e)) (Parser e) where
+instance MonadWriter (ErrLog e) (Parser e) where
   tell w = Parser $ \eo _ _ _ l -> eo () mempty (l <> w)
   {-# INLINE tell #-}
   listen (Parser m) = Parser $ \eo ee co ce l -> 
@@ -160,7 +161,7 @@ instance MonadDiagnostic e (Parser e) where
   errWith ds rs e = Parser $ \_ ee _ _ -> 
     ee mempty { errMessage = Err rs Error e ds }
   logWith v ds rs e = Parser $ \eo _ _ _ l b8 d bs -> 
-    eo () mempty (l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds) b8 d bs
+    eo () mempty l { errLog = errLog l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds } b8 d bs
     
 instance MonadError (ErrState e) (Parser e) where
   throwError m = Parser $ \_ ee _ _ -> ee m
@@ -172,11 +173,17 @@ instance MonadError (ErrState e) (Parser e) where
 ascii :: ByteString -> Bool
 ascii = Strict.all (<=0x7f) 
 
+short :: Delta -> (Int, Int)
+short d = (bytes d, Delta.column d)
+
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
   try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
     \e -> if fatalErr (errMessage e) then ce e else ee e
   {-# INLINE try #-}
+  highlightToken t (Parser m) = Parser $ \eo ee co ce l b8 d bs -> 
+    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert (Interval (short d) (short d')) t (errHighlights l') } b8' d') ce l b8 d bs
+
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
 
   labels (Parser p) msgs = Parser $ \ eo ee -> p
@@ -200,7 +207,6 @@ instance MonadParser (Parser e) where
             then co () mempty l (ascii bs) d' bs
             else co () mempty l True d' mempty
         | otherwise -> ee mempty l b8 d bs
-  {-# INLINE release #-}
   line = Parser $ \eo _ _ _ l b8 d bs -> eo bs mempty l b8 d bs
   {-# INLINE line #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
@@ -230,7 +236,6 @@ instance MonadParser (Parser e) where
                                               (\d' bs' -> co c mempty l (ascii bs') d' bs') 
                                               ddc
         | otherwise       -> co c mempty l b8 (d <> delta c) bs 
-  {-# INLINE satisfy #-}
   satisfy8 f = Parser $ \ _ ee co _ l b8 d bs ->
     let b = columnByte d in
     if b >= 0 && b < Strict.length bs 
@@ -244,7 +249,6 @@ instance MonadParser (Parser e) where
                                                         ddc
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
-  {-# INLINE satisfy8 #-}
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
             | NoSt !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
@@ -257,11 +261,11 @@ stepParser yl y (Parser p) l0 b80 d0 bs0 =
   where
     ju a e l b8 d bs = Pure (JuSt a e l b8 d bs)
     no e l b8 d bs = Pure (NoSt e l b8 d bs)
-    go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl <$> l) a
-    go r (Pure (NoSt e l b8 d bs))   = StepFail r (yl <$> l) $ y e b8 d bs
+    go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl <$> errLog l) a
+    go r (Pure (NoSt e l b8 d bs)) = StepFail r (yl <$> errLog l) $ y e b8 d bs
     go r (It ma k) = StepCont r (case ma of
-                                   JuSt a _ l _ _ _  -> Success (yl <$> l) a
-                                   NoSt e l b8 d bs  -> Failure (yl <$> l) $ y e b8 d bs) 
+                                   JuSt a _ l _ _ _  -> Success (yl <$> errLog l) a
+                                   NoSt e l b8 d bs  -> Failure (yl <$> errLog l) $ y e b8 d bs) 
                                 (go <*> k)
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
@@ -270,7 +274,7 @@ why pp (ErrState ss m) _ d bs
   | knownErr m  = explicateWith (char ',' <+> ex) m
   | otherwise   = Diagnostic r Error ex []
   where
-    ex = text "expected:" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- todo, oxford comma, "or" etc...
+    ex = text "expected:" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- TODO: oxford comma, "or" etc...
     r = Right $ addCaret d $ rendering d bs
     explicateWith x EmptyErr        = Diagnostic r  Error ((text "unspecified error") <> x)  []
     explicateWith x (FailErr s)     = Diagnostic r  Error ((fillSep $ text <$> words s) <> x) []

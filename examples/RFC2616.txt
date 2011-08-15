@@ -1,0 +1,6 @@
+GET http://slashdot.org/ HTTP/1.0
+foo: this is a test
+
+GET http://slashdot.org/ HTTP/1.0
+foo: of the emergency broadcast system
+

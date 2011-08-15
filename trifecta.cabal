@@ -41,6 +41,7 @@ library
     Text.Trifecta.Diagnostic.Combinators
     Text.Trifecta.Diagnostic.Level
     Text.Trifecta.Diagnostic.Err
+    Text.Trifecta.Diagnostic.Err.Log
     Text.Trifecta.Diagnostic.Err.State
     Text.Trifecta.Diagnostic.Rendering
     Text.Trifecta.Diagnostic.Rendering.Prim
@@ -63,6 +64,7 @@ library
     Text.Trifecta.Parser.Token.Combinators
     Text.Trifecta.Parser.Token.Prim
     Text.Trifecta.Parser.Token.Style
+    Text.Trifecta.Parser.Token.Highlight
     Text.Trifecta.Parser.Token.Identifier
     Text.Trifecta.Parser.Token.Identifier.Style
 

@@ -25,6 +25,7 @@ import Control.Applicative
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Identifier
+import Text.Trifecta.Parser.Token.Highlight
 
 set :: [String] -> HashSet ByteString
 set = HashSet.fromList . fmap UTF8.fromString
@@ -35,6 +36,8 @@ emptyOps = IdentifierStyle
   , styleStart    = styleLetter emptyOps
   , styleLetter   = () <$ oneOf ":!#$%&*+./<=>?@\\^|-~"
   , styleReserved = mempty
+  , styleHighlight = Operator
+  , styleReservedHighlight = ReservedOperator
   }
 haskell98Ops = emptyOps 
   { styleReserved = set ["::","..","=","\\","|","<-","->","@","~","=>"]
@@ -46,7 +49,9 @@ emptyIdents = IdentifierStyle
   { styleName     = "identifier"
   , styleStart    = () <$ (letter <|> char '_')
   , styleLetter   = () <$ (alphaNum <|> oneOf "_'")
-  , styleReserved = set [] }
+  , styleReserved = set []
+  , styleHighlight = Identifier
+  , styleReservedHighlight = ReservedIdentifier } 
 
 haskell98Idents = emptyIdents
   { styleReserved = set haskell98ReservedIdents }

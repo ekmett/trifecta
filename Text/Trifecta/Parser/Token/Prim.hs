@@ -29,6 +29,7 @@ import Control.Applicative
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
+import Text.Trifecta.Parser.Token.Highlight
 
 -- | This parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape
@@ -38,13 +39,13 @@ import Text.Trifecta.Parser.Combinators
 --
 -- This parser does NOT swallow trailing whitespace. 
 charLiteral' :: MonadParser m => m Char
-charLiteral' = between (char '\'') (char '\'' <?> "end of character") characterChar
+charLiteral' = highlightToken CharLiteral (between (char '\'') (char '\'' <?> "end of character") characterChar)
           <?> "character" 
 
 characterChar, charEscape, charLetter :: MonadParser m => m Char
 characterChar = charLetter <|> charEscape
             <?> "literal character"
-charEscape = char '\\' *> escapeCode
+charEscape = highlightToken EscapeCode $ char '\\' *> escapeCode
 charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 
 -- | This parser parses a literal string. Returns the literal
@@ -55,7 +56,7 @@ charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 --
 -- This parser does NOT swallow trailing whitespace
 stringLiteral' :: MonadParser m => m String
-stringLiteral' = lit where
+stringLiteral' = highlightToken StringLiteral lit where
   lit = Prelude.foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar) 
     <?> "literal string"
   stringChar = Just <$> stringLetter 
@@ -63,7 +64,7 @@ stringLiteral' = lit where
        <?> "string character"
   stringLetter    = satisfy (\c -> (c /= '"') && (c /= '\\') && (c > '\026'))
 
-  stringEscape = char '\\' *> esc where
+  stringEscape = highlightToken EscapeCode $ char '\\' *> esc where
     esc = Nothing <$ escapeGap 
       <|> Nothing <$ escapeEmpty 
       <|> Just <$> escapeCode
@@ -107,7 +108,7 @@ escapeCode = (charEsc <|> charNum <|> charAscii <|> charControl) <?> "escape cod
 --
 -- This parser does NOT swallow trailing whitespace. 
 natural' :: MonadParser m => m Integer
-natural' = nat <?> "natural"
+natural' = highlightToken Number nat <?> "natural"
 
 number :: MonadParser m => Integer -> m Char -> m Integer
 number base baseDigit = do
@@ -130,12 +131,13 @@ integer' :: MonadParser m => m Integer
 integer' = int <?> "integer"
 
 sign :: MonadParser m => m (Integer -> Integer)
-sign = negate <$ char '-'
+sign = highlightToken Operator
+     $ negate <$ char '-'
    <|> id <$ char '+'
    <|> pure id
 
 int :: MonadParser m => m Integer
-int = {-lexeme-} sign <*> nat
+int = {-lexeme-} sign <*> highlightToken Number nat
 nat, zeroNumber :: MonadParser m => m Integer
 nat = zeroNumber <|> decimal
 zeroNumber = char '0' *> (hexadecimal <|> octal <|> decimal <|> return 0) <?> ""
@@ -147,7 +149,7 @@ zeroNumber = char '0' *> (hexadecimal <|> octal <|> decimal <|> return 0) <?> ""
 -- This parser does NOT swallow trailing whitespace. 
 
 double' :: MonadParser m => m Double
-double' = floating <?> "double"
+double' = highlightToken Number floating <?> "double"
 
 floating :: MonadParser m => m Double
 floating = decimal >>= fractExponent
@@ -167,7 +169,8 @@ fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <
     | e < 0     = 1.0/power(-e)
     | otherwise = fromInteger (10^e)
 
--- | This parser parses either 'natural' or a 'float'.
+
+-- | This parser parses either 'natural' or a 'double'.
 -- Returns the value of the number. This parsers deals with
 -- any overlap in the grammar rules for naturals and floats. The number
 -- is parsed according to the grammar rules defined in the Haskell report. 
@@ -175,7 +178,7 @@ fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <
 -- This parser does NOT swallow trailing whitespace. 
 
 naturalOrDouble' :: MonadParser m => m (Either Integer Double)
-naturalOrDouble' = natDouble <?> "number"
+naturalOrDouble' = highlightToken Number natDouble <?> "number"
 
 natDouble, zeroNumFloat, decimalFloat :: MonadParser m => m (Either Integer Double)
 natDouble 
@@ -200,14 +203,14 @@ decimal :: MonadParser m => m Integer
 decimal = number 10 digit
 
 -- | Parses a positive whole number in the hexadecimal system. The number
--- should be prefixed with \"0x\" or \"0X\". Returns the value of the
+-- should be prefixed with \"x\" or \"X\". Returns the value of the
 -- number. 
 
 hexadecimal :: MonadParser m => m Integer
 hexadecimal = oneOf "xX" *> number 16 hexDigit
 
 -- | Parses a positive whole number in the octal system. The number
--- should be prefixed with \"0o\" or \"0O\". Returns the value of the
+-- should be prefixed with \"o\" or \"O\". Returns the value of the
 -- number. 
 
 octal :: MonadParser m => m Integer

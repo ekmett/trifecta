@@ -23,6 +23,7 @@ import Data.List (nub)
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
+import Text.Trifecta.Parser.Token.Highlight
 
 data CommentStyle = CommentStyle 
   { commentStart   :: String
@@ -47,11 +48,11 @@ buildWhiteSpaceParser (CommentStyle startStyle endStyle lineStyle nestingStyle)
     noLine  = null lineStyle
     noMulti = null startStyle
     simpleSpace = skipSome (satisfy isSpace)
-    oneLineComment = do
+    oneLineComment = highlightToken Comment $ do
       _ <- try $ string lineStyle
       skipMany (satisfyAscii (/= '\n')) -- TODO: use skipping/restOfLine and fiddle with the last byte
       return ()
-    multiLineComment = do
+    multiLineComment = highlightToken Comment $ do
       _ <- try $ string startStyle
       inComment
     inComment
