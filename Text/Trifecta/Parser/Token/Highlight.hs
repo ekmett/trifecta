@@ -16,3 +16,4 @@ data TokenHighlight
   | ReservedIdentifier
   | Operator
   | ReservedOperator
+  deriving (Eq,Ord,Show,Read)
