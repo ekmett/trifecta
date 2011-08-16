@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.32
+version:       0.32.1
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -10,7 +10,11 @@ stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 copyright:     Copyright (C) 2010-2011 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
-description:   A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
+description:   
+  A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
+  .
+  Current documentation is available from <http://ekmett.github.com/trifecta/>.
+
 build-type:    Simple  
 extra-source-files:
   examples/RFC2616.hs
