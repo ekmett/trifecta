@@ -34,7 +34,6 @@ import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
 import Data.Functor.Yoneda
-import Data.Monoid
 import Data.Word
 import Data.ByteString as Strict
 import Data.ByteString.Internal (w2c)

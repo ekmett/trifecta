@@ -5,7 +5,6 @@ module Text.Trifecta.Diagnostic.Err.State
 import Data.Functor.Plus
 import Data.Set as Set
 import Data.Semigroup
-import Data.Monoid
 import Text.PrettyPrint.Free
 import Text.Trifecta.Diagnostic.Err
 

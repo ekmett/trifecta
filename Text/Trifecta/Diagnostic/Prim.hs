@@ -12,7 +12,6 @@ import Control.Monad.Writer.Class
 import Data.Functor.Apply
 import Data.Foldable
 import Data.Traversable
-import Data.Monoid
 import Data.List.NonEmpty hiding (map)
 import Data.Semigroup
 import Data.Semigroup.Reducer

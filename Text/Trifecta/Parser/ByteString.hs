@@ -22,11 +22,10 @@ module Text.Trifecta.Parser.ByteString
 
 import Control.Applicative
 import Control.Monad (unless)
-import Data.Monoid
+import Data.Semigroup
 import Data.Foldable
 import qualified Data.ByteString as B
 import System.Console.Terminfo.PrettyPrint
-import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Prim
 import Text.Trifecta.Parser.Step
@@ -42,35 +41,40 @@ import qualified Data.FingerTree as F
 -- input read from @filePath@ using 'ByteString.readFile'. All diagnostic messages
 -- emitted over the course of the parse attempt are shown to the user on the console.
 --
--- >  main    = do{ result <- parseFromFile numbers "digits.txt"
--- >              ; case result of
--- >                  Nothing -> return ()
--- >                  Just a  -> print $ sum a
--- >              }
+-- > main = do
+-- >   result <- parseFromFile numbers "digits.txt"
+-- >   case result of
+-- >     Nothing -> return ()
+-- >     Just a  -> print $ sum a
 
 parseFromFile :: Show a => Parser String a -> String -> IO (Maybe a)
 parseFromFile p fn = do 
-  (xs, result) <- parseFromFileEx p fn
-  unless (Seq.null xs) $ displayLn $ toList xs
-  return result
+  result <- parseFromFileEx p fn
+  case result of 
+     Success xs a -> Just a  <$ unless (Seq.null xs) (displayLn (toList xs))
+     Failure xs   -> Nothing <$ unless (Seq.null xs) (displayLn (toList xs))
 
 -- | @parseFromFileEx p filePath@ runs a parser @p@ on the
 -- input read from @filePath@ using 'ByteString.readFile'. Returns all diagnostic messages
 -- emitted over the course of the parse and the answer if the parse was successful.
 --
--- >  main    = do{ (xs, result) <- parseFromFileEx numbers "digits.txt"
--- >              ; unless (Seq.null xs) $ displayLn (toList xs)
--- >              ; case result of
--- >                  Nothing -> return ()
--- >                  Just a  -> print $ sum a
--- >              }
+-- > main = do
+-- >   result <- parseFromFileEx (many number) "digits.txt"
+-- >   case result of
+-- >     Failure xs -> unless (Seq.null xs) $ displayLn xs
+-- >     Success xs a  -> 
+-- >       unless (Seq.null xs) $ displayLn xs
+-- >       print $ sum a
+-- >
 
-parseFromFileEx :: Show a => Parser String a -> String -> IO (Seq (Diagnostic TermDoc), Maybe a)
-parseFromFileEx p fn = do
-  i <- B.readFile fn
-  case starve
-     $ feed (rope (F.fromList [LineDirective (UTF8.fromString fn) 0, strand i]))
-     $ stepParser (fmap prettyTerm) (why prettyTerm) (release (Directed n 0 0 0 0) *> p) mempty True mempty mempty of
-     Success xs a -> return (xs,      Just a )
-     Failure xs e -> return (xs |> e, Nothing)
-  where n = UTF8.fromString fn
+parseFromFileEx :: Show a => Parser String a -> String -> IO (Result TermDoc a)
+parseFromFileEx p fn = k <$> B.readFile fn where 
+  k i = starve 
+      $ feed (rope (F.fromList [LineDirective (UTF8.fromString fn) 0, strand i]))
+      $ stepParser (fmap prettyTerm) 
+                   (why prettyTerm) 
+                   (release (Directed (UTF8.fromString fn) 0 0 0 0) *> p) 
+                   mempty 
+                   True 
+                   mempty 
+                   mempty 

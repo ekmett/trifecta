@@ -26,7 +26,6 @@ import Control.Monad.State
 import Data.Array
 import Data.ByteString hiding (groupBy, empty, any)
 import Data.Foldable
-import Data.Monoid
 import Data.Function (on)
 import Data.Functor.Bind
 import Data.List (groupBy)

@@ -15,7 +15,7 @@ module Text.Trifecta.Parser.It
 import Control.Applicative
 import Control.Comonad
 import Control.Monad
-import Data.Monoid
+import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
 import Data.Functor.Bind

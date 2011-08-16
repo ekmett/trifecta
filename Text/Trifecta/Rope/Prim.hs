@@ -9,7 +9,6 @@ module Text.Trifecta.Rope.Prim
   , grabLine
   ) where
 
-import Data.Monoid
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.ByteString (ByteString)

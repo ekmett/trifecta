@@ -5,7 +5,6 @@ module Text.Trifecta.Diagnostic.Err
   ) where
 
 import Data.Semigroup
-import Data.Monoid
 import Data.Functor.Plus
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
@@ -49,7 +48,7 @@ instance Plus Err where
 
 instance Semigroup (Err t) where
   (<>) = (<!>)
-  replicate1p _ = id
+  times1p _ = id
 
 instance Monoid (Err t) where
   mempty = EmptyErr

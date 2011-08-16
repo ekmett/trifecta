@@ -27,7 +27,6 @@ import qualified Data.Functor.Plus as Plus
 import Data.Functor.Plus hiding (some, many)
 import Data.Semigroup
 import Data.Foldable
-import Data.Monoid
 import Data.Functor.Bind (Apply(..), Bind((>>-)))
 import Data.IntervalMap.FingerTree (Interval(..))
 import qualified Data.IntervalMap.FingerTree as IntervalMap
@@ -260,12 +259,12 @@ stepParser yl y (Parser p) l0 b80 d0 bs0 =
   go mempty $ p ju no ju no l0 b80 d0 bs0
   where
     ju a e l b8 d bs = Pure (JuSt a e l b8 d bs)
-    no e l b8 d bs = Pure (NoSt e l b8 d bs)
+    no e l b8 d bs   = Pure (NoSt e l b8 d bs)
     go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl <$> errLog l) a
-    go r (Pure (NoSt e l b8 d bs)) = StepFail r (yl <$> errLog l) $ y e b8 d bs
+    go r (Pure (NoSt e l b8 d bs)) = StepFail r ((yl <$> errLog l) |> y e b8 d bs)
     go r (It ma k) = StepCont r (case ma of
                                    JuSt a _ l _ _ _  -> Success (yl <$> errLog l) a
-                                   NoSt e l b8 d bs  -> Failure (yl <$> errLog l) $ y e b8 d bs) 
+                                   NoSt e l b8 d bs  -> Failure ((yl <$> errLog l) |> y e b8 d bs)) 
                                 (go <*> k)
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
@@ -286,7 +285,7 @@ parseTest :: Show a => Parser String a -> String -> IO ()
 parseTest p s = case starve 
                    $ feed (UTF8.fromString s) 
                    $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty True mempty mempty of
-  Failure xs e -> displayLn $ prettyTerm $ toList (xs |> e)
+  Failure xs -> displayLn $ toList xs
   Success xs a -> do
-    unless (Seq.null xs) $ displayLn $ prettyTerm $ toList xs
+    unless (Seq.null xs) $ displayLn $ toList xs
     print a

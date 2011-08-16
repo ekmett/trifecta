@@ -4,7 +4,6 @@ module Text.Trifecta.Diagnostic.Err.Log
 
 import Data.Functor.Plus
 import Data.Semigroup
-import Data.Monoid
 import Text.PrettyPrint.Free
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Parser.Token.Highlight

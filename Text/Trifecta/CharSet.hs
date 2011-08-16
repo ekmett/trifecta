@@ -81,7 +81,7 @@ import qualified Text.Trifecta.ByteSet as ByteSet
 import Data.Bits hiding (complement)
 import Data.Word
 import Data.ByteString.Internal (c2w)
-import Data.Monoid (Monoid(..))
+import Data.Semigroup
 import qualified Data.IntSet as I
 import qualified Data.List as L
 import Prelude hiding (filter, map, null)
@@ -345,6 +345,9 @@ instance Read CharSet where
       normal = prec 10 $ do
         Ident "fromDistinctAscList" <- lexP
         fromDistinctAscList `fmap` step readPrec
+
+instance Semigroup CharSet where
+  (<>) = union
 
 instance Monoid CharSet where
   mempty = empty

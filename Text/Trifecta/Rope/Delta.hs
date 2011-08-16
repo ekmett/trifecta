@@ -9,7 +9,6 @@ module Text.Trifecta.Rope.Delta
   ) where
 
 import Control.Applicative
-import Data.Monoid
 import Data.Semigroup
 import Data.Hashable
 import Data.Word
