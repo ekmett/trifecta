@@ -8,12 +8,16 @@
 -- Stability   :  provisional
 -- Portability :  non-portable
 -- 
+-- idStyle = haskellIdentifierStyle { styleReserved = ... } 
+-- identifier = ident haskellIdentifierStyle
+-- reserved   = reserve haskellIdentifierStyle
+--
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Identifier
   ( IdentifierStyle(..)
   , ident
-  , reserved
-  , reservedByteString
+  , reserve
+  , reserveByteString
   ) where
 
 import Data.ByteString as Strict hiding (map, zip, foldl, foldr)
@@ -35,13 +39,13 @@ data IdentifierStyle m = IdentifierStyle
   , styleReservedHighlight :: TokenHighlight
   }
 
--- | parse a reserved operator or identifier
-reserved :: MonadTokenParser m => IdentifierStyle m -> String -> m ()
-reserved s name = reservedByteString s $! UTF8.fromString name
+-- | parse a reserved operator or identifier using a given style
+reserve :: MonadTokenParser m => IdentifierStyle m -> String -> m ()
+reserve s name = reserveByteString s $! UTF8.fromString name
 
--- | parse a reserved operator or identifier specified by bytestring
-reservedByteString :: MonadTokenParser m => IdentifierStyle m -> ByteString -> m ()
-reservedByteString s name = lexeme $ try $ do
+-- | parse a reserved operator or identifier using a given style specified by bytestring
+reserveByteString :: MonadTokenParser m => IdentifierStyle m -> ByteString -> m ()
+reserveByteString s name = lexeme $ try $ do
    _ <- highlightToken (styleReservedHighlight s) $ byteString name 
    notFollowedBy (styleLetter s) <?> "end of " ++ show name
 
