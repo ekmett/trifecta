@@ -100,7 +100,7 @@ escapeCode = (charEsc <|> charNum <|> charAscii <|> charControl) <?> "escape cod
            ,'\SYN','\ETB','\CAN','\SUB','\ESC','\DEL']
   
 
--- | This lexeme parser parses a natural number (a positive whole
+-- | This parser parses a natural number (a positive whole
 -- number). Returns the value of the number. The number can be
 -- specified in 'decimal', 'hexadecimal' or
 -- 'octal'. The number is parsed according to the grammar
@@ -115,7 +115,7 @@ number base baseDigit = do
   digits <- some baseDigit
   return $! foldl' (\x d -> base*x + toInteger (digitToInt d)) 0 digits
 
--- | This lexeme parser parses an integer (a whole number). This parser
+-- | This parser parses an integer (a whole number). This parser
 -- is like 'natural' except that it can be prefixed with
 -- sign (i.e. \'-\' or \'+\'). Returns the value of the number. The
 -- number can be specified in 'decimal', 'hexadecimal'
