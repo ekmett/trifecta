@@ -152,8 +152,8 @@ char c
   | otherwise                 = satisfy (c ==) <?> show [c]
 {-# INLINE char #-}
 
--- | @char c@ parses a single character @c@. Returns the parsed
--- character (i.e. @c@).
+-- | @notChar c@ parses any single character other than @c@. Returns the parsed
+-- character.
 --
 -- >  semiColon  = char ';'
 notChar :: MonadParser m => Char -> m Char
