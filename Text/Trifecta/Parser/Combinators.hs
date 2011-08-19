@@ -180,7 +180,6 @@ chainr1 p op = scan where
 --
 --    Note the overlapping parsers @anyChar@ and @string \"-->\"@, and
 --    therefore the use of the 'try' combinator.
--- manyTill :: Alternative m => m a -> m end -> m [a]
 manyTill :: (Alternative m, MonadPlus m) => m a -> m end -> m [a]
 {-
 manyTill p end = scan
