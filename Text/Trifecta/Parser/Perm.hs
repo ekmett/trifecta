@@ -46,7 +46,7 @@ infixl 2 <$$>, <$?>
 -- use the optional combinator ('<|?>') instead. Returns a
 -- new permutation parser that includes @p@. 
 
-(<||>) :: MonadParser m => Perm m (a -> b) -> m a -> Perm m b
+(<||>) :: Functor m => Perm m (a -> b) -> m a -> Perm m b
 (<||>) perm p = add perm p
 
 -- | The expression @f \<$$> p@ creates a fresh permutation parser
@@ -63,7 +63,7 @@ infixl 2 <$$>, <$?>
 -- gets its parameters in the order in which the parsers are specified,
 -- but actual input can be in any order.
 
-(<$$>) :: MonadParser m => (a -> b) -> m a -> Perm m b
+(<$$>) :: Functor m => (a -> b) -> m a -> Perm m b
 (<$$>) f p = newPerm f <||> p
 
 -- | The expression @perm \<||> (x,p)@ adds parser @p@ to the
@@ -71,7 +71,7 @@ infixl 2 <$$>, <$?>
 -- not be applied, the default value @x@ will be used instead. Returns
 -- a new permutation parser that includes the optional parser @p@. 
 
-(<|?>) :: MonadParser m => Perm m (a -> b) -> (a, m a) -> Perm m b
+(<|?>) :: Functor m => Perm m (a -> b) -> (a, m a) -> Perm m b
 (<|?>) perm (x,p) = addOpt perm x p
 
 -- | The expression @f \<$?> (x,p)@ creates a fresh permutation parser
@@ -80,7 +80,7 @@ infixl 2 <$$>, <$?>
 -- parser @p@ is optional - if it can not be applied, the default value
 -- @x@ will be used instead. 
 
-(<$?>) :: MonadParser m => (a -> b) -> (a, m a) -> Perm m b
+(<$?>) :: Functor m => (a -> b) -> (a, m a) -> Perm m b
 (<$?>) f (x,p) = newPerm f <|?> (x,p)
 
 {---------------------------------------------------------------
@@ -126,10 +126,10 @@ permute (Perm def xs)
     branch (Branch perm p) = flip id <$> p <*> permute perm
            
 -- build permutation trees
-newPerm :: MonadParser m => (a -> b) -> Perm m (a -> b)
+newPerm :: (a -> b) -> Perm m (a -> b)
 newPerm f = Perm (Just f) []
 
-add :: MonadParser m => Perm m (a -> b) -> m a -> Perm m b
+add :: Functor m => Perm m (a -> b) -> m a -> Perm m b
 add perm@(Perm _mf fs) p
   = Perm Nothing (first:map insert fs)
   where
@@ -137,10 +137,9 @@ add perm@(Perm _mf fs) p
     insert (Branch perm' p')
             = Branch (add (fmap flip perm') p) p'
 
-addOpt :: MonadParser m => Perm m (a -> b) -> a -> m a -> Perm m b
+addOpt :: Functor m => Perm m (a -> b) -> a -> m a -> Perm m b
 addOpt perm@(Perm mf fs) x p
   = Perm (fmap ($ x) mf) (first:map insert fs)
   where
-    first   = Branch perm p
-    insert (Branch perm' p')
-            = Branch (addOpt (fmap flip perm') x p) p'
+    first = Branch perm p
+    insert (Branch perm' p') = Branch (addOpt (fmap flip perm') x p) p'
