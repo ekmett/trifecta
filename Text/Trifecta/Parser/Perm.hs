@@ -10,9 +10,7 @@
 -- Stability   :  provisional
 -- Portability :  non-portable
 -- 
--- This module implements permutation parsers. The algorithm used
--- is fairly complex since we push the type system to its limits :-)
--- The algorithm is described in:
+-- This module implements permutation parsers. The algorithm is described in:
 -- 
 -- /Parsing Permutation Phrases,/
 -- by Arthur Baars, Andres Loh and Doaitse Swierstra.
@@ -30,9 +28,7 @@ module Text.Trifecta.Parser.Perm
     ) where
 
 import Control.Applicative
-import Text.Trifecta.Parser.Class
-import Text.Trifecta.Parser.Combinators
-import Control.Monad.Identity
+import Text.Trifecta.Parser.Combinators (choice)
 
 infixl 1 <||>, <|?>
 infixl 2 <$$>, <$?>
@@ -118,11 +114,11 @@ instance Functor m => Functor (Branch m) where
 -- >          tuple a b c  = (a,b,c)
 
 -- transform a permutation tree into a normal parser
-permute :: MonadParser m => Perm m a -> m a
+permute :: Alternative m => Perm m a -> m a
 permute (Perm def xs)
   = choice (map branch xs ++ e)
   where
-    e = maybe [] (pure . pure)  def
+    e = maybe [] (pure . pure) def
     branch (Branch perm p) = flip id <$> p <*> permute perm
            
 -- build permutation trees
