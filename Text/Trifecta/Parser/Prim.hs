@@ -46,6 +46,7 @@ import Text.Trifecta.Diagnostic.Err.State
 import Text.Trifecta.Diagnostic.Err.Log
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Rendering.Caret
+import Text.Trifecta.Highlighter.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Step
@@ -124,6 +125,7 @@ instance Monad (Parser e) where
   {-# INLINE (>>) #-}
   fail s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr s }
   {-# INLINE fail #-}
+
 
 instance MonadPlus (Parser e) where
   mzero = empty
@@ -245,6 +247,9 @@ instance MonadParser (Parser e) where
                                                         ddc
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
+
+instance MonadHighlighter (Parser e) where
+  highlights = Parser $ \eo _ _ _ l -> eo (errHighlights l) mempty l
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
             | NoSt !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
