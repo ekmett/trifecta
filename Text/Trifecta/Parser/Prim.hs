@@ -172,16 +172,13 @@ instance MonadError (ErrState e) (Parser e) where
 ascii :: ByteString -> Bool
 ascii = Strict.all (<=0x7f) 
 
-short :: Delta -> (Int, Int)
-short d = (bytes d, Delta.column d)
-
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
   try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
     \e -> if fatalErr (errMessage e) then ce e else ee e
   {-# INLINE try #-}
   highlightToken t (Parser m) = Parser $ \eo ee co ce l b8 d bs -> 
-    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert (Interval (short d) (short d')) t (errHighlights l') } b8' d') ce l b8 d bs
+    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert (Interval d d') t (errHighlights l') } b8' d') ce l b8 d bs
 
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
 

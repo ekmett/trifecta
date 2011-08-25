@@ -6,13 +6,14 @@ import Data.Functor.Plus
 import Data.Semigroup
 import Text.PrettyPrint.Free
 import Text.Trifecta.Diagnostic.Prim
+import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Token.Highlight
 import Data.IntervalMap.FingerTree as IntervalMap
 import Data.Sequence (Seq)
 
 data ErrLog e = ErrLog
   { errLog        :: !(Seq (Diagnostic e))
-  , errHighlights :: !(IntervalMap (Int, Int) TokenHighlight) 
+  , errHighlights :: !(IntervalMap Delta TokenHighlight) 
   }
 
 instance Functor ErrLog where

@@ -13,6 +13,7 @@ import Data.Semigroup
 import Data.Hashable
 import Data.Word
 import Data.Foldable
+import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
@@ -35,7 +36,13 @@ data Delta
               {-# UNPACK #-} !Int  -- the number of characters since the last newline
               {-# UNPACK #-} !Int  -- number of bytes
               {-# UNPACK #-} !Int  -- the number of bytes since the last newline
-  deriving (Eq, Ord, Show)
+  deriving Show
+
+instance Eq Delta where
+  (==) = (==) `on` bytes
+
+instance Ord Delta where
+  compare = compare `on` bytes
 
 instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
