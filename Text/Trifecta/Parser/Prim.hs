@@ -201,7 +201,7 @@ instance MonadParser (Parser e) where
     case mbs of
       Just bs' -> co () mempty l (ascii bs') d' bs'
       Nothing 
-        | bytes d' == bytes (rewind d) + Strict.length bs -> if near d d' 
+        | bytes d' == bytes (rewind d) + fromIntegral (Strict.length bs) -> if near d d' 
             then co () mempty l (ascii bs) d' bs
             else co () mempty l True d' mempty
         | otherwise -> ee mempty l b8 d bs
@@ -212,10 +212,10 @@ instance MonadParser (Parser e) where
   satisfy f = Parser $ \ _ ee co _ l b8 d bs ->
     if b8 -- fast path
     then let b = columnByte d in (
-         if b >= 0 && b < Strict.length bs 
-         then case toEnum $ fromEnum $ Strict.index bs b of
+         if b >= 0 && b < fromIntegral (Strict.length bs)
+         then case toEnum $ fromEnum $ Strict.index bs (fromIntegral b) of
            c | not (f c)                 -> ee mempty l b8 d bs
-             | b == Strict.length bs - 1 -> let !ddc = d <> delta c
+             | b == fromIntegral (Strict.length bs) - 1 -> let !ddc = d <> delta c
                                             in join $ fillIt ( if c == '\n'
                                                                then co c mempty l True ddc mempty 
                                                                else co c mempty l b8 ddc bs )
@@ -223,7 +223,7 @@ instance MonadParser (Parser e) where
                                                              ddc
              | otherwise                 -> co c mempty l b8 (d <> delta c) bs
          else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs)
-    else case UTF8.uncons $ Strict.drop (columnByte d) bs of
+    else case UTF8.uncons $ Strict.drop (fromIntegral (columnByte d)) bs of
       Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
       Just (c, xs) 
         | not (f c)       -> ee mempty l b8 d bs
@@ -236,10 +236,10 @@ instance MonadParser (Parser e) where
         | otherwise       -> co c mempty l b8 (d <> delta c) bs 
   satisfy8 f = Parser $ \ _ ee co _ l b8 d bs ->
     let b = columnByte d in
-    if b >= 0 && b < Strict.length bs 
-    then case toEnum $ fromEnum $ Strict.index bs b of
+    if b >= 0 && b < fromIntegral (Strict.length bs)
+    then case toEnum $ fromEnum $ Strict.index bs (fromIntegral b) of
       c | not (f c)                 -> ee mempty l b8 d bs
-        | b == Strict.length bs - 1 -> let !ddc = d <> delta c
+        | b == fromIntegral (Strict.length bs - 1) -> let !ddc = d <> delta c
                                        in join $ fillIt ( if c == 10
                                                           then co c mempty l True ddc mempty
                                                           else co c mempty l b8 ddc bs )

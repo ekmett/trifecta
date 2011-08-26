@@ -36,12 +36,12 @@ spanEffects  = [soft (Foreground Green)]
 
 drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
 drawSpan s e d a
-  | nl && nh  = go (column l) (P.replicate (max (column h - column l) 0) '~') a
-  | nl        = go (column l) (P.replicate (max (snd (snd (bounds a)) - column l + 1) 0) '~') a
-  |       nh  = go (-1)       (P.replicate (max (column h + 1) 0) '~') a
+  | nl && nh  = go (column l) (P.replicate (fromIntegral (max (column h - column l) 0)) '~') a
+  | nl        = go (column l) (P.replicate (max (snd (snd (bounds a)) - fromIntegral (column l) + 1) 0) '~') a
+  |       nh  = go (-1)       (P.replicate (fromIntegral (max (column h + 1) 0)) '~') a
   | otherwise = a
   where
-    go = draw spanEffects 1
+    go = draw spanEffects 1 . fromIntegral
     l = argmin bytes s e
     h = argmax bytes s e
     nl = near l d

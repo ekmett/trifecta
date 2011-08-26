@@ -145,7 +145,7 @@ instance Pretty Rendering where
 instance PrettyTerm Rendering where
   prettyTerm (Rendering d ll l f) = nesting $ \k -> columns $ \n -> go (n - k) where
     go cols = align (vsep (P.map ln [t..b])) where 
-      (lo, hi) = window (column d) ll (min (max (cols - 2) 30) 200)
+      (lo, hi) = window (fromIntegral $ column d) ll (min (max (cols - 2) 30) 200)
       a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
       ln y = hcat 

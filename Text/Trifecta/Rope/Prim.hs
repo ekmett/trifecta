@@ -18,13 +18,14 @@ import qualified Data.ByteString.UTF8 as UTF8
 import Data.FingerTree as FingerTree
 import Data.Foldable (toList)
 import Data.Hashable
+import Data.Int (Int64)
 import Text.Trifecta.Util as Util
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
 
 data Strand
   = Strand        {-# UNPACK #-} !ByteString !Delta
-  | LineDirective {-# UNPACK #-} !ByteString {-# UNPACK #-} !Int
+  | LineDirective {-# UNPACK #-} !ByteString {-# UNPACK #-} !Int64
   deriving Show
 
 strand :: ByteString -> Strand
@@ -36,7 +37,7 @@ instance Measured Delta Strand where
 
 instance Hashable Strand where
   hash (Strand h _) = hashWithSalt 0 h
-  hash (LineDirective p l)   = l `hashWithSalt` p
+  hash (LineDirective p l) = hash l `hashWithSalt` p
 
 instance HasDelta Strand where
   delta = measure
@@ -57,7 +58,7 @@ strands (Rope _ r) = r
 grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
 grabRest i t kf ks = trim (delta l) (bytes i - bytes l) (toList r) where
   trim j 0 (Strand h _ : xs) = go j h xs
-  trim _ k (Strand h _ : xs) = go i (Strict.drop k h) xs
+  trim _ k (Strand h _ : xs) = go i (Strict.drop (fromIntegral k) h) xs
   trim j k (p          : xs) = trim (j <> delta p) k xs 
   trim _ _ []                = kf
   go j h s = ks j $ Lazy.fromChunks $ h : [ a | Strand a _ <- s ]
@@ -100,5 +101,3 @@ instance Reducer [Char] Rope where
   unit = unit . strand . UTF8.fromString
   cons = cons . strand . UTF8.fromString
   snoc r = snoc r . strand . UTF8.fromString
-
-

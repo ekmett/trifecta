@@ -27,7 +27,7 @@ import Prelude hiding (span)
 -- >                  ^
 -- >                  ,
 drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
-drawFixit s e rpl d a = ifNear l (draw [soft (Foreground Blue)] 2 (column l) rpl) d 
+drawFixit s e rpl d a = ifNear l (draw [soft (Foreground Blue)] 2 (fromIntegral (column l)) rpl) d 
                       $ drawSpan s e d a
   where l = argmin bytes s e
 

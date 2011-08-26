@@ -228,7 +228,7 @@ skipping d = do
 restOfLine :: MonadParser m => m ByteString
 restOfLine = do
   m <- mark
-  Strict.drop (columnByte m) <$> line
+  Strict.drop (fromIntegral (columnByte m)) <$> line
 {-# INLINE restOfLine #-}
 
 -- | label a parser with a name

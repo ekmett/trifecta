@@ -11,6 +11,7 @@ module Text.Trifecta.Rope.Delta
 import Control.Applicative
 import Data.Semigroup
 import Data.Hashable
+import Data.Int
 import Data.Word
 import Data.Foldable
 import Data.Function (on)
@@ -22,20 +23,20 @@ import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
 
 data Delta
-  = Columns   {-# UNPACK #-} !Int  -- the number of characters
-              {-# UNPACK #-} !Int  -- the number of bytes
-  | Tab       {-# UNPACK #-} !Int  -- the number of characters before the tab
-              {-# UNPACK #-} !Int  -- the number of characters after the tab
-              {-# UNPACK #-} !Int  -- the number of bytes
-  | Lines     {-# UNPACK #-} !Int  -- the number of newlines contained
-              {-# UNPACK #-} !Int  -- the number of characters since the last newline
-              {-# UNPACK #-} !Int  -- number of bytes
-              {-# UNPACK #-} !Int  -- the number of bytes since the last newline
-  | Directed  !ByteString          -- current file name
-              {-# UNPACK #-} !Int  -- the number of lines since the last line directive
-              {-# UNPACK #-} !Int  -- the number of characters since the last newline
-              {-# UNPACK #-} !Int  -- number of bytes
-              {-# UNPACK #-} !Int  -- the number of bytes since the last newline
+  = Columns   {-# UNPACK #-} !Int64 -- the number of characters
+              {-# UNPACK #-} !Int64 -- the number of bytes
+  | Tab       {-# UNPACK #-} !Int64 -- the number of characters before the tab
+              {-# UNPACK #-} !Int64 -- the number of characters after the tab
+              {-# UNPACK #-} !Int64 -- the number of bytes
+  | Lines     {-# UNPACK #-} !Int64 -- the number of newlines contained
+              {-# UNPACK #-} !Int64 -- the number of characters since the last newline
+              {-# UNPACK #-} !Int64 -- number of bytes
+              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
+  | Directed  !ByteString           -- current file name
+              {-# UNPACK #-} !Int64 -- the number of lines since the last line directive
+              {-# UNPACK #-} !Int64 -- the number of characters since the last newline
+              {-# UNPACK #-} !Int64 -- number of bytes
+              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
   deriving Show
 
 instance Eq Delta where
@@ -57,10 +58,13 @@ instance PrettyTerm Delta where
     Lines l c _ _ -> k f l c
     Directed fn l c _ _ -> k (UTF8.toString fn) l c
     where 
-      k fn ln cn = bold (string fn) <> char ':' <> bold (int (ln+1)) <> char ':' <> bold (int (cn+1))
+      k fn ln cn = bold (string fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
       f = "(interactive)"
 
-column :: HasDelta t => t -> Int
+int64 :: Int64 -> Doc e
+int64 = pretty . show
+
+column :: HasDelta t => t -> Int64
 column t = case delta t of 
   Columns c _ -> c
   Tab b a _ -> nextTab b + a
@@ -68,7 +72,7 @@ column t = case delta t of
   Directed _ _ c _ _ -> c
 {-# INLINE column #-}
 
-columnByte :: Delta -> Int
+columnByte :: Delta -> Int64
 columnByte (Columns _ b) = b
 columnByte (Tab _ _ b) = b
 columnByte (Lines _ _ _ b) = b
@@ -109,7 +113,7 @@ instance Semigroup Delta where
   Directed p l _ t _ <> Lines m d t' b      = Directed p (l + m) d                         (t + t') b
   Directed _ _ _ t _ <> Directed p l c t' b = Directed p l       c                         (t + t') b
   
-nextTab :: Int -> Int
+nextTab :: Int64 -> Int64
 nextTab x = x + (8 - mod x 8)
 {-# INLINE nextTab #-}
 

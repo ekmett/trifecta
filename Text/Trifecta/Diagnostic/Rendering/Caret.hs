@@ -44,7 +44,7 @@ caretEffects :: [ScopedEffect]
 caretEffects = [soft (Foreground Green), soft Bold]
 
 drawCaret :: Delta -> Delta -> Lines -> Lines
-drawCaret p = ifNear p $ draw caretEffects 1 (column p) "^"
+drawCaret p = ifNear p $ draw caretEffects 1 (fromIntegral (column p)) "^"
 
 addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
