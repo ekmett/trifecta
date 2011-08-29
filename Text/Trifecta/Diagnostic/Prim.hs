@@ -22,12 +22,16 @@ import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Level
 import Text.PrettyPrint.Free
+import Text.Trifecta.Highlight.Class
 import System.Console.Terminfo.PrettyPrint
 import Prelude hiding (log)
 import Data.Typeable
 
 data Diagnostic m = Diagnostic !(Either String Rendering) !DiagnosticLevel m [Diagnostic m]
   deriving (Show, Typeable)
+
+instance Highlightable (Diagnostic e) where
+  addHighlights h (Diagnostic rs l m xs) = Diagnostic (addHighlights h <$> rs) l m (addHighlights h <$> xs)
 
 instance (Typeable m, Show m) => Exception (Diagnostic m)
 

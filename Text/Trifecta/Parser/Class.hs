@@ -42,7 +42,7 @@ import Data.Set as Set
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Parser.It
-import Text.Trifecta.Parser.Token.Highlight
+import Text.Trifecta.Highlight.Prim
 import Text.Trifecta.Diagnostic.Rendering.Prim
 -- import Control.Monad.Trans.Maybe.Strict as Strict
 -- import Control.Monad.Trans.Either.Strict as Strict
@@ -55,39 +55,36 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   try :: m a -> m a
   -- Used to implement (<?>), runs the parser then sets the 'expected' tokens to the list supplied
   labels     :: m a -> Set String -> m a
-  -- | Lift an operation from the primitive It monad
-  liftIt     :: It Rope a -> m a
- 
-  -- | mark the current location so it can be used in constructing a span, or for later seeking
-  mark       :: m Delta
-  -- | Used to emit an error on an unexpected token
-  unexpected :: MonadParser m => String -> m a
-
-  -- | Retrieve the contents of the current line (from the beginning of the line)
-  line       :: m ByteString
-
   -- | A version of many that discards its input. Specialized because it can often be implemented more cheaply.
   skipMany   :: m a -> m ()
   skipMany p = () <$ many p 
-
-  -- actions that definitely commit
-
-  -- | Seek back to previously marked location
-  release  :: Delta -> m ()
-
   -- | Parse a single character of the input, with UTF-8 decoding
   satisfy  :: (Char -> Bool) -> m Char
-
   -- | Parse a single byte of the input, without UTF-8 decoding
   satisfy8 :: (Word8 -> Bool) -> m Word8
-
-  -- | @highlightToken@ is called internally in the token parsers.
+  -- | @highlight@ is called internally in the token parsers.
   -- It delimits ranges of the input recognized by certain parsers that 
   -- are useful for syntax highlighting. An interested monad could
   -- choose to listen to these events and construct an interval tree
   -- for later pretty printing purposes.
-  highlightToken :: TokenHighlight -> m a -> m a
-  highlightToken _ m = m
+  highlight :: Highlight -> m a -> m a
+  highlight _ m = m
+
+
+
+  -- | Lift an operation from the primitive It monad
+  liftIt     :: It Rope a -> m a
+  -- | mark the current location so it can be used in constructing a span, or for later seeking
+  mark       :: m Delta
+  -- | Used to emit an error on an unexpected token
+  unexpected :: MonadParser m => String -> m a
+  -- | Retrieve the contents of the current line (from the beginning of the line)
+  line       :: m ByteString
+  -- | Seek back to previously marked location
+  release  :: Delta -> m ()
+
+
+
 
 instance MonadParser m => MonadParser (Lazy.StateT s m) where
   try (Lazy.StateT m) = Lazy.StateT $ try . m
@@ -99,7 +96,7 @@ instance MonadParser m => MonadParser (Lazy.StateT s m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Lazy.StateT m) = Lazy.StateT $ \e -> highlightToken t (m e) 
+  highlight t (Lazy.StateT m) = Lazy.StateT $ \e -> highlight t (m e) 
 
 instance MonadParser m => MonadParser (Strict.StateT s m) where
   try (Strict.StateT m) = Strict.StateT $ try . m
@@ -111,7 +108,7 @@ instance MonadParser m => MonadParser (Strict.StateT s m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Strict.StateT m) = Strict.StateT $ \e -> highlightToken t (m e) 
+  highlight t (Strict.StateT m) = Strict.StateT $ \e -> highlight t (m e) 
 
 instance MonadParser m => MonadParser (ReaderT e m) where
   try (ReaderT m) = ReaderT $ try . m
@@ -123,7 +120,7 @@ instance MonadParser m => MonadParser (ReaderT e m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (ReaderT m) = ReaderT $ \e -> highlightToken t (m e) 
+  highlight t (ReaderT m) = ReaderT $ \e -> highlight t (m e) 
 
 instance (MonadParser m, Monoid w) => MonadParser (Strict.WriterT w m) where
   try (Strict.WriterT m) = Strict.WriterT $ try m
@@ -135,7 +132,7 @@ instance (MonadParser m, Monoid w) => MonadParser (Strict.WriterT w m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Strict.WriterT m) = Strict.WriterT $ highlightToken t m
+  highlight t (Strict.WriterT m) = Strict.WriterT $ highlight t m
 
 instance (MonadParser m, Monoid w) => MonadParser (Lazy.WriterT w m) where
   try (Lazy.WriterT m) = Lazy.WriterT $ try m
@@ -147,7 +144,7 @@ instance (MonadParser m, Monoid w) => MonadParser (Lazy.WriterT w m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Lazy.WriterT m) = Lazy.WriterT $ highlightToken t m
+  highlight t (Lazy.WriterT m) = Lazy.WriterT $ highlight t m
 
 instance (MonadParser m, Monoid w) => MonadParser (Lazy.RWST r w s m) where
   try (Lazy.RWST m) = Lazy.RWST $ \r s -> try (m r s)
@@ -159,7 +156,7 @@ instance (MonadParser m, Monoid w) => MonadParser (Lazy.RWST r w s m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Lazy.RWST m) = Lazy.RWST $ \r s -> highlightToken t (m r s)
+  highlight t (Lazy.RWST m) = Lazy.RWST $ \r s -> highlight t (m r s)
 
 instance (MonadParser m, Monoid w) => MonadParser (Strict.RWST r w s m) where
   try (Strict.RWST m) = Strict.RWST $ \r s -> try (m r s)
@@ -171,7 +168,7 @@ instance (MonadParser m, Monoid w) => MonadParser (Strict.RWST r w s m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Strict.RWST m) = Strict.RWST $ \r s -> highlightToken t (m r s)
+  highlight t (Strict.RWST m) = Strict.RWST $ \r s -> highlight t (m r s)
 
 instance MonadParser m => MonadParser (IdentityT m) where
   try (IdentityT m) = IdentityT $ try m
@@ -183,7 +180,7 @@ instance MonadParser m => MonadParser (IdentityT m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (IdentityT m) = IdentityT $ highlightToken t m
+  highlight t (IdentityT m) = IdentityT $ highlight t m
 
 instance MonadParser m => MonadParser (Yoneda m) where
   try = lift . try . lowerYoneda
@@ -195,7 +192,7 @@ instance MonadParser m => MonadParser (Yoneda m) where
   unexpected = lift . unexpected
   satisfy = lift . satisfy
   satisfy8 = lift . satisfy8
-  highlightToken t (Yoneda m) = Yoneda $ \f -> highlightToken t (m f)
+  highlight t (Yoneda m) = Yoneda $ \f -> highlight t (m f)
 
 {-
 instance MonadParser m => MonadParser (Codensity m) where

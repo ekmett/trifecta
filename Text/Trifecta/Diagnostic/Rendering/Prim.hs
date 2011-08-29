@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 -- | Diagnostics rendering
 --
@@ -40,6 +40,7 @@ import System.Console.Terminfo.PrettyPrint
 import Text.PrettyPrint.Free hiding (column)
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
+import Text.Trifecta.Highlight.Class
 import qualified Data.ByteString.UTF8 as UTF8 
 
 outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
@@ -49,7 +50,6 @@ type Lines = Array (Int,Int) ([ScopedEffect], Char)
 
 (///) :: Ix i => Array i e -> [(i, e)] -> Array i e
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
-
 
 grow :: Int -> Lines -> Lines
 grow y a 
@@ -77,6 +77,9 @@ data Rendering = Rendering
   , renderingLine     :: Lines -> Lines
   , renderingOverlays :: Delta -> Lines -> Lines
   }
+
+instance Highlightable Rendering where
+  addHighlights _h r = r -- TODO
 
 instance Show Rendering where
   showsPrec d (Rendering p ll _ _) = showParen (d > 10) $ 
@@ -149,7 +152,7 @@ instance PrettyTerm Rendering where
       a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
       ln y = hcat 
-           $ P.map (\g -> P.foldr with (string (P.map snd g)) (fst (P.head g)))
+           $ P.map (\g -> P.foldr with (pretty (P.map snd g)) (fst (P.head g)))
            $ groupBy ((==) `on` fst) 
            [ a ! (y,i) | i <- [lo..hi] ] 
 

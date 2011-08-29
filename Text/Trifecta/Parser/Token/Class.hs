@@ -11,7 +11,6 @@
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Class
   ( MonadTokenParser(..)
-  , TokenHighlight
   ) where
 
 import Control.Applicative
@@ -25,7 +24,6 @@ import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
 import Data.Monoid
-import Text.Trifecta.Parser.Token.Highlight
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadTokenParser m where

@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.35
+version:       0.36
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -35,10 +35,12 @@ library
     Text.Trifecta.CharSet.Unicode
     Text.Trifecta.CharSet.Unicode.Block
     Text.Trifecta.CharSet.Unicode.Category
+    Text.Trifecta.IntervalMap
     Text.Trifecta.Rope
     Text.Trifecta.Rope.Bytes
     Text.Trifecta.Rope.Delta
     Text.Trifecta.Rope.Prim
+    Text.Trifecta.Rope.Highlighted
     Text.Trifecta.Diagnostic
     Text.Trifecta.Diagnostic.Prim
     Text.Trifecta.Diagnostic.Class
@@ -52,8 +54,10 @@ library
     Text.Trifecta.Diagnostic.Rendering.Caret
     Text.Trifecta.Diagnostic.Rendering.Fixit
     Text.Trifecta.Diagnostic.Rendering.Span
-    Text.Trifecta.Highlighter.Class
-    Text.Trifecta.Highlighter.HTML
+    Text.Trifecta.Highlight.Class
+    Text.Trifecta.Highlight.Prim
+    Text.Trifecta.Highlight.Effects
+    Text.Trifecta.Highlight.Rendering.HTML
     Text.Trifecta.Parser
     Text.Trifecta.Parser.ByteString
     Text.Trifecta.Parser.Char
@@ -71,7 +75,6 @@ library
     Text.Trifecta.Parser.Token.Combinators
     Text.Trifecta.Parser.Token.Prim
     Text.Trifecta.Parser.Token.Style
-    Text.Trifecta.Parser.Token.Highlight
     Text.Trifecta.Parser.Token.Identifier
     Text.Trifecta.Parser.Token.Identifier.Style
 
@@ -98,10 +101,11 @@ library
     utf8-string          >= 0.3.6   && < 0.4,
     semigroupoids        >= 1.2.4   && < 1.3,
     parallel             >= 3.1.0.1 && < 3.2,
+    pointed              >= 2       && < 2.1,
     transformers         >= 0.2.2   && < 0.3,
     kan-extensions       >= 2.0.1   && < 2.1,
     comonad              >= 1.1.1.1 && < 1.2,
     terminfo             >= 0.3.2   && < 0.4,
     keys                 >= 2.1     && < 2.2,
-    wl-pprint-extras     >= 1.5     && < 1.6,
+    wl-pprint-extras     >= 1.6     && < 1.7,
     wl-pprint-terminfo   >= 0.7     && < 0.8

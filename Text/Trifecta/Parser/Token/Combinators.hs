@@ -40,7 +40,7 @@ import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Prim
-import Text.Trifecta.Parser.Token.Highlight
+import Text.Trifecta.Highlight.Prim
 
 -- | This lexeme parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape
@@ -81,7 +81,7 @@ integer = lexeme int <?> "integer"
   sign = negate <$ char '-'
     <|> id <$ char '+'
     <|> pure id
-  int = lexeme (highlightToken Operator sign) <*> natural'
+  int = lexeme (highlight Operator sign) <*> natural'
 
 -- | This lexeme parser parses a floating point value. Returns the value
 -- of the number. The number is parsed according to the grammar rules
@@ -102,13 +102,13 @@ naturalOrDouble = lexeme naturalOrDouble'
 -- trailing white space. 
 
 symbol :: MonadTokenParser m => ByteString -> m ByteString
-symbol name = lexeme (highlightToken Symbol (byteString name))
+symbol name = lexeme (highlight Symbol (byteString name))
 
 -- | Lexeme parser @symbolic s@ parses 'char' @s@ and skips
 -- trailing white space. 
 
 symbolic :: MonadTokenParser m => Char -> m Char
-symbolic name = lexeme (highlightToken Symbol (char name))
+symbolic name = lexeme (highlight Symbol (char name))
 
 -- | Lexeme parser @parens p@ parses @p@ enclosed in parenthesis,
 -- returning the value of @p@.

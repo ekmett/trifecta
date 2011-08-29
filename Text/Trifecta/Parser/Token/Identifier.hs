@@ -29,14 +29,15 @@ import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Highlight.Prim
 
 data IdentifierStyle m = IdentifierStyle
   { styleName              :: String
   , styleStart             :: m ()
   , styleLetter            :: m ()
   , styleReserved          :: HashSet ByteString
-  , styleHighlight         :: TokenHighlight
-  , styleReservedHighlight :: TokenHighlight
+  , styleHighlight         :: Highlight
+  , styleReservedHighlight :: Highlight
   }
 
 -- | parse a reserved operator or identifier using a given style
@@ -46,13 +47,13 @@ reserve s name = reserveByteString s $! UTF8.fromString name
 -- | parse a reserved operator or identifier using a given style specified by bytestring
 reserveByteString :: MonadTokenParser m => IdentifierStyle m -> ByteString -> m ()
 reserveByteString s name = lexeme $ try $ do
-   _ <- highlightToken (styleReservedHighlight s) $ byteString name 
+   _ <- highlight (styleReservedHighlight s) $ byteString name 
    notFollowedBy (styleLetter s) <?> "end of " ++ show name
 
 -- | parse an non-reserved identifier or symbol
 ident :: MonadTokenParser m => IdentifierStyle m -> m ByteString
 ident s = lexeme $ try $ do
-  name <- highlightToken (styleHighlight s) (sliced (styleStart s *> skipMany (styleLetter s))) <?> styleName s
+  name <- highlight (styleHighlight s) (sliced (styleStart s *> skipMany (styleLetter s))) <?> styleName s
   when (member name (styleReserved s)) $ unexpected $ "reserved " ++ styleName s ++ " " ++ show name
   return name
 

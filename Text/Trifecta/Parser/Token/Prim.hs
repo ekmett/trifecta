@@ -29,7 +29,7 @@ import Control.Applicative
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Token.Highlight
+import Text.Trifecta.Highlight.Prim
 
 -- | This parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape
@@ -39,13 +39,13 @@ import Text.Trifecta.Parser.Token.Highlight
 --
 -- This parser does NOT swallow trailing whitespace. 
 charLiteral' :: MonadParser m => m Char
-charLiteral' = highlightToken CharLiteral (between (char '\'') (char '\'' <?> "end of character") characterChar)
+charLiteral' = highlight CharLiteral (between (char '\'') (char '\'' <?> "end of character") characterChar)
           <?> "character" 
 
 characterChar, charEscape, charLetter :: MonadParser m => m Char
 characterChar = charLetter <|> charEscape
             <?> "literal character"
-charEscape = highlightToken EscapeCode $ char '\\' *> escapeCode
+charEscape = highlight EscapeCode $ char '\\' *> escapeCode
 charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 
 -- | This parser parses a literal string. Returns the literal
@@ -56,7 +56,7 @@ charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 --
 -- This parser does NOT swallow trailing whitespace
 stringLiteral' :: MonadParser m => m String
-stringLiteral' = highlightToken StringLiteral lit where
+stringLiteral' = highlight StringLiteral lit where
   lit = Prelude.foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar) 
     <?> "literal string"
   stringChar = Just <$> stringLetter 
@@ -64,7 +64,7 @@ stringLiteral' = highlightToken StringLiteral lit where
        <?> "string character"
   stringLetter    = satisfy (\c -> (c /= '"') && (c /= '\\') && (c > '\026'))
 
-  stringEscape = highlightToken EscapeCode $ char '\\' *> esc where
+  stringEscape = highlight EscapeCode $ char '\\' *> esc where
     esc = Nothing <$ escapeGap 
       <|> Nothing <$ escapeEmpty 
       <|> Just <$> escapeCode
@@ -108,7 +108,7 @@ escapeCode = (charEsc <|> charNum <|> charAscii <|> charControl) <?> "escape cod
 --
 -- This parser does NOT swallow trailing whitespace. 
 natural' :: MonadParser m => m Integer
-natural' = highlightToken Number nat <?> "natural"
+natural' = highlight Number nat <?> "natural"
 
 number :: MonadParser m => Integer -> m Char -> m Integer
 number base baseDigit = do
@@ -131,13 +131,13 @@ integer' :: MonadParser m => m Integer
 integer' = int <?> "integer"
 
 sign :: MonadParser m => m (Integer -> Integer)
-sign = highlightToken Operator
+sign = highlight Operator
      $ negate <$ char '-'
    <|> id <$ char '+'
    <|> pure id
 
 int :: MonadParser m => m Integer
-int = {-lexeme-} sign <*> highlightToken Number nat
+int = {-lexeme-} sign <*> highlight Number nat
 nat, zeroNumber :: MonadParser m => m Integer
 nat = zeroNumber <|> decimal
 zeroNumber = char '0' *> (hexadecimal <|> octal <|> decimal <|> return 0) <?> ""
@@ -149,7 +149,7 @@ zeroNumber = char '0' *> (hexadecimal <|> octal <|> decimal <|> return 0) <?> ""
 -- This parser does NOT swallow trailing whitespace. 
 
 double' :: MonadParser m => m Double
-double' = highlightToken Number floating <?> "double"
+double' = highlight Number floating <?> "double"
 
 floating :: MonadParser m => m Double
 floating = decimal >>= fractExponent
@@ -178,7 +178,7 @@ fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <
 -- This parser does NOT swallow trailing whitespace. 
 
 naturalOrDouble' :: MonadParser m => m (Either Integer Double)
-naturalOrDouble' = highlightToken Number natDouble <?> "number"
+naturalOrDouble' = highlight Number natDouble <?> "number"
 
 natDouble, zeroNumFloat, decimalFloat :: MonadParser m => m (Either Integer Double)
 natDouble 

@@ -25,7 +25,7 @@ import Control.Applicative
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Identifier
-import Text.Trifecta.Parser.Token.Highlight
+import Text.Trifecta.Highlight.Prim
 
 set :: [String] -> HashSet ByteString
 set = HashSet.fromList . fmap UTF8.fromString

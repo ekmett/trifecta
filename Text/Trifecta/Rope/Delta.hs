@@ -58,7 +58,7 @@ instance PrettyTerm Delta where
     Lines l c _ _ -> k f l c
     Directed fn l c _ _ -> k (UTF8.toString fn) l c
     where 
-      k fn ln cn = bold (string fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
+      k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
       f = "(interactive)"
 
 int64 :: Int64 -> Doc e

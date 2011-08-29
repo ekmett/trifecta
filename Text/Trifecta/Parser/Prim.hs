@@ -28,8 +28,7 @@ import Data.Functor.Plus hiding (some, many)
 import Data.Semigroup
 import Data.Foldable
 import Data.Functor.Bind (Apply(..), Bind((>>-)))
-import Data.IntervalMap.FingerTree (Interval(..))
-import qualified Data.IntervalMap.FingerTree as IntervalMap
+import qualified Text.Trifecta.IntervalMap as IntervalMap
 import Data.Set as Set hiding (empty, toList)
 import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
@@ -46,7 +45,8 @@ import Text.Trifecta.Diagnostic.Err.State
 import Text.Trifecta.Diagnostic.Err.Log
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Rendering.Caret
-import Text.Trifecta.Highlighter.Class
+import Text.Trifecta.Highlight.Class
+import Text.Trifecta.Highlight.Prim
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.It
 import Text.Trifecta.Parser.Step
@@ -179,8 +179,8 @@ instance MonadParser (Parser e) where
   try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
     \e -> if fatalErr (errMessage e) then ce e else ee e
   {-# INLINE try #-}
-  highlightToken t (Parser m) = Parser $ \eo ee co ce l b8 d bs -> 
-    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert (Interval d d') t (errHighlights l') } b8' d') ce l b8 d bs
+  highlight t (Parser m) = Parser $ \eo ee co ce l b8 d bs -> 
+    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert d d' t (errHighlights l') } b8' d') ce l b8 d bs
 
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
 
@@ -248,40 +248,40 @@ instance MonadParser (Parser e) where
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
 
-instance MonadHighlighter (Parser e) where
-  highlights = Parser $ \eo _ _ _ l -> eo (errHighlights l) mempty l
+-- instance MonadHighlight (Parser e) where
+--  highlights = Parser $ \eo _ _ _ l -> eo (errHighlights l) mempty l
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
             | NoSt !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
 
 stepParser :: (Diagnostic e -> Diagnostic t) -> 
-              (ErrState e -> Bool -> Delta -> ByteString -> Diagnostic t) ->
+              (ErrState e -> Highlights -> Bool -> Delta -> ByteString -> Diagnostic t) ->
               Parser e a -> ErrLog e -> Bool -> Delta -> ByteString -> Step t a
 stepParser yl y (Parser p) l0 b80 d0 bs0 = 
   go mempty $ p ju no ju no l0 b80 d0 bs0
   where
     ju a e l b8 d bs = Pure (JuSt a e l b8 d bs)
     no e l b8 d bs   = Pure (NoSt e l b8 d bs)
-    go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl <$> errLog l) a
-    go r (Pure (NoSt e l b8 d bs)) = StepFail r ((yl <$> errLog l) |> y e b8 d bs)
+    go r (Pure (JuSt a _ l _ _ _)) = StepDone r (yl . addHighlights (errHighlights l) <$> errLog l) a
+    go r (Pure (NoSt e l b8 d bs)) = StepFail r ((yl . addHighlights (errHighlights l) <$> errLog l) |> y e (errHighlights l) b8 d bs)
     go r (It ma k) = StepCont r (case ma of
-                                   JuSt a _ l _ _ _  -> Success (yl <$> errLog l) a
-                                   NoSt e l b8 d bs  -> Failure ((yl <$> errLog l) |> y e b8 d bs)) 
+                                   JuSt a _ l _ _ _  -> Success (yl . addHighlights (errHighlights l) <$> errLog l) a
+                                   NoSt e l b8 d bs  -> Failure ((yl . addHighlights (errHighlights l) <$> errLog l) |> y e (errHighlights l) b8 d bs)) 
                                 (go <*> k)
 
-why :: Pretty e => (e -> Doc t) -> ErrState e -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
-why pp (ErrState ss m) _ d bs 
+why :: Pretty e => (e -> Doc t) -> ErrState e -> Highlights -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
+why pp (ErrState ss m) hs _ d bs 
   | Set.null ss = explicateWith empty m 
   | knownErr m  = explicateWith (char ',' <+> ex) m
   | otherwise   = Diagnostic r Error ex []
   where
     ex = text "expected:" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- TODO: oxford comma, "or" etc...
-    r = Right $ addCaret d $ rendering d bs
-    explicateWith x EmptyErr        = Diagnostic r  Error ((text "unspecified error") <> x)  []
-    explicateWith x (FailErr s)     = Diagnostic r  Error ((fillSep $ text <$> words s) <> x) []
-    explicateWith x (PanicErr s)    = Diagnostic r  Panic ((fillSep $ text <$> words s) <> x) []
-    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (fmap (fmap pp) es)
-      where r' = Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs
+    r = Right $ addCaret d $ addHighlights hs $ rendering d bs
+    explicateWith x EmptyErr        = Diagnostic r Error ((text "unspecified error") <> x)  []
+    explicateWith x (FailErr s)     = Diagnostic r Error ((fillSep $ text <$> words s) <> x) []
+    explicateWith x (PanicErr s)    = Diagnostic r Panic ((fillSep $ text <$> words s) <> x) []
+    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (fmap (addHighlights hs . fmap pp) es)
+      where r' = Right $ addCaret d $ Prelude.foldr (<>) (addHighlights hs $ rendering d bs) rs
 
 parseTest :: Show a => Parser String a -> String -> IO ()
 parseTest p s = case starve 

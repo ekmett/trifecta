@@ -21,14 +21,14 @@ data Result e a
 
 instance (Pretty e, Show a) => Pretty (Result e a) where
   pretty (Success xs a) 
-    | Seq.null xs = string (show a)
-    | otherwise   = prettyList (toList xs) `above` string (show a)
+    | Seq.null xs = pretty (show a)
+    | otherwise   = prettyList (toList xs) `above` pretty (show a)
   pretty (Failure xs) = prettyList $ toList xs
 
 instance (PrettyTerm e, Show a) => PrettyTerm (Result e a) where
   prettyTerm (Success xs a)
-    | Seq.null xs = string (show a)
-    | otherwise   = prettyTermList (toList xs) `above` string (show a)
+    | Seq.null xs = pretty (show a)
+    | otherwise   = prettyTermList (toList xs) `above` pretty (show a)
   prettyTerm (Failure xs) = prettyTermList $ toList xs
 
 instance Functor (Result e) where
