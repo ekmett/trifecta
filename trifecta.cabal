@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.36.1
+version:       0.36.2
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -96,7 +96,7 @@ library
     mtl                  >= 2.0.1   && < 2.1,
     semigroups           >= 0.8     && < 0.9, 
     fingertree           >= 0.0.1   && < 0.1,
-    reducers             >= 0.1.4   && < 0.2,
+    reducers             >= 0.1.6   && < 0.2,
     profunctors          >= 0.1.1   && < 0.2,
     utf8-string          >= 0.3.6   && < 0.4,
     semigroupoids        >= 1.2.4   && < 1.3,
