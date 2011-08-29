@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.36
+version:       0.36.1
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -108,4 +108,4 @@ library
     terminfo             >= 0.3.2   && < 0.4,
     keys                 >= 2.1     && < 2.2,
     wl-pprint-extras     >= 1.6     && < 1.7,
-    wl-pprint-terminfo   >= 0.7     && < 0.8
+    wl-pprint-terminfo   >= 0.8     && < 0.9
