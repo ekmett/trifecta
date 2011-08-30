@@ -21,8 +21,10 @@ data Highlight
   | ReservedIdentifier
   | Operator
   | ReservedOperator
+  | Constructor
+  | ReservedConstructor
+  | ConstructorOperator
+  | ReservedConstructorOperator
   deriving (Eq,Ord,Show,Read,Enum,Ix,Bounded)
 
 type Highlights = IntervalMap Delta Highlight
-
-
