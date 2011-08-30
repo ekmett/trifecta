@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.37
+version:       0.38
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
