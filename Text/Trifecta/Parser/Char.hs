@@ -187,9 +187,7 @@ byteString bs = do
    guard $ lr > 0
    case compare lbs lr of
      LT | bs `Strict.isPrefixOf` r -> bs <$ skipping (delta bs)
-        | otherwise -> empty
      EQ | bs == r -> bs <$ skipping (delta bs)
-        | otherwise -> empty
      GT | r `Strict.isPrefixOf` bs -> bs <$ skipping (delta r) *> byteString (Strict.drop lr bs)
-        | otherwise -> empty
+     _ -> empty 
  <?> show (UTF8.toString bs)
