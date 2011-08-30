@@ -53,10 +53,6 @@ reserveByteString s name = lexeme $ try $ do
 -- | parse an non-reserved identifier or symbol
 ident :: MonadTokenParser m => IdentifierStyle m -> m ByteString
 ident s = lexeme $ try $ do
-  m <- mark
-  name <- try (highlight (styleHighlight s) (sliced (styleStart s *> skipMany (styleLetter s)))) <?> styleName s
-  when (member name (styleReserved s)) $ do
-    release m
-    unexpected $ "reserved " ++ styleName s ++ " " ++ show name
+  name <- highlight (styleHighlight s) (sliced (styleStart s *> skipMany (styleLetter s))) <?> styleName s
+  when (member name (styleReserved s)) $ unexpected $ "reserved " ++ styleName s ++ " " ++ show name
   return name
-

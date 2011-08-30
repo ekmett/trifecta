@@ -176,8 +176,11 @@ ascii = Strict.all (<=0x7f)
 
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
-  try (Parser m) = Parser $ \ eo ee co ce -> m eo ee co $ 
-    \e -> if fatalErr (errMessage e) then ce e else ee e
+  try (Parser m) = Parser $ \ eo ee co ce l b8 d bs -> m eo ee co (\e l' _ _ _ -> 
+     if fatalErr (errMessage e) 
+     then ce e (l <> l') b8 d bs 
+     else ee e (l <> l') b8 d bs
+     ) l b8 d bs
   {-# INLINE try #-}
   highlight t (Parser m) = Parser $ \eo ee co ce l b8 d bs -> 
     m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert d d' t (errHighlights l') } b8' d') ce l b8 d bs
