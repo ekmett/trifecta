@@ -1,0 +1,8 @@
+automatic ctags/etags file generation
+typeahead completion for a (multiline) readline mode
+a highlighted readline mode
+configurable colors
+configurable css
+config file parsing for colors and css
+markdown or haddock-style comments
+monoidal Dyck language recognition to pre-balance parentheses
