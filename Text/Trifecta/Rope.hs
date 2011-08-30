@@ -6,8 +6,10 @@ module Text.Trifecta.Rope
   , Delta(..)
   , HasDelta(..)
   , HasBytes(..)
+  , HighlightedRope(..)
   ) where
 
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Bytes
+import Text.Trifecta.Rope.Highlighted
