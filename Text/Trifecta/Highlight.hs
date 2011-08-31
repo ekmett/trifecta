@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Highlight
--- Copyright   :  (C) 2011 Edward Kmett,
+-- Copyright   :  (C) 2011 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
 -- Maintainer  :  Edward Kmett <ekmett@gmail.com>
@@ -10,9 +10,13 @@
 --
 ----------------------------------------------------------------------------
 module Text.Trifecta.Highlight 
-  ( module Text.Trifecta.Highlight.Prim
-  , module Text.Trifecta.Highlight.Class
+  ( 
+  -- * Text.Trifecta.Highlight.Class
+    Highlightable(..)
+  -- * Text.Trifecta.Highlight.Prim
+  , Highlight
+  , Highlights
   ) where
 
-import Text.Trifecta.Highlight.Prim
 import Text.Trifecta.Highlight.Class
+import Text.Trifecta.Highlight.Prim
