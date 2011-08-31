@@ -18,9 +18,10 @@ import Data.Set as Set
 import Data.Semigroup
 import Text.PrettyPrint.Free
 import Text.Trifecta.Diagnostic.Err
+import Text.Trifecta.Diagnostic.Rendering.Caret
 
 data ErrState e = ErrState
- { errExpected  :: !(Set String)
+ { errExpected  :: !(Set (Careted String))
  , errMessage   :: !(Err e)
  }
 

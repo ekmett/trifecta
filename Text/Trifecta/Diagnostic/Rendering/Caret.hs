@@ -93,6 +93,12 @@ instance Functor Careted where
 instance Extend Careted where
   extend f as@(_ :^ s) = f as :^ s
 
+instance HasDelta (Careted a) where
+  delta (_ :^ c) = delta c
+
+instance HasBytes (Careted a) where
+  bytes (_ :^ c) = bytes c
+
 instance Comonad Careted where
   extract (a :^ _) = a
 

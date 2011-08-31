@@ -38,7 +38,6 @@ import Data.Word
 import Data.ByteString as Strict
 import Data.ByteString.Internal (w2c)
 import Data.Semigroup
-import Data.Set as Set
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Parser.It
@@ -54,7 +53,7 @@ class ( Alternative m, MonadPlus m) => MonadParser m where
   -- | Take a parser that may consume input, and on failure, go back to where we started and fail as if we didn't consume input.
   try :: m a -> m a
   -- Used to implement (<?>), runs the parser then sets the 'expected' tokens to the list supplied
-  labels     :: m a -> Set String -> m a
+  labels :: m a -> [String] -> m a
   -- | A version of many that discards its input. Specialized because it can often be implemented more cheaply.
   skipMany   :: m a -> m ()
   skipMany p = () <$ many p 
@@ -230,7 +229,7 @@ restOfLine = do
 
 -- | label a parser with a name
 (<?>) :: MonadParser m => m a -> String -> m a
-p <?> msg = labels p (Set.singleton msg)
+p <?> msg = labels p [msg]
 
 -- | run a parser, grabbing all of the text between its start and end points
 slicedWith :: MonadParser m => (a -> Strict.ByteString -> r) -> m a -> m r

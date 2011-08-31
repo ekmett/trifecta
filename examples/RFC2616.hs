@@ -24,11 +24,11 @@ f <$!> ma = do
 token :: MonadParser m => m Char
 token = noneOf $ ['\0'..'\31'] ++ "()<>@,;:\\\"/[]?={} \t" ++ ['\128'..'\255']
 
-isHorizontalSpace :: Char -> Bool
-isHorizontalSpace c = c == ' ' || c == '\t'
+isHSpace :: Char -> Bool
+isHSpace c = c == ' ' || c == '\t'
 
 skipHSpaces :: MonadParser m => m ()
-skipHSpaces = skipSome (satisfy isHorizontalSpace)
+skipHSpaces = skipSome (satisfy isHSpace)
 
 data Request = Request {
       requestMethod   :: String
@@ -39,11 +39,11 @@ data Request = Request {
 requestLine :: MonadParser m => m Request
 requestLine = Request <$!> (highlight ReservedIdentifier (some token) <?> "request method")
                        <*  skipHSpaces 
-                       <*> (highlight Identifier (some (satisfy (not . isHorizontalSpace))) <?> "url")
+                       <*> (highlight Identifier (some (satisfy (not . isHSpace))) <?> "url")
                        <*  skipHSpaces 
-                       <*> try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine) <?> "protocol")
+                       <*> (try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine)) <?> "protocol")
  where
-  httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.'
+  httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.' || c == '9'
 
 endOfLine :: MonadParser m => m ()
 endOfLine = (string "\r\n" *> pure ()) <|> (char '\n' *> pure ())
@@ -69,21 +69,5 @@ lumpy arg = do
     Nothing -> return ()
     Just rs -> print (length rs)
 
-{-
-chunky arg = bracket (openFile arg ReadMode) hClose $ \h ->
-               loop 0 =<< B.hGetContents h
- where
-  loop !n bs
-      | B.null bs = print n
-      | otherwise = case parse myReq arg bs of
-                      Left err      -> putStrLn $ arg ++ ": " ++ show err
-                      Right (r,bs') -> loop (n+1) bs'
-  myReq :: Parser ((Request, [Header]), B.ByteString)
-  myReq = liftA2 (,) request getInput
--}
-
 main :: IO ()
-main = mapM_ f =<< getArgs
-  where
-    f = lumpy
-    -- f = chunky
+main = mapM_ lumpy =<< getArgs

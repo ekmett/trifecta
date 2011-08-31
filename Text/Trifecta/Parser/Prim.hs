@@ -23,10 +23,13 @@ import Control.Applicative
 import Control.Monad.Error.Class
 import Control.Monad.Writer.Class
 import Control.Monad
+import Control.Comonad
 import qualified Data.Functor.Plus as Plus
 import Data.Functor.Plus hiding (some, many)
+import Data.Function
 import Data.Semigroup
 import Data.Foldable
+import qualified Data.List as List
 import Data.Functor.Bind (Apply(..), Bind((>>-)))
 import qualified Text.Trifecta.IntervalMap as IntervalMap
 import Data.Set as Set hiding (empty, toList)
@@ -188,10 +191,11 @@ instance MonadParser (Parser e) where
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
 
   labels (Parser p) msgs = Parser $ \ eo ee -> p
-     (\a e -> eo a $ if knownErr (errMessage e)
-                     then e { errExpected = msgs `union` errExpected e }
-                     else e)
-     (\e -> ee e { errExpected = msgs })
+     (\a e l b8 d bs -> 
+       eo a (if knownErr (errMessage e)
+             then e { errExpected = Set.fromList (Prelude.map (:^ Caret d bs) msgs) `union` errExpected e }
+             else e) l b8 d bs)
+     (\e l b8 d bs -> ee e { errExpected = Set.fromList $ Prelude.map (:^ Caret d bs) msgs } l b8 d bs)
   {-# INLINE labels #-}
   liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do 
      a <- m
@@ -274,16 +278,24 @@ stepParser yl y (Parser p) l0 b80 d0 bs0 =
 
 why :: Pretty e => (e -> Doc t) -> ErrState e -> Highlights -> Bool -> Delta -> ByteString -> Diagnostic (Doc t)
 why pp (ErrState ss m) hs _ d bs 
-  | Set.null ss = explicateWith empty m 
-  | knownErr m  = explicateWith (char ',' <+> ex) m
-  | otherwise   = Diagnostic r Error ex []
+  | Prelude.null now = explicateWith empty m 
+  | knownErr m       = explicateWith (char ',' <+> ex) m
+  | otherwise        = Diagnostic r Error ex notes
   where
-    ex = text "expected:" <+> fillSep (punctuate (char ',') $ text <$> toList ss) -- TODO: oxford comma, "or" etc...
+    ex = expect now
+    expect xs = text "expected:" <+> fillSep (punctuate (char ',') (Prelude.map (text . extract) xs))
+    (now,later) = List.partition ((==) d . delta) $ toList ss
+    -- attach notes for expected tokens at remote locations, clustered by location
+    clusters = List.groupBy ((==) `on` delta) $ List.sortBy (compare `on` delta) later
+    diagnoseCluster c = Diagnostic (Right $ addCaret dc $ addHighlights hs $ rendering dc bsc) Note (expect c) [] where
+      _ :^ Caret dc bsc = Prelude.head c
+    notes = Prelude.map diagnoseCluster clusters 
+    
     r = Right $ addCaret d $ addHighlights hs $ rendering d bs
-    explicateWith x EmptyErr        = Diagnostic r Error ((text "unspecified error") <> x)  []
-    explicateWith x (FailErr s)     = Diagnostic r Error ((fillSep $ text <$> words s) <> x) []
-    explicateWith x (PanicErr s)    = Diagnostic r Panic ((fillSep $ text <$> words s) <> x) []
-    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (fmap (addHighlights hs . fmap pp) es)
+    explicateWith x EmptyErr        = Diagnostic r Error ((text "unspecified error") <> x)  notes
+    explicateWith x (FailErr s)     = Diagnostic r Error ((fillSep $ text <$> words s) <> x) notes
+    explicateWith x (PanicErr s)    = Diagnostic r Panic ((fillSep $ text <$> words s) <> x) notes
+    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (notes ++ fmap (addHighlights hs . fmap pp) es)
       where r' = Right $ addCaret d $ Prelude.foldr (<>) (addHighlights hs $ rendering d bs) rs
 
 parseTest :: Show a => Parser String a -> String -> IO ()

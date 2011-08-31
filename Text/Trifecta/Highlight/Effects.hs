@@ -23,14 +23,17 @@ import Data.Semigroup
 import Text.Trifecta.Highlight.Prim
 
 highlightEffects :: Highlight -> [ScopedEffect]
-highlightEffects Comment            = [soft $ Foreground Green]
-highlightEffects ReservedIdentifier = [soft $ Foreground Blue]
-highlightEffects Operator           = [soft $ Foreground Yellow]
-highlightEffects ReservedOperator   = [soft $ Foreground Yellow]
-highlightEffects EscapeCode         = [soft $ Foreground Magenta, soft Bold]
-highlightEffects CharLiteral        = [soft $ Foreground Cyan]
-highlightEffects StringLiteral      = [soft $ Foreground Cyan]
--- highlightEffects Identifier      = []
+highlightEffects Comment                     = [soft $ Foreground Blue]
+highlightEffects ReservedIdentifier          = [soft $ Foreground Magenta, soft Bold]
+highlightEffects ReservedConstructor         = [soft $ Foreground Magenta, soft Bold]
+highlightEffects EscapeCode                  = [soft $ Foreground Magenta, soft Bold]
+highlightEffects Operator                    = [soft $ Foreground Yellow]
+highlightEffects CharLiteral                 = [soft $ Foreground Cyan]
+highlightEffects StringLiteral               = [soft $ Foreground Cyan]
+highlightEffects Constructor                 = [soft Bold]
+highlightEffects ReservedOperator            = [soft $ Foreground Yellow]
+highlightEffects ConstructorOperator         = [soft $ Foreground Yellow, soft Bold]
+highlightEffects ReservedConstructorOperator = [soft $ Foreground Yellow, soft Bold]
 highlightEffects _             = []
 
 pushToken, popToken :: Highlight -> TermDoc
