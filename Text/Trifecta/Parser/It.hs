@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, BangPatterns, MagicHash, UnboxedTuples, TypeFamilies #-}
--- | harder, better, faster, stronger...
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Parser.It
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- harder, better, faster, stronger...
+----------------------------------------------------------------------------
 module Text.Trifecta.Parser.It 
   ( It(Pure, It)
   , needIt

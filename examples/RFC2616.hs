@@ -10,6 +10,7 @@ import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.ByteString
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Char8
+import Text.Trifecta.Highlight.Prim
 import qualified Text.Trifecta.ByteSet as S
 import qualified Data.ByteString as B
 
@@ -36,9 +37,11 @@ data Request = Request {
     } deriving (Eq, Ord, Show)
 
 requestLine :: MonadParser m => m Request
-requestLine = Request <$!> (some token <* skipHSpaces)
-                       <*> (some (satisfy (not . isHorizontalSpace)) <* skipHSpaces <* string "HTTP/")
-                       <*> (many httpVersion <* endOfLine)
+requestLine = Request <$!> (highlight ReservedIdentifier (some token) <?> "request method")
+                       <*  skipHSpaces 
+                       <*> (highlight Identifier (some (satisfy (not . isHorizontalSpace))) <?> "url")
+                       <*  skipHSpaces 
+                       <*> try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine) <?> "protocol")
  where
   httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.'
 
@@ -52,9 +55,10 @@ data Header = Header {
 
 messageHeader :: MonadParser m => m Header
 messageHeader = (\h b c -> Header h (b : c)) 
-            <$!> (some token <* char ':' <* skipHSpaces)
-             <*> (manyTill anyChar endOfLine)
-             <*> (many $ skipHSpaces *> manyTill anyChar endOfLine)
+            <$!> (highlight ReservedIdentifier (some token)  <?> "header name")
+             <*  highlight Operator (char ':') <* skipHSpaces
+             <*> (highlight Identifier (manyTill anyChar endOfLine) <?> "header value")
+             <*> (many (skipHSpaces *> manyTill anyChar endOfLine) <?> "blank line")
 
 request :: MonadParser m => m (Request, [Header])
 request = (,) <$> requestLine <*> many messageHeader <* endOfLine

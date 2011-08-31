@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Diagnostic.Err
+-- Copyright   :  (C) 2011 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- The unlocated error type used internally within the parser.
+----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Err
   ( Err(..)
   , knownErr

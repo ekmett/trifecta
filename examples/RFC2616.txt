@@ -1,4 +1,4 @@
-GET http://slashdot.org/ HTTP/1.0
+GET http://slashdot.org/ HTTP/lolwut
 foo: this is a test
 
 GET http://slashdot.org/ HTTP/1.0

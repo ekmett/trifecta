@@ -1,4 +1,16 @@
 {-# LANGUAGE FlexibleContexts, DeriveDataTypeable #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Diagnostic.Prim
+-- Copyright   :  (C) 2011 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Rich diagnostics
+----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Prim
   ( Diagnostic(..)
   , tellDiagnostic

@@ -1,4 +1,15 @@
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, PatternGuards #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Rope.Prim
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
 module Text.Trifecta.Rope.Prim
   ( Rope(..)
   , rope

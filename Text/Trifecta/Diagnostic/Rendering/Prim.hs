@@ -1,10 +1,22 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
--- | Diagnostics rendering
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Diagnostic.Rendering.Prim
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
 --
--- The type for Lines will very likely change over time, so we can draw lit up control 
--- characters for ^Z, ^[, <0xff>, etc. this will make for much nicer diagnostics when 
--- working with protocols!
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- The type for Lines will very likely change over time, to enable drawing 
+-- lit up multi-character versions of control characters for @^Z@, @^[@, 
+-- @<0xff>@, etc. This will make for much nicer diagnostics when 
+-- working with protocols.
+--
+-----------------------------------------------------------------------------
+
 module Text.Trifecta.Diagnostic.Rendering.Prim 
   ( Rendering(..)
   , nullRendering

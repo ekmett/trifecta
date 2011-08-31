@@ -1,4 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Parser.Step
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Step 
   ( Step(..)
   , feed

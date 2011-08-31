@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, UndecidableInstances, FlexibleInstances, FlexibleContexts, PatternGuards #-}
 {-# OPTIONS_GHC -fspec-constr -fspec-constr-count=8 #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Parser.Char
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Char
   ( oneOf      -- :: MonadParser m => [Char] -> m Char
   , noneOf     -- :: MonadParser m => [Char] -> m Char

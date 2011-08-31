@@ -1,4 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies, FlexibleContexts, UndecidableInstances #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Diagnostic.Class
+-- Copyright   :  (C) 2011 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Provides a class for logging and throwing expressive diagnostics.
+----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Class
   ( MonadDiagnostic(..)
   ) where

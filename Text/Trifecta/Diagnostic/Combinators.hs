@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Diagnostic.Combinators
+-- Copyright   :  (C) 2011 Edward Kmett,
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Combinators for throwing and logging expressive diagnostics
+----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Combinators 
   ( fatal
   , err
