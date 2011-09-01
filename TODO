@@ -1,9 +1,11 @@
 automatic ctags/etags file generation
 typeahead completion for a (multiline) readline mode
+command line parser a la GetOpt
 a highlighted readline mode
 configurable colors
 configurable css
-config file parsing for colors and css
+a config file parser for loading a .trifecta config describing colors and css
 markdown or haddock-style comments
 monoidal Dyck language recognition to pre-balance parentheses
 preprocessing static fragments for more intelligent backtracking
+i18n support
