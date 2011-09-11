@@ -19,6 +19,7 @@ module Text.Trifecta.Parser
   , module Text.Trifecta.Parser.Result
   , module Text.Trifecta.Parser.Language
   , module Text.Trifecta.Parser.Layout
+  , module Text.Trifecta.Parser.Haskell
   -- * Expressive Diagnostics
   -- ** Text.Trifecta.Diagnostic.Rendering.Caret
   , caret
@@ -28,6 +29,7 @@ module Text.Trifecta.Parser
   , spanned
   -- ** Text.Trifecta.Diagnostic.Rendering.Fixit
   , fixit
+
   ) where
 
 import Text.Trifecta.Parser.Prim
@@ -39,6 +41,7 @@ import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Result
 import Text.Trifecta.Parser.Language
 import Text.Trifecta.Parser.Layout
+import Text.Trifecta.Parser.Haskell
 
 import Text.Trifecta.Diagnostic.Rendering.Caret (caret, careted)
 import Text.Trifecta.Diagnostic.Rendering.Span  (span, spanned)

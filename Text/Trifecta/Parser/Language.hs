@@ -31,3 +31,4 @@ import Text.Trifecta.Parser.Language.Combinators
 import Text.Trifecta.Parser.Language.Def
 import Text.Trifecta.Parser.Language.Monad
 import Text.Trifecta.Parser.Language.Style
+
