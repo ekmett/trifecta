@@ -13,7 +13,6 @@ module Text.Trifecta.Parser.Token.Class
   ( MonadTokenParser(..)
   ) where
 
-import Control.Applicative
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Lazy as Lazy
 import Control.Monad.Trans.State.Strict as Strict

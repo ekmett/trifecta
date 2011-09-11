@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.42
+version:       0.43
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -67,8 +67,17 @@ library
     Text.Trifecta.Parser.Combinators
     Text.Trifecta.Parser.Expr
     Text.Trifecta.Parser.It
+    Text.Trifecta.Parser.Language
+    Text.Trifecta.Parser.Language.Class
+    Text.Trifecta.Parser.Language.Combinators
+    Text.Trifecta.Parser.Language.Def
+    Text.Trifecta.Parser.Language.Monad
+    Text.Trifecta.Parser.Language.Style
     Text.Trifecta.Parser.Layout
     Text.Trifecta.Parser.Layout.Class
+    Text.Trifecta.Parser.Layout.Combinators
+    Text.Trifecta.Parser.Layout.Monad
+    Text.Trifecta.Parser.Layout.Prim
     Text.Trifecta.Parser.Perm
     Text.Trifecta.Parser.Prim
     Text.Trifecta.Parser.Result

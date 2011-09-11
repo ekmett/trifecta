@@ -17,6 +17,8 @@ module Text.Trifecta.Parser
   , module Text.Trifecta.Parser.Combinators
   , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Result
+  , module Text.Trifecta.Parser.Language
+  , module Text.Trifecta.Parser.Layout
   -- * Expressive Diagnostics
   -- ** Text.Trifecta.Diagnostic.Rendering.Caret
   , caret
@@ -35,6 +37,8 @@ import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Result
+import Text.Trifecta.Parser.Language
+import Text.Trifecta.Parser.Layout
 
 import Text.Trifecta.Diagnostic.Rendering.Caret (caret, careted)
 import Text.Trifecta.Diagnostic.Rendering.Span  (span, spanned)

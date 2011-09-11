@@ -7,14 +7,15 @@
 -- Maintainer  :  ekmett@gmail.com
 -- Stability   :  provisional
 -- Portability :  non-portable
--- 
--- idStyle = haskellIdentifierStyle { styleReserved = ... } 
--- identifier = ident haskellIdentifierStyle
--- reserved   = reserve haskellIdentifierStyle
+--
+-- > idStyle = haskellIdentifierStyle { styleReserved = ... }
+-- > identifier = ident haskellIdentifierStyle
+-- > reserved   = reserve haskellIdentifierStyle
 --
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Identifier
   ( IdentifierStyle(..)
+  , liftIdentifierStyle
   , ident
   , reserve
   , reserveByteString
@@ -25,6 +26,7 @@ import Data.ByteString.UTF8 as UTF8
 import Data.HashSet as HashSet
 import Control.Applicative
 import Control.Monad (when)
+import Control.Monad.Trans.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
@@ -41,6 +43,13 @@ data IdentifierStyle m = IdentifierStyle
   , styleReservedHighlight :: Highlight
   }
 
+-- | Lift an identifier style into a monad transformer
+liftIdentifierStyle :: (MonadTrans t, Monad m) => IdentifierStyle m -> IdentifierStyle (t m)
+liftIdentifierStyle s =
+  s { styleStart  = lift (styleStart s)
+    , styleLetter = lift (styleLetter s)
+    }
+
 -- | parse a reserved operator or identifier using a given style
 reserve :: MonadTokenParser m => IdentifierStyle m -> String -> m ()
 reserve s name = reserveByteString s $! UTF8.fromString name
@@ -48,7 +57,7 @@ reserve s name = reserveByteString s $! UTF8.fromString name
 -- | parse a reserved operator or identifier using a given style specified by bytestring
 reserveByteString :: MonadTokenParser m => IdentifierStyle m -> ByteString -> m ()
 reserveByteString s name = lexeme $ try $ do
-   _ <- highlight (styleReservedHighlight s) $ byteString name 
+   _ <- highlight (styleReservedHighlight s) $ byteString name
    notFollowedBy (styleLetter s) <?> "end of " ++ show name
 
 -- | parse an non-reserved identifier or symbol
