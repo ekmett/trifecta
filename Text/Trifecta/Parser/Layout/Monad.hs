@@ -61,9 +61,9 @@ instance MonadTokenParser m => MonadTokenParser (Layout m) where
   whiteSpace = skipOptional $ try (() <$ layoutEq WhiteSpace <?> "")
   nesting (Layout m) = disableLayout $ Layout (nesting m)
   semi = getLayout layoutStack >>= \ stk -> case stk of
-    IndentedLayout _:_ -> try (';' <$ layoutEq VirtualSemi <?> "virtual semi-colon")
-                      <|> lift semi
-    _                  -> lift semi
+    (DisabledLayout _:_) -> lift semi
+    _ -> try (';' <$ layoutEq VirtualSemi <?> "virtual semi-colon")
+     <|> lift semi
 
 instance MonadTokenParser m => MonadLayoutParser (Layout m) where
   getLayout l = Layout $ access l
