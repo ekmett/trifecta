@@ -29,6 +29,7 @@ import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Token.Combinators
 import Text.Trifecta.Highlight.Prim
 
 data IdentifierStyle m = IdentifierStyle

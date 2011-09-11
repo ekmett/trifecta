@@ -11,7 +11,8 @@
 -- 
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Combinators
-  ( charLiteral
+  ( lexeme
+  , charLiteral
   , stringLiteral
   , natural
   , integer
@@ -23,7 +24,6 @@ module Text.Trifecta.Parser.Token.Combinators
   , braces
   , angles
   , brackets
-  , semi
   , comma
   , colon
   , dot
@@ -41,6 +41,24 @@ import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Prim
 import Text.Trifecta.Highlight.Prim
+
+-- | @lexeme p@ first applies parser @p@ and then the 'whiteSpace'
+-- parser, returning the value of @p@. Every lexical
+-- token (lexeme) is defined using @lexeme@, this way every parse
+-- starts at a point without white space. Parsers that use @lexeme@ are
+-- called /lexeme/ parsers in this document.
+--
+-- The only point where the 'whiteSpace' parser should be
+-- called explicitly is the start of the main parser in order to skip
+-- any leading white space.
+--
+-- >    mainParser  = do { whiteSpace
+-- >                     ; ds <- many (lexeme digit)
+-- >                     ; eof
+-- >                     ; return (sum ds)
+-- >                     }
+lexeme :: MonadTokenParser m => m a -> m a
+lexeme p = p <* whiteSpace
 
 -- | This lexeme parser parses a single literal character. Returns the
 -- literal character value. This parsers deals correctly with escape
@@ -114,31 +132,25 @@ symbolic name = lexeme (highlight Symbol (char name))
 -- returning the value of @p@.
 
 parens :: MonadTokenParser m => m a -> m a
-parens = between (symbolic '(') (symbolic ')')
+parens = nesting . between (symbolic '(') (symbolic ')')
 
 -- | Lexeme parser @braces p@ parses @p@ enclosed in braces (\'{\' and
 -- \'}\'), returning the value of @p@. 
 
 braces :: MonadTokenParser m => m a -> m a
-braces = between (symbolic '{') (symbolic '}')
+braces = nesting . between (symbolic '{') (symbolic '}')
 
 -- | Lexeme parser @angles p@ parses @p@ enclosed in angle brackets (\'\<\'
 -- and \'>\'), returning the value of @p@. 
 
 angles :: MonadTokenParser m => m a -> m a
-angles = between (symbolic '<') (symbolic '>')
+angles = nesting . between (symbolic '<') (symbolic '>')
 
 -- | Lexeme parser @brackets p@ parses @p@ enclosed in brackets (\'[\'
 -- and \']\'), returning the value of @p@. 
 
 brackets :: MonadTokenParser m => m a -> m a
-brackets = between (symbolic '<') (symbolic '>')
-
--- | Lexeme parser |semi| parses the character \';\' and skips any
--- trailing white space. Returns the string \";\". 
-
-semi :: MonadTokenParser m => m Char
-semi = symbolic ';'
+brackets = nesting . between (symbolic '[') (symbolic ']')
 
 -- | Lexeme parser @comma@ parses the character \',\' and skips any
 -- trailing white space. Returns the string \",\". 

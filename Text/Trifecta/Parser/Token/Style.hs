@@ -20,17 +20,19 @@ module Text.Trifecta.Parser.Token.Style
 import Data.Char (isSpace)
 import Control.Applicative
 import Data.List (nub)
+import qualified Data.ByteString.Char8 as B
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
+import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Highlight.Prim
 
-data CommentStyle = CommentStyle 
+data CommentStyle = CommentStyle
   { commentStart   :: String
   , commentEnd     :: String
   , commentLine    :: String
   , commentNesting :: Bool
-  } 
+  }
 
 emptyCommentStyle, javaCommentStyle, haskellCommentStyle :: CommentStyle
 emptyCommentStyle   = CommentStyle "" "" "" True
@@ -50,8 +52,9 @@ buildWhiteSpaceParser (CommentStyle startStyle endStyle lineStyle nestingStyle)
     simpleSpace = skipSome (satisfy isSpace)
     oneLineComment = highlight Comment $ do
       _ <- try $ string lineStyle
-      skipMany (satisfyAscii (/= '\n')) -- TODO: use skipping/restOfLine and fiddle with the last byte
-      return ()
+      r <- restOfLine
+      let b = B.length r
+      skipping $ if b /= 0 && B.last r == '\n' then Lines 1 0 (fromIntegral b) 0 else delta r
     multiLineComment = highlight Comment $ do
       _ <- try $ string startStyle
       inComment

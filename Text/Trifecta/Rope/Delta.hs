@@ -9,8 +9,8 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Rope.Delta 
-  ( Delta(..) 
+module Text.Trifecta.Rope.Delta
+  ( Delta(..)
   , HasDelta(..)
   , nextTab
   , rewind
@@ -68,7 +68,7 @@ instance PrettyTerm Delta where
     Tab x y _ -> k f 0 (nextTab x + y)
     Lines l c _ _ -> k f l c
     Directed fn l c _ _ -> k (UTF8.toString fn) l c
-    where 
+    where
       k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
       f = "(interactive)"
 
@@ -76,7 +76,7 @@ int64 :: Int64 -> Doc e
 int64 = pretty . show
 
 column :: HasDelta t => t -> Int64
-column t = case delta t of 
+column t = case delta t of
   Columns c _ -> c
   Tab b a _ -> nextTab b + a
   Lines _ c _ _ -> c
@@ -116,9 +116,9 @@ instance Semigroup Delta where
   Lines l _ t _      <> Lines m d t' b      = Lines      (l + m) d                         (t + t') b
   Lines _ _ t _      <> Directed p l c t' a = Directed p l       c                         (t + t') a
   Tab x y a          <> Columns d b         = Tab                x (y + d)                          (a + b)
-  Tab x y a          <> Tab x' y' b         = Tab                x (nextTab (y + x') + y')          (a + b) 
+  Tab x y a          <> Tab x' y' b         = Tab                x (nextTab (y + x') + y')          (a + b)
   Tab _ _ a          <> Lines l c t a'      = Lines      l       c                         (t + a ) a'
-  Tab _ _ a          <> Directed p l c t a' = Directed p l       c                         (t + a ) a' 
+  Tab _ _ a          <> Directed p l c t a' = Directed p l       c                         (t + a ) a'
   Directed p l c t a <> Columns d b         = Directed p l       (c + d)                   (t + b ) (a + b)
   Directed p l c t a <> Tab x y b           = Directed p l       (nextTab (c + x) + y)     (t + b ) (a + b)
   Directed p l _ t _ <> Lines m d t' b      = Directed p (l + m) d                         (t + t') b
@@ -131,7 +131,7 @@ nextTab x = x + (8 - mod x 8)
 rewind :: Delta -> Delta
 rewind (Lines n _ b d)      = Lines n 0 (b - d) 0
 rewind (Directed p n _ b d) = Directed p n 0 (b - d) 0
-rewind _                    = Columns 0 0 
+rewind _                    = Columns 0 0
 {-# INLINE rewind #-}
 
 near :: (HasDelta s, HasDelta t) => s -> t -> Bool
@@ -147,7 +147,7 @@ instance HasDelta Delta where
 instance HasDelta Char where
   delta '\t' = Tab 0 0 1
   delta '\n' = Lines 1 0 1 0
-  delta c 
+  delta c
     | o <= 0x7f   = Columns 1 1
     | o <= 0x7ff  = Columns 1 2
     | o <= 0xffff = Columns 1 3
@@ -157,7 +157,7 @@ instance HasDelta Char where
 instance HasDelta Word8 where
   delta 9  = Tab 0 0 1
   delta 10 = Lines 1 0 1 0
-  delta n 
+  delta n
     | n <= 0x7f              = Columns 1 1
     | n >= 0xc0 && n <= 0xf4 = Columns 1 1
     | otherwise              = Columns 0 1

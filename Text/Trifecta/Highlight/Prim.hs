@@ -38,6 +38,8 @@ data Highlight
   | ReservedConstructorOperator
   | BadInput
   | Unbound
+  | Layout
+  | MatchedSymbols
   deriving (Eq,Ord,Show,Read,Enum,Ix,Bounded)
 
 type Highlights = IntervalMap Delta Highlight

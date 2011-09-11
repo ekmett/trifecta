@@ -9,3 +9,4 @@ markdown or haddock-style comments
 monoidal Dyck language recognition to pre-balance parentheses
 preprocessing static fragments for more intelligent backtracking
 i18n support
+A literate-haskell-style comment mode

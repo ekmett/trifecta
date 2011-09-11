@@ -16,6 +16,9 @@ module Text.Trifecta.Diagnostic.Err
   , fatalErr
   ) where
 
+import Control.Applicative
+import Data.Foldable
+import Data.Traversable
 import Data.Semigroup
 import Data.Functor.Plus
 import Text.Trifecta.Diagnostic.Prim
@@ -46,6 +49,19 @@ instance Functor Err where
   fmap _ (PanicErr s) = PanicErr s
   fmap f (Err rs l e es) = Err rs l (f e) (fmap (fmap f) es)
 
+instance Foldable Err where
+  foldMap _ EmptyErr   = mempty
+  foldMap _ FailErr{}  = mempty
+  foldMap _ PanicErr{} = mempty
+  foldMap f (Err _ _ e ds) = f e `mappend` foldMap (foldMap f) ds
+
+instance Traversable Err where
+  traverse _ EmptyErr = pure EmptyErr
+  traverse _ (FailErr s) = pure $ FailErr s
+  traverse _ (PanicErr s) = pure $ PanicErr s
+  traverse f (Err rs l e ds) = Err rs l <$> f e <*> traverse (traverse f) ds
+
+-- | Merge two errors, selecting the most severe.
 instance Alt Err where
   a                   <!> EmptyErr            = a
   _                   <!> a@(Err _ Fatal _ _) = a
@@ -55,13 +71,16 @@ instance Alt Err where
   _                   <!> b                   = b
   {-# INLINE (<!>) #-}
 
+-- | Merge two errors, selecting the most severe.
 instance Plus Err where
   zero = EmptyErr
 
+-- | Merge two errors, selecting the most severe.
 instance Semigroup (Err t) where
   (<>) = (<!>)
   times1p _ = id
 
+-- | Merge two errors, selecting the most severe.
 instance Monoid (Err t) where
   mempty = EmptyErr
   mappend = (<!>) 

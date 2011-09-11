@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.41
+version:       0.42
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -10,12 +10,12 @@ stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 copyright:     Copyright (C) 2010-2011 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
-description:   
+description:
   A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
   .
   Current documentation is available from <http://ekmett.github.com/trifecta/>.
 
-build-type:    Simple  
+build-type:    Simple
 extra-source-files:
   examples/RFC2616.hs
 
@@ -67,6 +67,8 @@ library
     Text.Trifecta.Parser.Combinators
     Text.Trifecta.Parser.Expr
     Text.Trifecta.Parser.It
+    Text.Trifecta.Parser.Layout
+    Text.Trifecta.Parser.Layout.Class
     Text.Trifecta.Parser.Perm
     Text.Trifecta.Parser.Prim
     Text.Trifecta.Parser.Result
@@ -84,18 +86,21 @@ library
 
   ghc-options: -Wall
 
-  build-depends: 
+  build-depends:
     base                 >= 4       && < 5,
-    array                >= 0.3.0.2 && < 0.4, 
+    array                >= 0.3.0.2 && < 0.4,
     containers           >= 0.3     && < 0.5,
     unordered-containers >= 0.1.4   && < 0.2,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.4.1.6 && < 0.5,
     bifunctors           >= 0.1.2   && < 0.2,
+    data-lens            >= 2.0.1   && < 2.1,
+    data-lens-fd         >= 2.0     && < 2.1,
+    data-lens-template   >= 2.1     && < 2.2,
     hashable             >= 1.1.2.1 && < 1.2,
     bytestring           >= 0.9.1   && < 0.10,
     mtl                  >= 2.0.1   && < 2.1,
-    semigroups           >= 0.8     && < 0.9, 
+    semigroups           >= 0.8     && < 0.9,
     fingertree           >= 0.0.1   && < 0.1,
     reducers             >= 0.1.6   && < 0.2,
     profunctors          >= 0.1.1   && < 0.2,

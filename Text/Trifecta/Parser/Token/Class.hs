@@ -31,54 +31,52 @@ class MonadParser m => MonadTokenParser m where
   -- occurrences of a 'space', a line comment or a block (multi
   -- line) comment. Block comments may be nested. How comments are
   -- started and ended is defined by this method.
-  whiteSpace       :: m ()
-  
-  -- | @lexeme p@ first applies parser @p@ and then the 'whiteSpace'
-  -- parser, returning the value of @p@. Every lexical
-  -- token (lexeme) is defined using @lexeme@, this way every parse
-  -- starts at a point without white space. Parsers that use @lexeme@ are
-  -- called /lexeme/ parsers in this document.
-  -- 
-  -- The only point where the 'whiteSpace' parser should be
-  -- called explicitly is the start of the main parser in order to skip
-  -- any leading white space.
-  --
-  -- >    mainParser  = do { whiteSpace
-  -- >                     ; ds <- many (lexeme digit)
-  -- >                     ; eof
-  -- >                     ; return (sum ds)
-  -- >                     }
-  lexeme :: m a -> m a
-  lexeme p = p <* whiteSpace
+  whiteSpace :: m ()
+
+  -- | Called when we enter a nested pair of symbols. Used to disable
+  -- layout or highlight nested contexts.
+  nesting :: m a -> m a
+
+  -- | Lexeme parser |semi| parses the character \';\' and skips any
+  -- trailing white space. Returns the character \';\'.‗
+  semi :: m Char
 
 instance MonadTokenParser m => MonadTokenParser (ReaderT r m) where
   whiteSpace = lift whiteSpace
-  lexeme (ReaderT m) = ReaderT $ lexeme . m
+  nesting (ReaderT m) = ReaderT $ \r -> nesting (m r)
+  semi = lift semi
 
 instance MonadTokenParser m => MonadTokenParser (Lazy.StateT s m) where
   whiteSpace = lift whiteSpace
-  lexeme (Lazy.StateT m) = Lazy.StateT $ lexeme . m
+  nesting (Lazy.StateT m) = Lazy.StateT $ \s -> nesting (m s)
+  semi = lift semi
 
 instance MonadTokenParser m => MonadTokenParser (Strict.StateT s m) where
   whiteSpace = lift whiteSpace
-  lexeme (Strict.StateT m) = Strict.StateT $ lexeme . m
+  nesting (Strict.StateT m) = Strict.StateT $ \s -> nesting (m s)
+  semi = lift semi
 
 instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Lazy.WriterT w m) where
   whiteSpace = lift whiteSpace
-  lexeme (Lazy.WriterT m) = Lazy.WriterT $ lexeme m
+  nesting (Lazy.WriterT m) = Lazy.WriterT $ nesting m
+  semi = lift semi
 
 instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Strict.WriterT w m) where
   whiteSpace = lift whiteSpace
-  lexeme (Strict.WriterT m) = Strict.WriterT $ lexeme m
+  nesting (Strict.WriterT m) = Strict.WriterT $ nesting m
+  semi = lift semi
 
 instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Lazy.RWST r w s m) where
   whiteSpace = lift whiteSpace
-  lexeme (Lazy.RWST m) = Lazy.RWST $ \r s -> lexeme (m r s)
+  nesting (Lazy.RWST m) = Lazy.RWST $ \r s -> nesting (m r s)
+  semi = lift semi
 
 instance (MonadTokenParser m, Monoid w) => MonadTokenParser (Strict.RWST r w s m) where
   whiteSpace = lift whiteSpace
-  lexeme (Strict.RWST m) = Strict.RWST $ \r s -> lexeme (m r s)
+  nesting (Strict.RWST m) = Strict.RWST $ \r s -> nesting (m r s)
+  semi = lift semi
 
 instance MonadTokenParser m => MonadTokenParser (IdentityT m) where
   whiteSpace = lift whiteSpace
-  lexeme = IdentityT . lexeme . runIdentityT
+  nesting (IdentityT m) = IdentityT (nesting m)
+  semi = lift semi
