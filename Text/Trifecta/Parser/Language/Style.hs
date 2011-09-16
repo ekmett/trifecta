@@ -15,12 +15,12 @@ module Text.Trifecta.Parser.Language.Style
   , haskell98LanguageDef
   ) where
 
-import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Token.Style
-import Text.Trifecta.Parser.Token.Identifier.Style
+import Text.Trifecta.Parser.Identifier.Style
 import Text.Trifecta.Parser.Language.Def
 
-emptyLanguageDef, haskellLanguageDef, haskell98LanguageDef :: MonadTokenParser m => LanguageDef m
+emptyLanguageDef, haskellLanguageDef, haskell98LanguageDef :: MonadParser m => LanguageDef m
 emptyLanguageDef     = LanguageDef emptyCommentStyle   emptyIdents     emptyOps
 haskellLanguageDef   = LanguageDef haskellCommentStyle haskellIdents   haskellOps
 haskell98LanguageDef = LanguageDef haskellCommentStyle haskell98Idents haskell98Ops

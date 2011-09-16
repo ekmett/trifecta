@@ -37,9 +37,6 @@ import Data.ByteString as Strict hiding (empty)
 import Data.Sequence as Seq hiding (empty)
 import Data.ByteString.UTF8 as UTF8
 import Text.PrettyPrint.Free hiding (line)
-import Text.Trifecta.Rope.Delta as Delta
-import Text.Trifecta.Rope.Prim
-import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
@@ -52,8 +49,12 @@ import Text.Trifecta.Highlight.Class
 import Text.Trifecta.Highlight.Prim
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.It
+import Text.Trifecta.Parser.Mark
 import Text.Trifecta.Parser.Step
 import Text.Trifecta.Parser.Result
+import Text.Trifecta.Rope.Delta as Delta
+import Text.Trifecta.Rope.Prim
+import Text.Trifecta.Rope.Bytes
 import System.Console.Terminfo.PrettyPrint
 
 data Parser e a = Parser
@@ -177,6 +178,12 @@ instance MonadError (ErrState e) (Parser e) where
 ascii :: ByteString -> Bool
 ascii = Strict.all (<=0x7f)
 
+liftIt :: It Rope a -> Parser e a
+liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do
+  a <- m
+  eo a mempty l b8 d bs
+{-# INLINE liftIt #-}
+
 instance MonadParser (Parser e) where
   -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
   try (Parser m) = Parser $ \ eo ee co ce l b8 d bs -> m eo ee co (\e l' _ _ _ ->
@@ -185,10 +192,16 @@ instance MonadParser (Parser e) where
      else ee e (l <> l') b8 d bs
      ) l b8 d bs
   {-# INLINE try #-}
-  highlight t (Parser m) = Parser $ \eo ee co ce l b8 d bs ->
-    m eo ee (\a e l' b8' d' -> co a e l' { errHighlights = IntervalMap.insert d d' t (errHighlights l') } b8' d') ce l b8 d bs
+  highlightInterval h s e = Parser $ \eo ee co ce l -> co () mempty l { errHighlights = IntervalMap.insert s e h (errHighlights l) }
+  {-# INLINE highlightInterval #-}
+
+  skipping d = do
+    m <- mark
+    release $ m <> d
+  {-# INLINE skipping #-}
 
   unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
+  {-# INLINE unexpected #-}
 
   labels (Parser p) msgs = Parser $ \ eo ee -> p
      (\a e l b8 d bs ->
@@ -197,21 +210,6 @@ instance MonadParser (Parser e) where
              else e) l b8 d bs)
      (\e l b8 d bs -> ee e { errExpected = Set.fromList $ Prelude.map (:^ Caret d bs) msgs } l b8 d bs)
   {-# INLINE labels #-}
-  liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do
-     a <- m
-     eo a mempty l b8 d bs
-  {-# INLINE liftIt #-}
-  mark = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
-  {-# INLINE mark #-}
-  release d' = Parser $ \_ ee co _ l b8 d bs -> do
-    mbs <- rewindIt d'
-    case mbs of
-      Just bs' -> co () mempty l (ascii bs') d' bs'
-      Nothing
-        | bytes d' == bytes (rewind d) + fromIntegral (Strict.length bs) -> if near d d'
-            then co () mempty l (ascii bs) d' bs
-            else co () mempty l True d' mempty
-        | otherwise -> ee mempty l b8 d bs
   line = Parser $ \eo _ _ _ l b8 d bs -> eo bs mempty l b8 d bs
   {-# INLINE line #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
@@ -255,8 +253,18 @@ instance MonadParser (Parser e) where
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
 
--- instance MonadHighlight (Parser e) where
---  highlights = Parser $ \eo _ _ _ l -> eo (errHighlights l) mempty l
+instance MonadMark Delta (Parser e) where
+  mark = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
+  {-# INLINE mark #-}
+  release d' = Parser $ \_ ee co _ l b8 d bs -> do
+    mbs <- rewindIt d'
+    case mbs of
+      Just bs' -> co () mempty l (ascii bs') d' bs'
+      Nothing
+        | bytes d' == bytes (rewind d) + fromIntegral (Strict.length bs) -> if near d d'
+            then co () mempty l (ascii bs) d' bs
+            else co () mempty l True d' mempty
+        | otherwise -> ee mempty l b8 d bs
 
 data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
             | NoSt !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString

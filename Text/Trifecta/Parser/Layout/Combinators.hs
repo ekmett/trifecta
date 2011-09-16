@@ -1,6 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Text.Trifecta.Parser.Layout.Combinators
   ( layoutEq
+  , getLayout
+  , setLayout
+  , modLayout
   , disableLayout
   , enableLayout
   , laidout
@@ -8,6 +11,7 @@ module Text.Trifecta.Parser.Layout.Combinators
 
 import Control.Applicative
 import Control.Monad (guard)
+import Data.Lens.Common
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Token.Combinators
@@ -15,7 +19,16 @@ import qualified Text.Trifecta.Highlight.Prim as Highlight
 import Text.Trifecta.Parser.Layout.Class
 import Text.Trifecta.Parser.Layout.Prim
 
-disableLayout :: MonadLayoutParser m => m a -> m a
+getLayout :: MonadLayout m => Lens LayoutState t -> m t
+getLayout l = layoutState $ \s -> (getL l s, s)
+
+setLayout :: MonadLayout m => Lens LayoutState t -> t -> m ()
+setLayout l t = layoutState $ \s -> ((), setL l t s)
+
+modLayout :: MonadLayout m => Lens LayoutState t -> (t -> t) -> m ()
+modLayout l f = layoutState $ \s -> ((), modL l f s)
+
+disableLayout :: MonadLayout m => m a -> m a
 disableLayout p = do
   r <- rend
   modLayout layoutStack (DisabledLayout r:)
@@ -25,7 +38,7 @@ disableLayout p = do
     DisabledLayout r':xs | delta r == delta r' -> result <$ setLayout layoutStack xs
     _ -> unexpected "layout"
 
-enableLayout :: MonadLayoutParser m => m a -> m a
+enableLayout :: MonadLayout m => m a -> m a
 enableLayout p = do
   result <- highlight Highlight.Layout $ do
     r <- rend
@@ -33,12 +46,11 @@ enableLayout p = do
     p
   result <$ layout <?> "virtual right brace"
 
-laidout :: MonadLayoutParser m => m a -> m a
+laidout :: MonadLayout m => m a -> m a
 laidout p = braces p <|> enableLayout p
 
-layoutEq :: MonadLayoutParser m => LayoutToken -> m LayoutToken
+layoutEq :: MonadLayout m => LayoutToken -> m ()
 layoutEq s = try $ do
   r <- layout
   guard (s == r)
-  return r
 

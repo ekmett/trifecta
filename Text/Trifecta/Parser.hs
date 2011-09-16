@@ -15,6 +15,7 @@ module Text.Trifecta.Parser
   , module Text.Trifecta.Parser.Class
   , module Text.Trifecta.Parser.Char
   , module Text.Trifecta.Parser.Combinators
+  , module Text.Trifecta.Parser.Identifier
   , module Text.Trifecta.Parser.Token
   , module Text.Trifecta.Parser.Result
   , module Text.Trifecta.Parser.Language
@@ -37,6 +38,7 @@ import Text.Trifecta.Parser.ByteString
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
+import Text.Trifecta.Parser.Identifier
 import Text.Trifecta.Parser.Token
 import Text.Trifecta.Parser.Result
 import Text.Trifecta.Parser.Language

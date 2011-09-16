@@ -5,7 +5,7 @@ module Text.Trifecta.Parser.Language.Def
 
 import Control.Monad.Trans.Class
 import Text.Trifecta.Parser.Token.Style
-import Text.Trifecta.Parser.Token.Identifier
+import Text.Trifecta.Parser.Identifier
 
 data LanguageDef m = LanguageDef
   { languageCommentStyle :: CommentStyle

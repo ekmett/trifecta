@@ -21,7 +21,7 @@ module Text.Trifecta.Parser.Language.Combinators
 import Data.ByteString
 import Text.Trifecta.Parser.Language.Class
 import Text.Trifecta.Parser.Language.Def
-import Text.Trifecta.Parser.Token.Identifier
+import Text.Trifecta.Parser.Identifier
 
 identifier :: MonadLanguage m => m ByteString
 identifier = asksLanguage languageIdentifiers >>= ident

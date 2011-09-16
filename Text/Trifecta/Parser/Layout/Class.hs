@@ -1,9 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Text.Trifecta.Parser.Layout.Class
-  ( MonadLayoutParser(..)
+  ( MonadLayout(..)
   ) where
 
-import Data.Lens.Common
 import Data.Monoid
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Reader
@@ -15,58 +14,40 @@ import qualified Control.Monad.Trans.Writer.Strict as Strict
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Strict as Strict
 import Text.Trifecta.Parser.Layout.Prim
-import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Class
 
-class MonadTokenParser m => MonadLayoutParser m where
+class MonadParser m => MonadLayout m where
   layout    :: m LayoutToken
-  getLayout :: Lens LayoutState t -> m t
-  setLayout :: Lens LayoutState t -> t -> m ()
-  modLayout :: Lens LayoutState t -> (t -> t) -> m ()
+  layoutState :: (LayoutState -> (a, LayoutState)) -> m a
 
-instance MonadLayoutParser m => MonadLayoutParser (Strict.StateT s m) where
+instance MonadLayout m => MonadLayout (Strict.StateT s m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance MonadLayoutParser m => MonadLayoutParser (Lazy.StateT s m) where
+instance MonadLayout m => MonadLayout (Lazy.StateT s m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance MonadLayoutParser m => MonadLayoutParser (ReaderT e m) where
+instance MonadLayout m => MonadLayout (ReaderT e m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance (Monoid w, MonadLayoutParser m) => MonadLayoutParser (Strict.WriterT w m) where
+instance (Monoid w, MonadLayout m) => MonadLayout (Strict.WriterT w m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance (Monoid w, MonadLayoutParser m) => MonadLayoutParser (Lazy.WriterT w m) where
+instance (Monoid w, MonadLayout m) => MonadLayout (Lazy.WriterT w m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance (Monoid w, MonadLayoutParser m) => MonadLayoutParser (Strict.RWST r w s m) where
+instance (Monoid w, MonadLayout m) => MonadLayout (Strict.RWST r w s m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance (Monoid w, MonadLayoutParser m) => MonadLayoutParser (Lazy.RWST r w s m) where
+instance (Monoid w, MonadLayout m) => MonadLayout (Lazy.RWST r w s m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState
 
-instance MonadLayoutParser m => MonadLayoutParser (IdentityT m) where
+instance MonadLayout m => MonadLayout (IdentityT m) where
   layout = lift layout
-  getLayout l = lift $ getLayout l
-  setLayout l t = lift $ setLayout l t
-  modLayout l f = lift $ modLayout l f
+  layoutState = lift . layoutState

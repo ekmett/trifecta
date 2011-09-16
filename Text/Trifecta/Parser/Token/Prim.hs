@@ -4,11 +4,11 @@
 -- Copyright   :  (c) Edward Kmett 2011,
 --                (c) Daan Leijen 1999-2001
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  ekmett@gmail.com
 -- Stability   :  provisional
 -- Portability :  non-portable
--- 
+--
 -----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token.Prim
   ( charLiteral'
@@ -35,12 +35,12 @@ import Text.Trifecta.Highlight.Prim
 -- literal character value. This parsers deals correctly with escape
 -- sequences. The literal character is parsed according to the grammar
 -- rules defined in the Haskell report (which matches most programming
--- languages quite closely). 
+-- languages quite closely).
 --
--- This parser does NOT swallow trailing whitespace. 
+-- This parser does NOT swallow trailing whitespace.
 charLiteral' :: MonadParser m => m Char
 charLiteral' = highlight CharLiteral (between (char '\'') (char '\'' <?> "end of character") characterChar)
-          <?> "character" 
+          <?> "character"
 
 characterChar, charEscape, charLetter :: MonadParser m => m Char
 characterChar = charLetter <|> charEscape
@@ -52,21 +52,21 @@ charLetter = satisfy (\c -> (c /= '\'') && (c /= '\\') && (c > '\026'))
 -- string value. This parsers deals correctly with escape sequences and
 -- gaps. The literal string is parsed according to the grammar rules
 -- defined in the Haskell report (which matches most programming
--- languages quite closely). 
+-- languages quite closely).
 --
 -- This parser does NOT swallow trailing whitespace
 stringLiteral' :: MonadParser m => m String
 stringLiteral' = highlight StringLiteral lit where
-  lit = Prelude.foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar) 
+  lit = Prelude.foldr (maybe id (:)) "" <$> between (char '"') (char '"' <?> "end of string") (many stringChar)
     <?> "literal string"
-  stringChar = Just <$> stringLetter 
-           <|> stringEscape 
+  stringChar = Just <$> stringLetter
+           <|> stringEscape
        <?> "string character"
   stringLetter    = satisfy (\c -> (c /= '"') && (c /= '\\') && (c > '\026'))
 
   stringEscape = highlight EscapeCode $ char '\\' *> esc where
-    esc = Nothing <$ escapeGap 
-      <|> Nothing <$ escapeEmpty 
+    esc = Nothing <$ escapeGap
+      <|> Nothing <$ escapeEmpty
       <|> Just <$> escapeCode
   escapeEmpty = char '&'
   escapeGap = do skipSome space
@@ -74,10 +74,10 @@ stringLiteral' = highlight StringLiteral lit where
 
 escapeCode :: MonadParser m => m Char
 escapeCode = (charEsc <|> charNum <|> charAscii <|> charControl) <?> "escape code"
-  where 
+  where
   charControl = (\c -> toEnum (fromEnum c - fromEnum 'A')) <$> (char '^' *> upper)
   charNum     = toEnum . fromInteger <$> num where
-    num = decimal 
+    num = decimal
       <|> (char 'o' *> number 8 octDigit)
       <|> (char 'x' *> number 16 hexDigit)
   charEsc = choice $ parseEsc <$> escMap
@@ -98,15 +98,15 @@ escapeCode = (charEsc <|> charNum <|> charAscii <|> charControl) <?> "escape cod
   ascii3 = ['\NUL','\SOH','\STX','\ETX','\EOT','\ENQ','\ACK'
            ,'\BEL','\DLE','\DC1','\DC2','\DC3','\DC4','\NAK'
            ,'\SYN','\ETB','\CAN','\SUB','\ESC','\DEL']
-  
+
 
 -- | This parser parses a natural number (a positive whole
 -- number). Returns the value of the number. The number can be
 -- specified in 'decimal', 'hexadecimal' or
 -- 'octal'. The number is parsed according to the grammar
--- rules in the Haskell report. 
+-- rules in the Haskell report.
 --
--- This parser does NOT swallow trailing whitespace. 
+-- This parser does NOT swallow trailing whitespace.
 natural' :: MonadParser m => m Integer
 natural' = highlight Number nat <?> "natural"
 
@@ -120,13 +120,13 @@ number base baseDigit = do
 -- sign (i.e. \'-\' or \'+\'). Returns the value of the number. The
 -- number can be specified in 'decimal', 'hexadecimal'
 -- or 'octal'. The number is parsed according
--- to the grammar rules in the Haskell report. 
+-- to the grammar rules in the Haskell report.
 --
--- This parser does NOT swallow trailing whitespace. 
+-- This parser does NOT swallow trailing whitespace.
 --
 -- Also, unlike the 'integer' parser, this parser does not admit spaces
 -- between the sign and the number.
-        
+
 integer' :: MonadParser m => m Integer
 integer' = int <?> "integer"
 
@@ -144,9 +144,9 @@ zeroNumber = char '0' *> (hexadecimal <|> octal <|> decimal <|> return 0) <?> ""
 
 -- | This parser parses a floating point value. Returns the value
 -- of the number. The number is parsed according to the grammar rules
--- defined in the Haskell report. 
+-- defined in the Haskell report.
 --
--- This parser does NOT swallow trailing whitespace. 
+-- This parser does NOT swallow trailing whitespace.
 
 double' :: MonadParser m => m Double
 double' = highlight Number floating <?> "double"
@@ -165,7 +165,7 @@ fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <
        e <- decimal <?> "exponent"
        return (power (f e))
     <?> "exponent"
-  power e  
+  power e
     | e < 0     = 1.0/power(-e)
     | otherwise = fromInteger (10^e)
 
@@ -173,15 +173,15 @@ fractExponent n = (\fract expo -> (fromInteger n + fract) * expo) <$> fraction <
 -- | This parser parses either 'natural' or a 'double'.
 -- Returns the value of the number. This parsers deals with
 -- any overlap in the grammar rules for naturals and floats. The number
--- is parsed according to the grammar rules defined in the Haskell report. 
+-- is parsed according to the grammar rules defined in the Haskell report.
 --
--- This parser does NOT swallow trailing whitespace. 
+-- This parser does NOT swallow trailing whitespace.
 
 naturalOrDouble' :: MonadParser m => m (Either Integer Double)
 naturalOrDouble' = highlight Number natDouble <?> "number"
 
 natDouble, zeroNumFloat, decimalFloat :: MonadParser m => m (Either Integer Double)
-natDouble 
+natDouble
     = char '0' *> zeroNumFloat
   <|> decimalFloat
 zeroNumFloat
@@ -189,7 +189,7 @@ zeroNumFloat
   <|> decimalFloat
   <|> fractFloat 0
   <|> return (Left 0)
-decimalFloat = do 
+decimalFloat = do
   n <- decimal
   option (Left n) (fractFloat n)
 
@@ -197,21 +197,21 @@ fractFloat :: MonadParser m => Integer -> m (Either Integer Double)
 fractFloat n = Right <$> fractExponent n
 
 -- | Parses a positive whole number in the decimal system. Returns the
--- value of the number. 
+-- value of the number.
 
 decimal :: MonadParser m => m Integer
 decimal = number 10 digit
 
 -- | Parses a positive whole number in the hexadecimal system. The number
 -- should be prefixed with \"x\" or \"X\". Returns the value of the
--- number. 
+-- number.
 
 hexadecimal :: MonadParser m => m Integer
 hexadecimal = oneOf "xX" *> number 16 hexDigit
 
 -- | Parses a positive whole number in the octal system. The number
 -- should be prefixed with \"o\" or \"O\". Returns the value of the
--- number. 
+-- number.
 
 octal :: MonadParser m => m Integer
 octal = oneOf "oO" *> number 8 octDigit

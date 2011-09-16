@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Token.Identifier
+-- Module      :  Text.Trifecta.Parser.Identifier
 -- Copyright   :  (c) Edward Kmett 2011
 -- License     :  BSD3
 -- 
@@ -13,7 +13,7 @@
 -- > reserved   = reserve haskellIdentifierStyle
 --
 -----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Token.Identifier
+module Text.Trifecta.Parser.Identifier
   ( IdentifierStyle(..)
   , liftIdentifierStyle
   , ident
@@ -30,7 +30,6 @@ import Control.Monad.Trans.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Combinators
 import Text.Trifecta.Highlight.Prim
 
@@ -51,17 +50,17 @@ liftIdentifierStyle s =
     }
 
 -- | parse a reserved operator or identifier using a given style
-reserve :: MonadTokenParser m => IdentifierStyle m -> String -> m ()
+reserve :: MonadParser m => IdentifierStyle m -> String -> m ()
 reserve s name = reserveByteString s $! UTF8.fromString name
 
 -- | parse a reserved operator or identifier using a given style specified by bytestring
-reserveByteString :: MonadTokenParser m => IdentifierStyle m -> ByteString -> m ()
+reserveByteString :: MonadParser m => IdentifierStyle m -> ByteString -> m ()
 reserveByteString s name = lexeme $ try $ do
    _ <- highlight (styleReservedHighlight s) $ byteString name
    notFollowedBy (styleLetter s) <?> "end of " ++ show name
 
 -- | parse an non-reserved identifier or symbol
-ident :: MonadTokenParser m => IdentifierStyle m -> m ByteString
+ident :: MonadParser m => IdentifierStyle m -> m ByteString
 ident s = lexeme $ try $ do
   name <- highlight (styleHighlight s) (sliced (styleStart s *> skipMany (styleLetter s))) <?> styleName s
   when (member name (styleReserved s)) $ unexpected $ "reserved " ++ styleName s ++ " " ++ show name

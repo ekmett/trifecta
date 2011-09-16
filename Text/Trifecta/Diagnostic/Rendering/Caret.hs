@@ -61,11 +61,11 @@ addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
 
 caret :: MonadParser m => m Caret
-caret = Caret <$> mark <*> line
+caret = Caret <$> position <*> line
   
 careted :: MonadParser m => m a -> m (Careted a)
 careted p = do
-  m <- mark
+  m <- position
   l <- line
   a <- p
   return $ a :^ Caret m l

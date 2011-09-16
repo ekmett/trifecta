@@ -15,9 +15,9 @@ import qualified Control.Monad.Trans.State.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import Data.Monoid
 import Text.Trifecta.Parser.Language.Def
-import Text.Trifecta.Parser.Token.Class
+import Text.Trifecta.Parser.Class
 
-class MonadTokenParser m => MonadLanguage m where
+class MonadParser m => MonadLanguage m where
   askLanguage :: m (LanguageDef m)
 
 asksLanguage :: MonadLanguage m => (LanguageDef m -> r) -> m r

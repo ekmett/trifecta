@@ -95,13 +95,13 @@ instance Bind Spanned where
      b :~ t -> b :~ (s <> t)
 
 instance Foldable Spanned where
-  foldMap f (a :~ _) = f a 
+  foldMap f (a :~ _) = f a
 
 instance Traversable Spanned where
   traverse f (a :~ s) = (:~ s) <$> f a
 
 instance Foldable1 Spanned where
-  foldMap1 f (a :~ _) = f a 
+  foldMap1 f (a :~ _) = f a
 
 instance Traversable1 Spanned where
   traverse1 f (a :~ s) = (:~ s) <$> f a
@@ -118,8 +118,8 @@ instance Hashable Span where
 instance Hashable a => Hashable (Spanned a) where
   hash (a :~ s) = hash a `hashWithSalt` s
 
-span :: MonadParser m => m a -> m Span 
-span p = (\s l e -> Span s e l) <$> mark <*> line <*> (p *> mark)
-  
+span :: MonadParser m => m a -> m Span
+span p = (\s l e -> Span s e l) <$> position <*> line <*> (p *> position)
+
 spanned :: MonadParser m => m a -> m (Spanned a)
-spanned p = (\s l a e -> a :~ Span s e l) <$> mark <*> line <*> p <*> mark
+spanned p = (\s l a e -> a :~ Span s e l) <$> position <*> line <*> p <*> position

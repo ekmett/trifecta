@@ -13,14 +13,13 @@ import Control.Monad.State.Class
 import Control.Monad.Cont.Class
 import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Parser.Class
-import Text.Trifecta.Parser.Token.Class
-import Text.Trifecta.Parser.Token.Combinators
+import Text.Trifecta.Parser.Mark
 import Text.Trifecta.Parser.Token.Style
 import Text.Trifecta.Parser.Language.Def
 import Text.Trifecta.Parser.Language.Class
 
 newtype Language m a = Language { unlanguage :: ReaderT (LanguageDef (Language m)) m a }
-  deriving (Functor,Applicative,Alternative,Monad,MonadPlus,MonadParser,MonadCont)
+  deriving (Functor,Applicative,Alternative,Monad,MonadPlus,MonadCont)
 
 runLanguage :: Language m a -> LanguageDef (Language m) -> m a
 runLanguage = runReaderT . unlanguage
@@ -31,10 +30,25 @@ instance MonadParser m => MonadLanguage (Language m) where
 instance MonadTrans Language where
   lift = Language . lift
 
-instance MonadParser m => MonadTokenParser (Language m) where
-  whiteSpace = asksLanguage languageCommentStyle >>= buildWhiteSpaceParser
-  nesting = id
-  semi = symbolic ';'
+instance MonadParser m => MonadParser (Language m) where
+  highlightInterval h s e = lift $ highlightInterval h s e
+  someSpace = asksLanguage languageCommentStyle >>= buildSomeSpaceParser (lift someSpace)
+  nesting (Language (ReaderT m)) = Language $ ReaderT $ nesting . m
+  semi = lift semi
+  try (Language m) = Language $ try m
+  labels (Language m) ss = Language $ labels m ss
+  satisfy = lift . satisfy
+  satisfy8 = lift . satisfy8
+  skipping = lift . skipping
+  unexpected = lift . unexpected
+  position = lift position
+  line = lift line
+  lookAhead (Language m) = Language (lookAhead m)
+  slicedWith f (Language m) = Language $ ReaderT $ slicedWith f . runReaderT m
+
+instance MonadMark d m => MonadMark d (Language m) where
+  mark = lift mark
+  release = lift . release
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Language m) where
   fatalWith xs rs e = lift $ fatalWith xs rs e
@@ -43,7 +57,7 @@ instance MonadDiagnostic e m => MonadDiagnostic e (Language m) where
 
 instance MonadState s m => MonadState s (Language m) where
   get = Language $ lift get
-  put = Language . lift . put
+  put s = Language $ lift $ put s
 
 instance MonadWriter w m => MonadWriter w (Language m) where
   tell = Language . lift . tell

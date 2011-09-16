@@ -11,7 +11,9 @@
 ----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Layout
   ( Layout(..)
-  , MonadLayoutParser(..)
+  , LayoutMark(..)
+  , MonadLayout(..)
+  , LayoutState(..)
   , runLayout
   , defaultLayoutState
   ) where

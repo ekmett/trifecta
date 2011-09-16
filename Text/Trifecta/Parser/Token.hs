@@ -10,20 +10,15 @@
 --
 ----------------------------------------------------------------------------
 module Text.Trifecta.Parser.Token
-  ( module Text.Trifecta.Parser.Token.Class
-  , module Text.Trifecta.Parser.Token.Combinators
-  , module Text.Trifecta.Parser.Token.Identifier
-  -- * Text.Trifecta.Parser.Prim
+  ( module Text.Trifecta.Parser.Token.Combinators
+  -- * Text.Trifecta.Parser.Token.Prim
   , decimal
   , hexadecimal
   , octal
   ) where
 
-import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Prim
 import Text.Trifecta.Parser.Token.Combinators
-import Text.Trifecta.Parser.Token.Identifier
 
 -- expected to be imported manually
 -- import Text.Trifecta.Parser.Token.Style
--- import Text.Trifecta.Parser.Token.Identifier.Style

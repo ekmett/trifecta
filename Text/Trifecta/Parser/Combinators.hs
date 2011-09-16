@@ -3,16 +3,16 @@
 -- Module      :  Text.Trifecta.Parser.Combinators
 -- Copyright   :  (c) Edward Kmett 2011
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  ekmett@gmail.com
 -- Stability   :  experimental
 -- Portability :  non-portable
--- 
+--
 -- Commonly used generic combinators
--- 
+--
 -----------------------------------------------------------------------------
 
-module Text.Trifecta.Parser.Combinators 
+module Text.Trifecta.Parser.Combinators
   ( choice
   , option
   , optional -- from Control.Applicative, parsec optionMaybe
@@ -35,7 +35,6 @@ module Text.Trifecta.Parser.Combinators
   , eof
   , manyTill
   , notFollowedBy
-  , lookAhead
   ) where
 
 import Data.Traversable
@@ -55,7 +54,7 @@ choice = foldr (<|>) empty
 -- returned by @p@.
 --
 -- >  priority  = option 0 (do{ d <- digit
--- >                          ; return (digitToInt d) 
+-- >                          ; return (digitToInt d)
 -- >                          })
 option :: Alternative m => a -> m a -> m a
 option x p = p <|> pure x
@@ -86,13 +85,13 @@ sepBy :: Alternative m => m a -> m sep -> m [a]
 sepBy p sep = sepBy1 p sep <|> pure []
 
 -- | @sepBy1 p sep@ parses /one/ or more occurrences of @p@, separated
--- by @sep@. Returns a list of values returned by @p@. 
+-- by @sep@. Returns a list of values returned by @p@.
 sepBy1 :: Alternative m => m a -> m sep -> m [a]
 sepBy1 p sep = (:) <$> p <*> many (sep *> p)
 
 -- | @sepEndBy1 p sep@ parses /one/ or more occurrences of @p@,
 -- separated and optionally ended by @sep@. Returns a list of values
--- returned by @p@. 
+-- returned by @p@.
 sepEndBy1 :: Alternative m => m a -> m sep -> m [a]
 sepEndBy1 p sep = flip id <$> p <*> ((flip (:) <$> (sep *> sepEndBy p sep)) <|> pure pure)
 
@@ -105,7 +104,7 @@ sepEndBy :: Alternative m => m a -> m sep -> m [a]
 sepEndBy p sep = sepEndBy1 p sep <|> pure []
 
 -- | @endBy1 p sep@ parses /one/ or more occurrences of @p@, seperated
--- and ended by @sep@. Returns a list of values returned by @p@. 
+-- and ended by @sep@. Returns a list of values returned by @p@.
 endBy1 :: Alternative m => m a -> m sep -> m [a]
 endBy1 p sep = some (p <* sep)
 
@@ -116,14 +115,12 @@ endBy1 p sep = some (p <* sep)
 endBy :: Alternative m => m a -> m sep -> m [a]
 endBy p sep = many (p <* sep)
 
-
 -- | @count n p@ parses @n@ occurrences of @p@. If @n@ is smaller or
 -- equal to zero, the parser equals to @return []@. Returns a list of
--- @n@ values returned by @p@. 
+-- @n@ values returned by @p@.
 count :: Applicative m => Int -> m a -> m [a]
 count n p | n <= 0    = pure []
           | otherwise = sequenceA (replicate n p)
-
 
 -- | @chainr p op x@ parser /zero/ or more occurrences of @p@,
 -- separated by @op@ Returns a value obtained by a /right/ associative
@@ -181,15 +178,9 @@ chainr1 p op = scan where
 --    Note the overlapping parsers @anyChar@ and @string \"-->\"@, and
 --    therefore the use of the 'try' combinator.
 manyTill :: (Alternative m, MonadPlus m) => m a -> m end -> m [a]
-{-
-manyTill p end = scan
-  where 
-    scan = do end; return [] 
-       <|> do x <- p; xs <- scan; return (x:xs)
--}
 manyTill p end = go where go = ([] <$ end) <|> ((:) <$> p <*> go)
 
--- * MonadParsers 
+-- * MonadParsers
 
 -- | This parser only succeeds at the end of the input. This is not a
 -- primitive parser but it is defined using 'notFollowedBy'.
@@ -197,7 +188,7 @@ manyTill p end = go where go = ([] <$ end) <|> ((:) <$> p <*> go)
 -- >  eof  = notFollowedBy anyChar <?> "end of input"
 eof :: MonadParser m => m ()
 eof = do
-   l <- restOfLine 
+   l <- restOfLine
    guard $ B.null l
  <?> "end of input"
 
@@ -214,10 +205,3 @@ eof = do
 -- >                       })
 notFollowedBy :: (MonadParser m, Show a) => m a -> m ()
 notFollowedBy p = try ((try p >>= unexpected . show) <|> pure ())
-
--- | @lookAhead p@ parses @p@ without consuming any input.
-lookAhead :: MonadParser m => m a -> m a
-lookAhead p = try $ do 
-  m <- mark
-  p <* release m
-

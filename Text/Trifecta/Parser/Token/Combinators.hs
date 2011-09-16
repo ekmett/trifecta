@@ -38,7 +38,6 @@ import Control.Applicative
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Token.Class
 import Text.Trifecta.Parser.Token.Prim
 import Text.Trifecta.Highlight.Prim
 
@@ -57,7 +56,7 @@ import Text.Trifecta.Highlight.Prim
 -- >                     ; eof
 -- >                     ; return (sum ds)
 -- >                     }
-lexeme :: MonadTokenParser m => m a -> m a
+lexeme :: MonadParser m => m a -> m a
 lexeme p = p <* whiteSpace
 
 -- | This lexeme parser parses a single literal character. Returns the
@@ -65,7 +64,7 @@ lexeme p = p <* whiteSpace
 -- sequences. The literal character is parsed according to the grammar
 -- rules defined in the Haskell report (which matches most programming
 -- languages quite closely). 
-charLiteral :: MonadTokenParser m => m Char
+charLiteral :: MonadParser m => m Char
 charLiteral = lexeme charLiteral'
 
 -- | This lexeme parser parses a literal string. Returns the literal
@@ -74,7 +73,7 @@ charLiteral = lexeme charLiteral'
 -- defined in the Haskell report (which matches most programming
 -- languages quite closely). 
 
-stringLiteral :: MonadTokenParser m => m String
+stringLiteral :: MonadParser m => m String
 stringLiteral = lexeme stringLiteral'
 
 -- | This lexeme parser parses a natural number (a positive whole
@@ -83,7 +82,7 @@ stringLiteral = lexeme stringLiteral'
 -- 'octal'. The number is parsed according to the grammar
 -- rules in the Haskell report. 
 
-natural :: MonadTokenParser m => m Integer
+natural :: MonadParser m => m Integer
 natural = lexeme natural'
 
 -- | This lexeme parser parses an integer (a whole number). This parser
@@ -92,8 +91,8 @@ natural = lexeme natural'
 -- number can be specified in 'decimal', 'hexadecimal'
 -- or 'octal'. The number is parsed according
 -- to the grammar rules in the Haskell report. 
-        
-integer :: MonadTokenParser m => m Integer
+
+integer :: MonadParser m => m Integer
 integer = lexeme int <?> "integer"
   where
   sign = negate <$ char '-'
@@ -105,7 +104,7 @@ integer = lexeme int <?> "integer"
 -- of the number. The number is parsed according to the grammar rules
 -- defined in the Haskell report. 
 
-double :: MonadTokenParser m => m Double
+double :: MonadParser m => m Double
 double = lexeme double'
 
 -- | This lexeme parser parses either 'natural' or a 'float'.
@@ -113,86 +112,86 @@ double = lexeme double'
 -- any overlap in the grammar rules for naturals and floats. The number
 -- is parsed according to the grammar rules defined in the Haskell report. 
 
-naturalOrDouble :: MonadTokenParser m => m (Either Integer Double)
+naturalOrDouble :: MonadParser m => m (Either Integer Double)
 naturalOrDouble = lexeme naturalOrDouble'
 
 -- | Lexeme parser @symbol s@ parses 'string' @s@ and skips
 -- trailing white space. 
 
-symbol :: MonadTokenParser m => ByteString -> m ByteString
+symbol :: MonadParser m => ByteString -> m ByteString
 symbol name = lexeme (highlight Symbol (byteString name))
 
 -- | Lexeme parser @symbolic s@ parses 'char' @s@ and skips
 -- trailing white space. 
 
-symbolic :: MonadTokenParser m => Char -> m Char
+symbolic :: MonadParser m => Char -> m Char
 symbolic name = lexeme (highlight Symbol (char name))
 
 -- | Lexeme parser @parens p@ parses @p@ enclosed in parenthesis,
 -- returning the value of @p@.
 
-parens :: MonadTokenParser m => m a -> m a
+parens :: MonadParser m => m a -> m a
 parens = nesting . between (symbolic '(') (symbolic ')')
 
 -- | Lexeme parser @braces p@ parses @p@ enclosed in braces (\'{\' and
 -- \'}\'), returning the value of @p@. 
 
-braces :: MonadTokenParser m => m a -> m a
+braces :: MonadParser m => m a -> m a
 braces = nesting . between (symbolic '{') (symbolic '}')
 
 -- | Lexeme parser @angles p@ parses @p@ enclosed in angle brackets (\'\<\'
 -- and \'>\'), returning the value of @p@. 
 
-angles :: MonadTokenParser m => m a -> m a
+angles :: MonadParser m => m a -> m a
 angles = nesting . between (symbolic '<') (symbolic '>')
 
 -- | Lexeme parser @brackets p@ parses @p@ enclosed in brackets (\'[\'
 -- and \']\'), returning the value of @p@. 
 
-brackets :: MonadTokenParser m => m a -> m a
+brackets :: MonadParser m => m a -> m a
 brackets = nesting . between (symbolic '[') (symbolic ']')
 
 -- | Lexeme parser @comma@ parses the character \',\' and skips any
 -- trailing white space. Returns the string \",\". 
 
-comma :: MonadTokenParser m => m Char
+comma :: MonadParser m => m Char
 comma = symbolic ','
 
 -- | Lexeme parser @colon@ parses the character \':\' and skips any
 -- trailing white space. Returns the string \":\". 
 
-colon :: MonadTokenParser m => m Char
+colon :: MonadParser m => m Char
 colon = symbolic ':'
 
 -- | Lexeme parser @dot@ parses the character \'.\' and skips any
 -- trailing white space. Returns the string \".\". 
 
-dot :: MonadTokenParser m => m Char
+dot :: MonadParser m => m Char
 dot = symbolic '.'
 
 -- | Lexeme parser @semiSep p@ parses /zero/ or more occurrences of @p@
 -- separated by 'semi'. Returns a list of values returned by
 -- @p@.
 
-semiSep :: MonadTokenParser m => m a -> m [a]
+semiSep :: MonadParser m => m a -> m [a]
 semiSep p = sepBy p semi
 
 -- | Lexeme parser @semiSep1 p@ parses /one/ or more occurrences of @p@
 -- separated by 'semi'. Returns a list of values returned by @p@. 
 
-semiSep1 :: MonadTokenParser m => m a -> m [a]
+semiSep1 :: MonadParser m => m a -> m [a]
 semiSep1 p = sepBy1 p semi
 
 -- | Lexeme parser @commaSep p@ parses /zero/ or more occurrences of
 -- @p@ separated by 'comma'. Returns a list of values returned
 -- by @p@. 
 
-commaSep :: MonadTokenParser m => m a -> m [a]
+commaSep :: MonadParser m => m a -> m [a]
 commaSep p = sepBy p comma
 
 -- | Lexeme parser @commaSep1 p@ parses /one/ or more occurrences of
 -- @p@ separated by 'comma'. Returns a list of values returned
 -- by @p@. 
 
-commaSep1 :: MonadTokenParser m => m a -> m [a]
+commaSep1 :: MonadParser m => m a -> m [a]
 commaSep1 p = sepBy p comma

@@ -3,12 +3,18 @@ module Text.Trifecta.Parser.Layout.Prim
   ( LayoutToken(..)
   , LayoutState(..)
   , LayoutContext(..)
+  , LayoutMark(..)
   , defaultLayoutState
   , layoutBol
   , layoutStack
   ) where
 
+import Data.Functor
 import Data.Lens.Common
+import Data.Foldable
+import Data.Semigroup.Foldable
+import Data.Semigroup.Traversable
+import Data.Traversable
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Diagnostic.Rendering.Prim
@@ -44,3 +50,26 @@ layoutBol = lens _layoutBol (\s l -> l { _layoutBol = s})
 
 layoutStack :: Lens LayoutState [LayoutContext]
 layoutStack = lens _layoutStack (\s l -> l { _layoutStack = s})
+
+data LayoutMark d = LayoutMark LayoutState d
+
+instance Functor LayoutMark where
+  fmap f (LayoutMark s a) = LayoutMark s (f a)
+
+instance Foldable LayoutMark where
+  foldMap f (LayoutMark _ a) = f a
+
+instance Traversable LayoutMark where
+  traverse f (LayoutMark s a) = LayoutMark s <$> f a
+
+instance Foldable1 LayoutMark where
+  foldMap1 f (LayoutMark _ a) = f a
+
+instance Traversable1 LayoutMark where
+  traverse1 f (LayoutMark s a) = LayoutMark s <$> f a
+
+instance HasDelta d => HasDelta (LayoutMark d) where
+  delta (LayoutMark _ d) = delta d
+
+instance HasBytes d => HasBytes (LayoutMark d) where
+  bytes (LayoutMark _ d) = bytes d
