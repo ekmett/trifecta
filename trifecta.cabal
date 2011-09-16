@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.46
+version:       0.47
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -57,6 +57,22 @@ library
     Text.Trifecta.Highlight.Prim
     Text.Trifecta.Highlight.Effects
     Text.Trifecta.Highlight.Rendering.HTML
+    Text.Trifecta.Language
+    Text.Trifecta.Language.Class
+    Text.Trifecta.Language.Combinators
+    Text.Trifecta.Language.Prim
+    Text.Trifecta.Language.Monad
+    Text.Trifecta.Language.Style
+    Text.Trifecta.Layout
+    Text.Trifecta.Layout.Class
+    Text.Trifecta.Layout.Combinators
+    Text.Trifecta.Layout.Monad
+    Text.Trifecta.Layout.Prim
+    Text.Trifecta.Literate
+    Text.Trifecta.Literate.Class
+    Text.Trifecta.Literate.Prim
+    Text.Trifecta.Literate.Combinators
+    Text.Trifecta.Literate.Monad
     Text.Trifecta.Parser
     Text.Trifecta.Parser.ByteString
     Text.Trifecta.Parser.Char
@@ -65,22 +81,6 @@ library
     Text.Trifecta.Parser.Combinators
     Text.Trifecta.Parser.Expr
     Text.Trifecta.Parser.It
-    Text.Trifecta.Parser.Language
-    Text.Trifecta.Parser.Language.Class
-    Text.Trifecta.Parser.Language.Combinators
-    Text.Trifecta.Parser.Language.Prim
-    Text.Trifecta.Parser.Language.Monad
-    Text.Trifecta.Parser.Language.Style
-    Text.Trifecta.Parser.Literate
-    Text.Trifecta.Parser.Literate.Class
-    Text.Trifecta.Parser.Literate.Prim
-    Text.Trifecta.Parser.Literate.Combinators
-    Text.Trifecta.Parser.Literate.Monad
-    Text.Trifecta.Parser.Layout
-    Text.Trifecta.Parser.Layout.Class
-    Text.Trifecta.Parser.Layout.Combinators
-    Text.Trifecta.Parser.Layout.Monad
-    Text.Trifecta.Parser.Layout.Prim
     Text.Trifecta.Parser.Mark
     Text.Trifecta.Parser.Perm
     Text.Trifecta.Parser.Prim

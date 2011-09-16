@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Language.Style
+-- Module      :  Text.Trifecta.Language.Style
 -- Copyright   :  (c) Edward Kmett 2011
 -- License     :  BSD3
 -- 
@@ -9,7 +9,7 @@
 -- Portability :  non-portable
 -- 
 -----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Language.Style
+module Text.Trifecta.Language.Style
   ( emptyLanguageDef
   , haskellLanguageDef
   , haskell98LanguageDef
@@ -18,7 +18,7 @@ module Text.Trifecta.Parser.Language.Style
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Token.Style
 import Text.Trifecta.Parser.Identifier.Style
-import Text.Trifecta.Parser.Language.Prim
+import Text.Trifecta.Language.Prim
 
 emptyLanguageDef, haskellLanguageDef, haskell98LanguageDef :: MonadParser m => LanguageDef m
 emptyLanguageDef     = LanguageDef emptyCommentStyle   emptyIdents     emptyOps

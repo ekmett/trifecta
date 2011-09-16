@@ -1,4 +1,15 @@
-module Text.Trifecta.Parser.Literate.Class
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Literate.Class
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Literate.Class
   ( MonadLiterate(..)
   ) where
 
@@ -13,7 +24,7 @@ import qualified Control.Monad.Trans.RWS.Strict as Strict
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import Data.Monoid
 import Text.Trifecta.Parser.Class
-import Text.Trifecta.Parser.Literate.Prim
+import Text.Trifecta.Literate.Prim
 
 class MonadParser m => MonadLiterate m where
   literateState :: (LiterateState -> (a, LiterateState)) -> m a

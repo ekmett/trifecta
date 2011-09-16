@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, GeneralizedNewtypeDeriving #-}
-module Text.Trifecta.Parser.Literate.Monad
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Literate.Monad
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Literate.Monad
   ( Literate(..)
   , runLiterate
   ) where
@@ -14,15 +25,15 @@ import Control.Monad.Reader.Class
 import Control.Monad.Writer.Class
 import Data.Semigroup
 import Text.Trifecta.Diagnostic.Class
+import Text.Trifecta.Language.Prim
+import Text.Trifecta.Language.Class
+import Text.Trifecta.Literate.Prim
+import Text.Trifecta.Literate.Class
+import Text.Trifecta.Literate.Combinators
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Combinators
 import Text.Trifecta.Parser.Mark
-import Text.Trifecta.Parser.Language.Prim
-import Text.Trifecta.Parser.Language.Class
-import Text.Trifecta.Parser.Literate.Prim
-import Text.Trifecta.Parser.Literate.Class
-import Text.Trifecta.Parser.Literate.Combinators
 import Text.Trifecta.Rope.Delta
 
 newtype Literate m a = Literate { unliterate :: StateT LiterateState m a }

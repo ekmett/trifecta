@@ -1,4 +1,15 @@
-module Text.Trifecta.Parser.Language.Class
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Language.Class
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Language.Class
   ( MonadLanguage(..)
   , asksLanguage
   ) where
@@ -14,7 +25,7 @@ import qualified Control.Monad.Trans.Writer.Lazy as Lazy
 import qualified Control.Monad.Trans.State.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import Data.Monoid
-import Text.Trifecta.Parser.Language.Prim
+import Text.Trifecta.Language.Prim
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadLanguage m where

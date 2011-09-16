@@ -15,10 +15,10 @@ module Text.Trifecta.Parser.Rich
   ) where
 
 import Control.Monad (liftM)
-import Text.Trifecta.Parser.Layout
-import Text.Trifecta.Parser.Language
-import Text.Trifecta.Parser.Language.Prim
-import Text.Trifecta.Parser.Literate
+import Text.Trifecta.Layout
+import Text.Trifecta.Language
+import Text.Trifecta.Language.Prim
+import Text.Trifecta.Literate
 
 type Rich m = Layout (Language (Literate m))
 

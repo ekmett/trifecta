@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Language
+-- Module      :  Text.Trifecta.Language
 -- Copyright   :  (C) 2011 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
@@ -9,7 +9,7 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Language
+module Text.Trifecta.Language
   ( Language(..)
   , runLanguage
   , LanguageDef(..)
@@ -26,9 +26,9 @@ module Text.Trifecta.Parser.Language
   , haskell98LanguageDef
   ) where
 
-import Text.Trifecta.Parser.Language.Class
-import Text.Trifecta.Parser.Language.Combinators
-import Text.Trifecta.Parser.Language.Prim
-import Text.Trifecta.Parser.Language.Monad
-import Text.Trifecta.Parser.Language.Style
+import Text.Trifecta.Language.Class
+import Text.Trifecta.Language.Combinators
+import Text.Trifecta.Language.Prim
+import Text.Trifecta.Language.Monad
+import Text.Trifecta.Language.Style
 

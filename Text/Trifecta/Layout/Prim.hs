@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Text.Trifecta.Parser.Layout.Prim
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Layout.Prim
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Layout.Prim
   ( LayoutToken(..)
   , LayoutState(..)
   , LayoutContext(..)

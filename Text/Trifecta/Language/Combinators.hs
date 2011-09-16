@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Language.Combinators
+-- Module      :  Text.Trifecta.Language.Combinators
 -- Copyright   :  (C) 2011 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
@@ -9,7 +9,7 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Language.Combinators
+module Text.Trifecta.Language.Combinators
   ( identifier
   , reserved
   , reservedByteString
@@ -19,8 +19,8 @@ module Text.Trifecta.Parser.Language.Combinators
   ) where
 
 import Data.ByteString
-import Text.Trifecta.Parser.Language.Class
-import Text.Trifecta.Parser.Language.Prim
+import Text.Trifecta.Language.Class
+import Text.Trifecta.Language.Prim
 import Text.Trifecta.Parser.Identifier
 
 identifier :: MonadLanguage m => m ByteString

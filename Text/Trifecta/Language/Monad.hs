@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, GeneralizedNewtypeDeriving #-}
-module Text.Trifecta.Parser.Language.Monad
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Language.Monad
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Language.Monad
   ( Language(..)
   , runLanguage
   ) where
@@ -15,8 +26,8 @@ import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Mark
 import Text.Trifecta.Parser.Token.Style
-import Text.Trifecta.Parser.Language.Prim
-import Text.Trifecta.Parser.Language.Class
+import Text.Trifecta.Language.Prim
+import Text.Trifecta.Language.Class
 
 newtype Language m a = Language { unlanguage :: ReaderT (LanguageDef (Language m)) m a }
   deriving (Functor,Applicative,Alternative,Monad,MonadPlus,MonadCont)

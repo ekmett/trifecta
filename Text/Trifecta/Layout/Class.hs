@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Text.Trifecta.Parser.Layout.Class
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Layout.Class
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Layout.Class
   ( MonadLayout(..)
   ) where
 
@@ -13,7 +24,7 @@ import qualified Control.Monad.Trans.Writer.Lazy as Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Strict
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Strict as Strict
-import Text.Trifecta.Parser.Layout.Prim
+import Text.Trifecta.Layout.Prim
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadLayout m where

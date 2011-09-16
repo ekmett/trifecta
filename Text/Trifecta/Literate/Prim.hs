@@ -1,4 +1,15 @@
-module Text.Trifecta.Parser.Literate.Prim
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Literate.Prim
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Literate.Prim
   ( LiterateState(..)
   , defaultLiterateState
   , LiterateMark(..)

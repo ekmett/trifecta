@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.Literate
+-- Module      :  Text.Trifecta.Parser.Layout
 -- Copyright   :  (C) 2011 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
@@ -9,15 +9,15 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Literate
-  ( Literate(..)
-  , LiterateMark(..)
-  , MonadLiterate(..)
-  , LiterateState(..)
-  , runLiterate
-  , defaultLiterateState
+module Text.Trifecta.Layout
+  ( Layout(..)
+  , LayoutMark(..)
+  , MonadLayout(..)
+  , LayoutState(..)
+  , runLayout
+  , defaultLayoutState
   ) where
 
-import Text.Trifecta.Parser.Literate.Monad
-import Text.Trifecta.Parser.Literate.Class
-import Text.Trifecta.Parser.Literate.Prim
+import Text.Trifecta.Layout.Monad
+import Text.Trifecta.Layout.Class
+import Text.Trifecta.Layout.Prim

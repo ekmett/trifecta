@@ -1,5 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Text.Trifecta.Parser.Layout.Combinators
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Layout.Combinators
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Layout.Combinators
   ( layoutEq
   , getLayout
   , setLayout
@@ -16,8 +27,8 @@ import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Token.Combinators
 import qualified Text.Trifecta.Highlight.Prim as Highlight
-import Text.Trifecta.Parser.Layout.Class
-import Text.Trifecta.Parser.Layout.Prim
+import Text.Trifecta.Layout.Class
+import Text.Trifecta.Layout.Prim
 
 getLayout :: MonadLayout m => Lens LayoutState t -> m t
 getLayout l = layoutState $ \s -> (getL l s, s)

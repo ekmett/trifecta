@@ -10,7 +10,7 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Parser.Layout.Monad
+module Text.Trifecta.Layout.Monad
   ( Layout(..)
   , runLayout
   ) where
@@ -29,9 +29,9 @@ import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Mark
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Layout.Prim
-import Text.Trifecta.Parser.Layout.Class
-import Text.Trifecta.Parser.Layout.Combinators
+import Text.Trifecta.Layout.Prim
+import Text.Trifecta.Layout.Class
+import Text.Trifecta.Layout.Combinators
 import Text.Trifecta.Rope.Delta
 
 -- | Adds Haskell-style "layout" to base parser

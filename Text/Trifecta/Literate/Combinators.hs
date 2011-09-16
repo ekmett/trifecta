@@ -1,4 +1,15 @@
-module Text.Trifecta.Parser.Literate.Combinators
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Text.Trifecta.Literate.Combinators
+-- Copyright   :  (C) 2011 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+--
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+----------------------------------------------------------------------------
+module Text.Trifecta.Literate.Combinators
   ( someLiterateSpace
   , getLiterate
   , putLiterate
@@ -9,11 +20,11 @@ import Control.Applicative
 import Control.Monad
 import Text.Trifecta.Rope.Delta
 import qualified Text.Trifecta.Highlight.Prim as Highlight
+import Text.Trifecta.Literate.Prim
+import Text.Trifecta.Literate.Class
 import Text.Trifecta.Parser.Char
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Literate.Prim
-import Text.Trifecta.Parser.Literate.Class
 
 getLiterate :: MonadLiterate m => m LiterateState
 getLiterate = literateState $ \s -> (s, s)
