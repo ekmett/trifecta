@@ -192,7 +192,7 @@ instance MonadParser (Parser e) where
      else ee e (l <> l') b8 d bs
      ) l b8 d bs
   {-# INLINE try #-}
-  highlightInterval h s e = Parser $ \eo ee co ce l -> co () mempty l { errHighlights = IntervalMap.insert s e h (errHighlights l) }
+  highlightInterval h s e = Parser $ \eo _ _ _ l -> eo () mempty l { errHighlights = IntervalMap.insert s e h (errHighlights l) }
   {-# INLINE highlightInterval #-}
 
   skipping d = do
@@ -252,9 +252,20 @@ instance MonadParser (Parser e) where
                                                         ddc
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
     else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
+  position = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
+  {-# INLINE position #-}
+  slicedWith f p = do
+    m <- position
+    a <- p
+    r <- position
+    f a <$> liftIt (sliceIt m r)
+  {-# INLINE slicedWith #-}
+  lookAhead (Parser m) = Parser $ \eo ee _ ce l b8 d bs ->
+    m eo ee (\a e l' _ _ _ -> eo a e (l <> l') b8 d bs) ce l b8 d bs
+  {-# INLINE lookAhead #-}
 
 instance MonadMark Delta (Parser e) where
-  mark = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
+  mark = position
   {-# INLINE mark #-}
   release d' = Parser $ \_ ee co _ l b8 d bs -> do
     mbs <- rewindIt d'
