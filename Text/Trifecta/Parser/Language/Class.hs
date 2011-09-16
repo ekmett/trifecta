@@ -14,7 +14,7 @@ import qualified Control.Monad.Trans.Writer.Lazy as Lazy
 import qualified Control.Monad.Trans.State.Lazy as Lazy
 import qualified Control.Monad.Trans.RWS.Lazy as Lazy
 import Data.Monoid
-import Text.Trifecta.Parser.Language.Def
+import Text.Trifecta.Parser.Language.Prim
 import Text.Trifecta.Parser.Class
 
 class MonadParser m => MonadLanguage m where

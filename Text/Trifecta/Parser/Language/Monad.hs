@@ -15,7 +15,7 @@ import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Mark
 import Text.Trifecta.Parser.Token.Style
-import Text.Trifecta.Parser.Language.Def
+import Text.Trifecta.Parser.Language.Prim
 import Text.Trifecta.Parser.Language.Class
 
 newtype Language m a = Language { unlanguage :: ReaderT (LanguageDef (Language m)) m a }

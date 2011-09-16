@@ -20,23 +20,23 @@ module Text.Trifecta.Parser.Language.Combinators
 
 import Data.ByteString
 import Text.Trifecta.Parser.Language.Class
-import Text.Trifecta.Parser.Language.Def
+import Text.Trifecta.Parser.Language.Prim
 import Text.Trifecta.Parser.Identifier
 
 identifier :: MonadLanguage m => m ByteString
-identifier = asksLanguage languageIdentifiers >>= ident
+identifier = asksLanguage languageIdentifierStyle >>= ident
 
 reserved :: MonadLanguage m => String -> m ()
-reserved i = asksLanguage languageIdentifiers >>= \style -> reserve style i
+reserved i = asksLanguage languageIdentifierStyle >>= \style -> reserve style i
 
 reservedByteString :: MonadLanguage m => ByteString -> m ()
-reservedByteString i = asksLanguage languageIdentifiers >>= \style -> reserveByteString style i
+reservedByteString i = asksLanguage languageIdentifierStyle >>= \style -> reserveByteString style i
 
 op :: MonadLanguage m => m ByteString
-op = asksLanguage languageOperators >>= ident
+op = asksLanguage languageOperatorStyle >>= ident
 
 reservedOp :: MonadLanguage m => String -> m ()
-reservedOp i = asksLanguage languageOperators >>= \style -> reserve style i
+reservedOp i = asksLanguage languageOperatorStyle >>= \style -> reserve style i
 
 reservedOpByteString :: MonadLanguage m => ByteString -> m ()
-reservedOpByteString i = asksLanguage languageOperators >>= \style -> reserveByteString style i
+reservedOpByteString i = asksLanguage languageOperatorStyle >>= \style -> reserveByteString style i

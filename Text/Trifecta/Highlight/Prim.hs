@@ -40,6 +40,8 @@ data Highlight
   | Unbound
   | Layout
   | MatchedSymbols
+  | LiterateComment
+  | LiterateSyntax
   deriving (Eq,Ord,Show,Read,Enum,Ix,Bounded)
 
 type Highlights = IntervalMap Delta Highlight

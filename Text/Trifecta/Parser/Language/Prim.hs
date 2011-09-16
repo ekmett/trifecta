@@ -1,4 +1,4 @@
-module Text.Trifecta.Parser.Language.Def
+module Text.Trifecta.Parser.Language.Prim
   ( LanguageDef(..)
   , liftLanguageDef
   ) where
@@ -8,9 +8,9 @@ import Text.Trifecta.Parser.Token.Style
 import Text.Trifecta.Parser.Identifier
 
 data LanguageDef m = LanguageDef
-  { languageCommentStyle :: CommentStyle
-  , languageIdentifiers  :: IdentifierStyle m
-  , languageOperators    :: IdentifierStyle m
+  { languageCommentStyle     :: CommentStyle
+  , languageIdentifierStyle  :: IdentifierStyle m
+  , languageOperatorStyle    :: IdentifierStyle m
   }
 
 liftLanguageDef :: (MonadTrans t, Monad m) => LanguageDef m -> LanguageDef (t m)

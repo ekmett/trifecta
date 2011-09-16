@@ -1,9 +1,10 @@
 module Text.Trifecta.Parser.Literate.Prim
   ( LiterateState(..)
   , defaultLiterateState
-  , LiterateMark
+  , LiterateMark(..)
   ) where
 
+import Data.Functor
 import Data.Foldable
 import Data.Traversable
 import Data.Semigroup
@@ -13,15 +14,15 @@ import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
 
 data LiterateState
-  = Literate      -- ^ parsing a literate comment from a given position
-  | LiterateCode  -- ^ In the midst of a @\begin{code} ... \end{code}@ block
-  | LiterateTrack -- ^ In the midst of a @> ...@ block
-  | Illiterate    -- ^ Don't use literate syntax
+  = LiterateStart   -- ^ Parsing literate syntax
+  | IlliterateStart -- ^ Disable literate parsing
+  | LiterateCode    -- ^ In the midst of a @\begin{code} ... \end{code}@ block
+  | LiterateTrack   -- ^ In the midst of a @> ...@ block
 
 defaultLiterateState :: LiterateState
-defaultLiterateState = literateStart
+defaultLiterateState = LiterateStart
 
-data LiterateMark = LiterateMark LiterateState d
+data LiterateMark d = LiterateMark LiterateState d
 
 instance Functor LiterateMark where
   fmap f (LiterateMark s a) = LiterateMark s (f a)
@@ -38,10 +39,10 @@ instance Foldable1 LiterateMark where
 instance Traversable1 LiterateMark where
   traverse1 f (LiterateMark s a) = LiterateMark s <$> f a
 
-instance HasDelta d => (LiterateMark d) where
+instance HasDelta d => HasDelta (LiterateMark d) where
   delta (LiterateMark _ d) = delta d
 
-instance HasBytes d => (LiterateMark d) where
+instance HasBytes d => HasBytes (LiterateMark d) where
   bytes (LiterateMark _ d) = bytes d
 
 instance Semigroup d => Semigroup (LiterateMark d) where

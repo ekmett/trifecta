@@ -10,17 +10,18 @@
 --
 ----------------------------------------------------------------------------
 module Text.Trifecta.Parser
-  ( module Text.Trifecta.Parser.Prim
-  , module Text.Trifecta.Parser.ByteString
-  , module Text.Trifecta.Parser.Class
+  ( module Text.Trifecta.Parser.ByteString
   , module Text.Trifecta.Parser.Char
+  , module Text.Trifecta.Parser.Class
   , module Text.Trifecta.Parser.Combinators
   , module Text.Trifecta.Parser.Identifier
-  , module Text.Trifecta.Parser.Token
-  , module Text.Trifecta.Parser.Result
   , module Text.Trifecta.Parser.Language
   , module Text.Trifecta.Parser.Layout
-  , module Text.Trifecta.Parser.Haskell
+  , module Text.Trifecta.Parser.Literate
+  , module Text.Trifecta.Parser.Prim
+  , module Text.Trifecta.Parser.Result
+  , module Text.Trifecta.Parser.Rich
+  , module Text.Trifecta.Parser.Token
   -- * Expressive Diagnostics
   -- ** Text.Trifecta.Diagnostic.Rendering.Caret
   , caret
@@ -33,20 +34,20 @@ module Text.Trifecta.Parser
 
   ) where
 
-import Text.Trifecta.Parser.Prim
-import Text.Trifecta.Parser.ByteString
-import Text.Trifecta.Parser.Class
-import Text.Trifecta.Parser.Char
-import Text.Trifecta.Parser.Combinators
-import Text.Trifecta.Parser.Identifier
-import Text.Trifecta.Parser.Token
-import Text.Trifecta.Parser.Result
-import Text.Trifecta.Parser.Language
-import Text.Trifecta.Parser.Layout
-import Text.Trifecta.Parser.Haskell
-
 import Text.Trifecta.Diagnostic.Rendering.Caret (caret, careted)
 import Text.Trifecta.Diagnostic.Rendering.Span  (span, spanned)
 import Text.Trifecta.Diagnostic.Rendering.Fixit (fixit)
+import Text.Trifecta.Parser.ByteString
+import Text.Trifecta.Parser.Char
+import Text.Trifecta.Parser.Class
+import Text.Trifecta.Parser.Combinators
+import Text.Trifecta.Parser.Identifier
+import Text.Trifecta.Parser.Language
+import Text.Trifecta.Parser.Layout
+import Text.Trifecta.Parser.Literate
+import Text.Trifecta.Parser.Prim
+import Text.Trifecta.Parser.Result
+import Text.Trifecta.Parser.Rich
+import Text.Trifecta.Parser.Token
 
 import Prelude ()
