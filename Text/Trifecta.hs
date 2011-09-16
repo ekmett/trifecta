@@ -9,7 +9,7 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta 
+module Text.Trifecta
   ( module Text.Trifecta.Diagnostic
   , module Text.Trifecta.Parser
   , module Text.Trifecta.Rope
