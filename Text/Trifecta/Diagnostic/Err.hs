@@ -26,12 +26,11 @@ import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.PrettyPrint.Free
 
--- | unlocated error
 data Err e
-  = EmptyErr         -- empty, no error specified
-  | FailErr String   -- a recoverable error caused by fail
-  | PanicErr String  -- something is bad with the grammar, fail fast
-  | Err     [Rendering] !DiagnosticLevel e [Diagnostic e]
+  = EmptyErr                  -- no error specified, unlocated
+  | FailErr  Rendering String -- a recoverable error caused by fail from a known location
+  | PanicErr Rendering String -- something is bad with the grammar, fail fast
+  | Err     !(Diagnostic e)   -- a user defined error message
   deriving Show
 
 knownErr :: Err e -> Bool
@@ -39,36 +38,39 @@ knownErr EmptyErr = False
 knownErr _ = True
 
 fatalErr :: Err e -> Bool
-fatalErr (Err _ Fatal _ _) = True
-fatalErr (PanicErr _) = True
+fatalErr (Err (Diagnostic _ Panic _ _)) = True
+fatalErr (Err (Diagnostic _ Fatal _ _)) = True
+fatalErr (PanicErr _ _) = True
 fatalErr _ = False
 
 instance Functor Err where
   fmap _ EmptyErr = EmptyErr
-  fmap _ (FailErr s) = FailErr s
-  fmap _ (PanicErr s) = PanicErr s
-  fmap f (Err rs l e es) = Err rs l (f e) (fmap (fmap f) es)
+  fmap _ (FailErr r s) = FailErr r s
+  fmap _ (PanicErr r s) = PanicErr r s
+  fmap f (Err e) = Err (fmap f e)
 
 instance Foldable Err where
   foldMap _ EmptyErr   = mempty
   foldMap _ FailErr{}  = mempty
   foldMap _ PanicErr{} = mempty
-  foldMap f (Err _ _ e ds) = f e `mappend` foldMap (foldMap f) ds
+  foldMap f (Err e) = foldMap f e
 
 instance Traversable Err where
   traverse _ EmptyErr = pure EmptyErr
-  traverse _ (FailErr s) = pure $ FailErr s
-  traverse _ (PanicErr s) = pure $ PanicErr s
-  traverse f (Err rs l e ds) = Err rs l <$> f e <*> traverse (traverse f) ds
+  traverse _ (FailErr r s) = pure $ FailErr r s
+  traverse _ (PanicErr r s) = pure $ PanicErr r s
+  traverse f (Err e) = Err <$> traverse f e
 
 -- | Merge two errors, selecting the most severe.
 instance Alt Err where
-  a                   <!> EmptyErr            = a
-  _                   <!> a@(Err _ Fatal _ _) = a
-  a@(Err _ Fatal _ _) <!> _                   = a
-  _                   <!> a@PanicErr{}        = a
-  a@PanicErr{}        <!> _                   = a
-  _                   <!> b                   = b
+  a <!> EmptyErr            = a
+  _ <!> a@(Err (Diagnostic _ Panic _ _)) = a
+  a@(Err (Diagnostic _ Panic _ _)) <!> _ = a
+  _ <!> a@PanicErr{} = a
+  a@PanicErr{} <!> _ = a
+  _ <!> a@(Err (Diagnostic _ Fatal _ _)) = a
+  a@(Err (Diagnostic _ Fatal _ _)) <!> _ = a
+  _ <!> b = b
   {-# INLINE (<!>) #-}
 
 -- | Merge two errors, selecting the most severe.
@@ -83,4 +85,4 @@ instance Semigroup (Err t) where
 -- | Merge two errors, selecting the most severe.
 instance Monoid (Err t) where
   mempty = EmptyErr
-  mappend = (<!>) 
+  mappend = (<!>)

@@ -19,6 +19,7 @@ module Text.Trifecta.Diagnostic.Rendering.Caret
   , drawCaret
   , addCaret
   , caretEffects
+  , renderingCaret
   ) where
 
 import Control.Applicative
@@ -84,6 +85,9 @@ instance Reducer Caret Rendering where
 
 instance Semigroup Caret where
   a <> _ = a
+
+renderingCaret :: Delta -> ByteString -> Rendering
+renderingCaret d bs = addCaret d $ rendering d bs
 
 data Careted a = a :^ Caret deriving (Eq,Ord,Show)
 

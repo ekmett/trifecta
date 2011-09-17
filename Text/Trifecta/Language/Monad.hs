@@ -62,9 +62,8 @@ instance MonadMark d m => MonadMark d (Language m) where
   release = lift . release
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Language m) where
-  fatalWith xs rs e = lift $ fatalWith xs rs e
-  errWith xs rs e = lift $ errWith xs rs e
-  logWith l xs rs e = lift $ logWith l xs rs e
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadState s m => MonadState s (Language m) where
   get = Language $ lift get

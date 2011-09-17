@@ -13,7 +13,6 @@
 ----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Prim
   ( Diagnostic(..)
-  , tellDiagnostic
   ) where
 
 import Control.Applicative
@@ -46,9 +45,6 @@ instance Highlightable (Diagnostic e) where
   addHighlights h (Diagnostic rs l m xs) = Diagnostic (addHighlights h <$> rs) l m (addHighlights h <$> xs)
 
 instance (Typeable m, Show m) => Exception (Diagnostic m)
-
-tellDiagnostic :: (MonadWriter t m, Reducer (Diagnostic e) t) => Diagnostic e -> m ()
-tellDiagnostic = tell . unit
 
 instance Renderable (Diagnostic m) where
   render (Diagnostic r _ _ _) = either (const emptyRendering) id r

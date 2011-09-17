@@ -43,7 +43,6 @@ import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Err
 import Text.Trifecta.Diagnostic.Err.State
 import Text.Trifecta.Diagnostic.Err.Log
-import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Rendering.Caret
 import Text.Trifecta.Highlight.Class
 import Text.Trifecta.Highlight.Prim
@@ -101,7 +100,6 @@ instance Plus (Parser e) where zero = empty
 instance Alternative (Parser e) where
   empty = Parser $ \_ ee _ _ -> ee mempty
   {-# INLINE empty #-}
-  -- Parser m <|> Parser n = Parser $ \ eo ee co ce -> m eo (n eo ee co ce) co ce
   Parser m <|> Parser n = Parser $ \ eo ee co ce ->
     m eo (\e -> n (\a e'-> eo a (e <> e')) (\e' -> ee (e <> e')) co ce)
       co ce
@@ -127,7 +125,7 @@ instance Monad (Parser e) where
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
-  fail s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr s }
+  fail s = Parser $ \ _ ee _ _ l b8 d bs -> ee mempty { errMessage = FailErr (renderingCaret d bs) s } l b8 d bs
   {-# INLINE fail #-}
 
 
@@ -152,21 +150,18 @@ instance MonadWriter (ErrLog e) (Parser e) where
       (\      e' l' -> ce   e' (l <>   l'))
       mempty
   {-# INLINE pass #-}
+
 manyAccum :: (a -> [a] -> [a]) -> Parser e a -> Parser e [a]
 manyAccum acc (Parser p) = Parser $ \eo _ co ce ->
   let walk xs x _ = p manyErr (\_ -> co (acc x xs) mempty) (walk (acc x xs)) ce
-      -- NB: to squelch this error you can change your grammar to add a commit, if you are progressing
-      -- in some other fashion
-      manyErr _ e = ce e { errMessage = PanicErr "'many' applied to a parser that accepted an empty string" }
+      manyErr _ e l b8 d bs = ce e { errMessage = PanicErr (renderingCaret d bs) "'many' applied to a parser that accepted an empty string" } l b8 d bs
   in p manyErr (eo []) (walk []) ce
 
 instance MonadDiagnostic e (Parser e) where
-  fatalWith ds rs e = Parser $ \_ _ _ ce ->
-    ce mempty { errMessage = Err rs Fatal e ds }
-  errWith ds rs e = Parser $ \_ ee _ _ ->
-    ee mempty { errMessage = Err rs Error e ds }
-  logWith v ds rs e = Parser $ \eo _ _ _ l b8 d bs ->
-    eo () mempty l { errLog = errLog l |> Diagnostic (Right $ addCaret d $ Prelude.foldr (<>) (rendering d bs) rs) v e ds } b8 d bs
+  throwDiagnostic e@(Diagnostic _ l _ _)
+    | l == Fatal || l == Panic = Parser $ \_ _ _ ce -> ce mempty { errMessage = Err e }
+    | otherwise                = Parser $ \_ ee _ _ -> ee mempty { errMessage = Err e }
+  logDiagnostic d = Parser $ \eo _ _ _ l -> eo () mempty l { errLog = errLog l |> d }
 
 instance MonadError (ErrState e) (Parser e) where
   throwError m = Parser $ \_ ee _ _ -> ee m
@@ -185,7 +180,6 @@ liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do
 {-# INLINE liftIt #-}
 
 instance MonadParser (Parser e) where
-  -- commit (Parser m) = Parser $ \ _ _ co ce -> m co ce co ce
   try (Parser m) = Parser $ \ eo ee co ce l b8 d bs -> m eo ee co (\e l' _ _ _ ->
      if fatalErr (errMessage e)
      then ce e (l <> l') b8 d bs
@@ -200,7 +194,7 @@ instance MonadParser (Parser e) where
     release $ m <> d
   {-# INLINE skipping #-}
 
-  unexpected s = Parser $ \ _ ee _ _ -> ee mempty { errMessage = FailErr $ "unexpected " ++ s }
+  unexpected s = Parser $ \ _ ee _ _ l b8 d bs -> ee mempty { errMessage = FailErr (renderingCaret d bs) $  "unexpected " ++ s } l b8 d bs
   {-# INLINE unexpected #-}
 
   labels (Parser p) msgs = Parser $ \ eo ee -> p
@@ -227,9 +221,9 @@ instance MonadParser (Parser e) where
                                                              (\d' bs' -> co c mempty l (ascii bs') d' bs')
                                                              ddc
              | otherwise                 -> co c mempty l b8 (d <> delta c) bs
-         else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs)
+         else ee mempty { errMessage = FailErr (renderingCaret d bs) "unexpected EOF" } l b8 d bs)
     else case UTF8.uncons $ Strict.drop (fromIntegral (columnByte d)) bs of
-      Nothing             -> ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
+      Nothing             -> ee mempty { errMessage = FailErr (renderingCaret d bs) "unexpected EOF" } l b8 d bs
       Just (c, xs)
         | not (f c)       -> ee mempty l b8 d bs
         | Strict.null xs  -> let !ddc = d <> delta c
@@ -251,7 +245,7 @@ instance MonadParser (Parser e) where
                                                         (\d' bs' -> co c mempty l (ascii bs') d' bs')
                                                         ddc
         | otherwise                 -> co c mempty l b8 (d <> delta c) bs
-    else ee mempty { errMessage = FailErr "unexpected EOF" } l b8 d bs
+    else ee mempty { errMessage = FailErr (renderingCaret d bs) "unexpected EOF" } l b8 d bs
   position = Parser $ \eo _ _ _ l b8 d -> eo d mempty l b8 d
   {-# INLINE position #-}
   slicedWith f p = do
@@ -299,7 +293,7 @@ why :: Pretty e => (e -> Doc t) -> ErrState e -> Highlights -> Bool -> Delta -> 
 why pp (ErrState ss m) hs _ d bs
   | Prelude.null now = explicateWith empty m
   | knownErr m       = explicateWith (char ',' <+> ex) m
-  | otherwise        = Diagnostic r Error ex notes
+  | otherwise        = Diagnostic rightHere Error ex notes
   where
     ex = expect now
     ignoreBlanks = go . List.nub . List.sort where
@@ -307,19 +301,24 @@ why pp (ErrState ss m) hs _ d bs
       go [""] = ["space"]
       go xs   = List.filter (/= "") xs
     expect xs = text "expected:" <+> fillSep (punctuate (char ',') (Prelude.map text $ ignoreBlanks $ Prelude.map extract xs))
-    (now,later) = List.partition ((==) d . delta) $ toList ss
-    -- attach notes for expected tokens at remote locations, clustered by location
+    (now,later) = List.partition (\x -> errLoc m == Just (delta x)) $ toList ss
     clusters = List.groupBy ((==) `on` delta) $ List.sortBy (compare `on` delta) later
-    diagnoseCluster c = Diagnostic (Right $ addCaret dc $ addHighlights hs $ rendering dc bsc) Note (expect c) [] where
+    diagnoseCluster c = Diagnostic (Right $ addHighlights hs $ renderingCaret dc bsc) Note (expect c) [] where
       _ :^ Caret dc bsc = Prelude.head c
     notes = Prelude.map diagnoseCluster clusters
+    rightHere = Right $ addHighlights hs $ renderingCaret d bs
 
-    r = Right $ addCaret d $ addHighlights hs $ rendering d bs
-    explicateWith x EmptyErr        = Diagnostic r Error ((text "unspecified error") <> x)  notes
-    explicateWith x (FailErr s)     = Diagnostic r Error ((fillSep $ text <$> words s) <> x) notes
-    explicateWith x (PanicErr s)    = Diagnostic r Panic ((fillSep $ text <$> words s) <> x) notes
-    explicateWith x (Err rs l e es) = Diagnostic r' l (pp e <> x) (notes ++ fmap (addHighlights hs . fmap pp) es)
-      where r' = Right $ addCaret d $ Prelude.foldr (<>) (addHighlights hs $ rendering d bs) rs
+    explicateWith x EmptyErr          = Diagnostic rightHere Error ((text "unspecified error") <> x)  notes
+    explicateWith x (FailErr r s)     = Diagnostic (Right $ addHighlights hs r) Error ((fillSep $ text <$> words s) <> x) notes
+    explicateWith x (PanicErr r s)    = Diagnostic (Right $ addHighlights hs r) Panic ((fillSep $ text <$> words s) <> x) notes
+    explicateWith x (Err (Diagnostic r l e es)) = Diagnostic (addHighlights hs <$> r) l (pp e <> x) (notes ++ fmap (addHighlights hs . fmap pp) es)
+
+    errLoc EmptyErr = Just d
+    errLoc (FailErr r _) = Just $ delta r
+    errLoc (PanicErr r _) = Just $ delta r
+    errLoc (Err (Diagnostic (Left _)  _ _ _)) = Nothing
+    errLoc (Err (Diagnostic (Right r)  _ _ _)) =  Just $ delta r
+ 
 
 parseTest :: Show a => Parser String a -> String -> IO ()
 parseTest p s = case starve

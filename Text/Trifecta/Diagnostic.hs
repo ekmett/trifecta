@@ -13,24 +13,22 @@ module Text.Trifecta.Diagnostic
   ( 
   -- * Diagnostics
     Diagnostic(..)
-  , tellDiagnostic
   -- * Rendering
   , Renderable(..)
   , Source
   , rendering
+  , renderingCaret
   , Caret(..), Careted(..)
   , Span(..), Spanned(..)
   , Fixit(..), Rendered(..)
   -- * Emitting diagnostics
   , MonadDiagnostic(..)
-  , fatal
-  , err
-  , warn
-  , note
-  , verbose
-  , warnWith
-  , noteWith
-  , verboseWith
+  , panic, panicAt
+  , fatal, fatalAt
+  , err, errAt
+  , warn, warnAt
+  , note, noteAt
+  , verbose, verboseAt
   -- * Diagnostic Levels
   , DiagnosticLevel(..)
   ) where

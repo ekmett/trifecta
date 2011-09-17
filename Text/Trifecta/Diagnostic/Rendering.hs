@@ -11,7 +11,7 @@
 ----------------------------------------------------------------------------
 module Text.Trifecta.Diagnostic.Rendering
   ( Renderable(..)
-  , Source, rendering
+  , Source, rendering, renderingCaret
   , Caret(..), Careted(..)
   , Span(..), Spanned(..)
   , Fixit(..), Rendered(..)

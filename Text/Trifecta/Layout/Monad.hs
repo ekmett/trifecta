@@ -66,9 +66,8 @@ instance MonadMark d m => MonadMark (LayoutMark d) (Layout m) where
   release (LayoutMark s m) = lift (release m) *> setLayout id s
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Layout m) where
-  fatalWith xs r e = lift $ fatalWith xs r e
-  errWith xs r e   = lift $ errWith xs r e
-  logWith l xs r e = lift $ logWith l xs r e
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadParser m => MonadLayout (Layout m) where
   layout = buildLayoutParser (lift whiteSpace)

@@ -30,46 +30,37 @@ import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Rendering.Prim
 
 class Monad m => MonadDiagnostic e m | m -> e where
-  fatalWith ::                    [Diagnostic e] -> [Rendering] -> e -> m a  -- consuming error
-  errWith   ::                    [Diagnostic e] -> [Rendering] -> e -> m a  -- non-consuming error, handled by <|> 
-  logWith   :: DiagnosticLevel -> [Diagnostic e] -> [Rendering] -> e -> m () -- log an error and continue
+  throwDiagnostic :: Diagnostic e -> m a
+  logDiagnostic   :: Diagnostic e -> m ()
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Lazy.StateT s m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Strict.StateT s m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadDiagnostic e m => MonadDiagnostic e (ReaderT r m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance (MonadDiagnostic e m, Monoid w) => MonadDiagnostic e (Lazy.WriterT w m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance (MonadDiagnostic e m, Monoid w) => MonadDiagnostic e (Strict.WriterT w m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance (MonadDiagnostic e m, Monoid w) => MonadDiagnostic e (Lazy.RWST r w s m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance (MonadDiagnostic e m, Monoid w) => MonadDiagnostic e (Strict.RWST r w s m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadDiagnostic e m => MonadDiagnostic e (IdentityT m) where
-  fatalWith d r e = lift (fatalWith d r e)
-  errWith   d r e = lift (errWith d r e)
-  logWith l d r e = lift (logWith l d r e)
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic

@@ -77,9 +77,8 @@ instance MonadLanguage m => MonadLanguage (Literate m) where
   askLanguage = liftM liftLanguageDef $ lift askLanguage
 
 instance MonadDiagnostic e m => MonadDiagnostic e (Literate m) where
-  fatalWith xs rs e = lift $ fatalWith xs rs e
-  errWith xs rs e = lift $ errWith xs rs e
-  logWith l xs rs e = lift $ logWith l xs rs e
+  throwDiagnostic = lift . throwDiagnostic
+  logDiagnostic = lift . logDiagnostic
 
 instance MonadState s m => MonadState s (Literate m) where
   get = lift get

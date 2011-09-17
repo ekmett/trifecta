@@ -10,48 +10,48 @@
 --
 -- Combinators for throwing and logging expressive diagnostics
 ----------------------------------------------------------------------------
-module Text.Trifecta.Diagnostic.Combinators 
-  ( fatal
-  , err
-  , warn
-  , note
-  , verbose
-  , warnWith
-  , noteWith
-  , verboseWith
+module Text.Trifecta.Diagnostic.Combinators
+  ( panic, panicAt
+  , fatal, fatalAt
+  , err, errAt
+  , warn, warnAt
+  , note, noteAt
+  , verbose, verboseAt
   ) where
 
+import Control.Applicative
+import Control.Monad.Instances ()
+import Text.Trifecta.Parser.Class
 import Text.Trifecta.Diagnostic.Class
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Rendering.Prim
+import Text.Trifecta.Diagnostic.Rendering.Caret
+import Text.Trifecta.Rope.Delta
 
-fatal :: MonadDiagnostic e m => e -> m a
-fatal = fatalWith [] []
+rendCaret :: MonadParser m => m Rendering
+rendCaret = (delta >>= addCaret) <$> rend
 
-err :: MonadDiagnostic e m => e -> m a
-err = errWith [] []
+panicAt, fatalAt, errAt :: MonadDiagnostic e m => [Diagnostic e] -> e -> Rendering -> m a
+panicAt es e r = throwDiagnostic $ Diagnostic (Right r) Panic e es
+fatalAt es e r = throwDiagnostic $ Diagnostic (Right r) Fatal e es
+errAt   es e r = throwDiagnostic $ Diagnostic (Right r) Error e es
 
-warn :: MonadDiagnostic e m => e -> m ()
-warn = warnWith [] []
+panic, fatal, err :: (MonadParser m, MonadDiagnostic e m) => [Diagnostic e] -> e -> m a
+panic es e = rendCaret >>= panicAt es e
+fatal es e = rendCaret >>= fatalAt es e
+err es e   = rendCaret >>= errAt es e
 
-note :: MonadDiagnostic e m => e -> m ()
-note = noteWith [] []
+warnAt, noteAt :: MonadDiagnostic e m => [Diagnostic e] -> e -> Rendering -> m ()
+warnAt es e r = logDiagnostic $ Diagnostic (Right r) Warning e es
+noteAt es e r = logDiagnostic $ Diagnostic (Right r) Note e es
 
-verbose :: MonadDiagnostic e m => Int -> e -> m ()
-verbose n = verboseWith n [] []
+verboseAt :: MonadDiagnostic e m => Int -> [Diagnostic e] -> e -> Rendering -> m ()
+verboseAt l es e r = logDiagnostic $ Diagnostic (Right r) (Verbose l) e es
 
-warnWith :: MonadDiagnostic e m => [Diagnostic e] -> [Rendering] -> e -> m ()
-warnWith = logWith Warning
+warn, note :: (MonadParser m, MonadDiagnostic e m) => [Diagnostic e] -> e -> m ()
+warn es e = rendCaret >>= warnAt es e
+note es e = rendCaret >>= noteAt es e
 
-noteWith :: MonadDiagnostic e m => [Diagnostic e] -> [Rendering] -> e -> m ()
-noteWith = logWith Note
-
-verboseWith :: MonadDiagnostic e m => Int -> [Diagnostic e] -> [Rendering] -> e -> m ()
-verboseWith n = logWith (Verbose n)
-
--- sublimate :: MonadDiagnostic e m => m a -> m a
--- sublimate a = a `catchError` \e -> 
---   if fatalErr e then throwError e else do 
---     m <- here
---     tell (diagnose m e)
+verbose :: (MonadParser m, MonadDiagnostic e m) => Int -> [Diagnostic e] -> e -> m ()
+verbose l es e = rendCaret >>= verboseAt l es e

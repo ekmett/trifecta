@@ -10,7 +10,7 @@
 --
 -- A fairly straightforward set of common error levels.
 ----------------------------------------------------------------------------
-module Text.Trifecta.Diagnostic.Level 
+module Text.Trifecta.Diagnostic.Level
   ( DiagnosticLevel(..)
   ) where
 
@@ -20,12 +20,12 @@ import Text.PrettyPrint.Free
 import System.Console.Terminfo.PrettyPrint
 
 -- | The severity of an error (or message)
-data DiagnosticLevel 
+data DiagnosticLevel
   = Verbose !Int -- ^ a comment we should only show to the excessively curious
   | Note         -- ^ a comment
   | Warning      -- ^ a warning, computation continues
   | Error        -- ^ a user specified error
-  | Fatal        -- ^ a user specified fatal error 
+  | Fatal        -- ^ a user specified fatal error
   | Panic        -- ^ a non-maskable death sentence thrown by the parser itself
   deriving (Eq,Show,Read)
 
