@@ -22,6 +22,7 @@ module Text.Trifecta.Parser.Prim
 import Control.Applicative
 import Control.Monad.Error.Class
 import Control.Monad.Writer.Class
+import Control.Monad.Cont.Class
 import Control.Monad
 import Control.Comonad
 import qualified Data.Functor.Plus as Plus
@@ -56,8 +57,8 @@ import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Rope.Bytes
 import System.Console.Terminfo.PrettyPrint
 
-data Parser e a = Parser
-  { unparser :: forall r.
+data Parser r e a = Parser
+  { unparser ::
     (a -> ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- uncommitted ok
     (     ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- uncommitted err
     (a -> ErrState e -> ErrLog e -> Bool -> Delta -> ByteString -> It Rope r) -> -- committed ok
@@ -65,14 +66,14 @@ data Parser e a = Parser
                         ErrLog e -> Bool -> Delta -> ByteString -> It Rope r
   }
 
-instance Functor (Parser e) where
+instance Functor (Parser r e) where
   fmap f (Parser m) = Parser $ \ eo ee co -> m (eo . f) ee (co . f)
   {-# INLINE fmap #-}
   a <$ Parser m = Parser $ \ eo ee co -> m (\_ -> eo a) ee (\_ -> co a)
   {-# INLINE (<$) #-}
 
-instance Apply (Parser e) where (<.>) = (<*>)
-instance Applicative (Parser e) where
+instance Apply (Parser r e) where (<.>) = (<*>)
+instance Applicative (Parser r e) where
   pure a = Parser $ \ eo _ _ _ -> eo a mempty
   {-# INLINE pure #-}
   (<*>) = ap
@@ -92,12 +93,12 @@ instance Applicative (Parser e) where
   {-# INLINE (*>) #-}
 -}
 
-instance Alt (Parser e) where
+instance Alt (Parser r e) where
   (<!>) = (<|>)
   many p = Prelude.reverse <$> manyAccum (:) p
   some p = p *> many p
-instance Plus (Parser e) where zero = empty
-instance Alternative (Parser e) where
+instance Plus (Parser r e) where zero = empty
+instance Alternative (Parser r e) where
   empty = Parser $ \_ ee _ _ -> ee mempty
   {-# INLINE empty #-}
   Parser m <|> Parser n = Parser $ \ eo ee co ce ->
@@ -108,15 +109,15 @@ instance Alternative (Parser e) where
   {-# INLINE many #-}
   some p = (:) <$> p <*> many p
 
-instance Semigroup (Parser e a) where
+instance Semigroup (Parser r e a) where
   (<>) = (<|>)
 
-instance Monoid (Parser e a) where
+instance Monoid (Parser r e a) where
   mappend = (<|>)
   mempty = empty
 
-instance Bind (Parser e) where (>>-) = (>>=)
-instance Monad (Parser e) where
+instance Bind (Parser r e) where (>>-) = (>>=)
+instance Monad (Parser r e) where
   return a = Parser $ \ eo _ _ _ -> eo a mempty
   {-# INLINE return #-}
   Parser m >>= k = Parser $ \ eo ee co ce ->
@@ -129,11 +130,11 @@ instance Monad (Parser e) where
   {-# INLINE fail #-}
 
 
-instance MonadPlus (Parser e) where
+instance MonadPlus (Parser r e) where
   mzero = empty
   mplus = (<|>)
 
-instance MonadWriter (ErrLog e) (Parser e) where
+instance MonadWriter (ErrLog e) (Parser r e) where
   tell w = Parser $ \eo _ _ _ l -> eo () mempty (l <> w)
   {-# INLINE tell #-}
   listen (Parser m) = Parser $ \eo ee co ce l ->
@@ -151,19 +152,19 @@ instance MonadWriter (ErrLog e) (Parser e) where
       mempty
   {-# INLINE pass #-}
 
-manyAccum :: (a -> [a] -> [a]) -> Parser e a -> Parser e [a]
+manyAccum :: (a -> [a] -> [a]) -> Parser r e a -> Parser r e [a]
 manyAccum acc (Parser p) = Parser $ \eo _ co ce ->
   let walk xs x _ = p manyErr (\_ -> co (acc x xs) mempty) (walk (acc x xs)) ce
       manyErr _ e l b8 d bs = ce e { errMessage = PanicErr (renderingCaret d bs) "'many' applied to a parser that accepted an empty string" } l b8 d bs
   in p manyErr (eo []) (walk []) ce
 
-instance MonadDiagnostic e (Parser e) where
+instance MonadDiagnostic e (Parser r e) where
   throwDiagnostic e@(Diagnostic _ l _ _)
     | l == Fatal || l == Panic = Parser $ \_ _ _ ce -> ce mempty { errMessage = Err e }
     | otherwise                = Parser $ \_ ee _ _ -> ee mempty { errMessage = Err e }
   logDiagnostic d = Parser $ \eo _ _ _ l -> eo () mempty l { errLog = errLog l |> d }
 
-instance MonadError (ErrState e) (Parser e) where
+instance MonadError (ErrState e) (Parser r e) where
   throwError m = Parser $ \_ ee _ _ -> ee m
   {-# INLINE throwError #-}
   catchError (Parser m) k = Parser $ \ eo ee co ce ->
@@ -173,13 +174,13 @@ instance MonadError (ErrState e) (Parser e) where
 ascii :: ByteString -> Bool
 ascii = Strict.all (<=0x7f)
 
-liftIt :: It Rope a -> Parser e a
+liftIt :: It Rope a -> Parser r e a
 liftIt m = Parser $ \ eo _ _ _ l b8 d bs -> do
   a <- m
   eo a mempty l b8 d bs
 {-# INLINE liftIt #-}
 
-instance MonadParser (Parser e) where
+instance MonadParser (Parser r e) where
   try (Parser m) = Parser $ \ eo ee co ce l b8 d bs -> m eo ee co (\e l' _ _ _ ->
      if fatalErr (errMessage e)
      then ce e (l <> l') b8 d bs
@@ -258,7 +259,10 @@ instance MonadParser (Parser e) where
     m eo ee (\a e l' _ _ _ -> eo a e (l <> l') b8 d bs) ce l b8 d bs
   {-# INLINE lookAhead #-}
 
-instance MonadMark Delta (Parser e) where
+instance MonadCont (Parser r e) where
+  callCC f = Parser $ \ eo ee co ce l b8 d bs -> unparser (f (\a -> Parser $ \_ _ _ _ l' _ _ _ -> eo a mempty l' b8 d bs)) eo ee co ce l b8 d bs
+
+instance MonadMark Delta (Parser r e) where
   mark = position
   {-# INLINE mark #-}
   release d' = Parser $ \_ ee co _ l b8 d bs -> do
@@ -276,7 +280,7 @@ data St e a = JuSt a !(ErrState e) !(ErrLog e) !Bool !Delta !ByteString
 
 stepParser :: (Diagnostic e -> Diagnostic t) ->
               (ErrState e -> Highlights -> Bool -> Delta -> ByteString -> Diagnostic t) ->
-              Parser e a -> ErrLog e -> Bool -> Delta -> ByteString -> Step t a
+              (forall r. Parser r e a) -> ErrLog e -> Bool -> Delta -> ByteString -> Step t a
 stepParser yl y (Parser p) l0 b80 d0 bs0 =
   go mempty $ p ju no ju no l0 b80 d0 bs0
   where
@@ -318,9 +322,8 @@ why pp (ErrState ss m) hs _ d bs
     errLoc (PanicErr r _) = Just $ delta r
     errLoc (Err (Diagnostic (Left _)  _ _ _)) = Nothing
     errLoc (Err (Diagnostic (Right r)  _ _ _)) =  Just $ delta r
- 
 
-parseTest :: Show a => Parser String a -> String -> IO ()
+parseTest :: Show a => (forall r. Parser r String a) -> String -> IO ()
 parseTest p s = case starve
                    $ feed (UTF8.fromString s)
                    $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty True mempty mempty of

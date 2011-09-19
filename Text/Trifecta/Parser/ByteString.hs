@@ -47,7 +47,7 @@ import qualified Data.FingerTree as F
 -- >     Nothing -> return ()
 -- >     Just a  -> print $ sum a
 
-parseFromFile :: Show a => Parser String a -> String -> IO (Maybe a)
+parseFromFile :: Show a => (forall r. Parser r String a) -> String -> IO (Maybe a)
 parseFromFile p fn = do
   result <- parseFromFileEx p fn
   case result of
@@ -67,7 +67,7 @@ parseFromFile p fn = do
 -- >       print $ sum a
 -- >
 
-parseFromFileEx :: Show a => Parser String a -> String -> IO (Result TermDoc a)
+parseFromFileEx :: Show a => (forall r. Parser r String a) -> String -> IO (Result TermDoc a)
 parseFromFileEx p fn = k <$> B.readFile fn where
   k i = starve
       $ feed (rope (F.fromList [LineDirective (UTF8.fromString fn) 0, strand i]))
