@@ -26,8 +26,6 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
 import Data.Monoid
 import Text.Trifecta.Diagnostic.Prim
-import Text.Trifecta.Diagnostic.Level
-import Text.Trifecta.Diagnostic.Rendering.Prim
 
 class Monad m => MonadDiagnostic e m | m -> e where
   throwDiagnostic :: Diagnostic e -> m a

@@ -42,7 +42,7 @@ import Text.Trifecta.Rope.Delta
 import qualified Data.IntSet as IntSet
 import Text.Trifecta.CharSet (CharSet(..))
 import qualified Text.Trifecta.CharSet as CharSet
-import qualified Text.Trifecta.ByteSet as ByteSet
+import qualified Text.Trifecta.Util.ByteSet as ByteSet
 import qualified Data.ByteString as Strict
 import Data.ByteString.Internal (w2c,c2w)
 import Data.ByteString.UTF8 as UTF8

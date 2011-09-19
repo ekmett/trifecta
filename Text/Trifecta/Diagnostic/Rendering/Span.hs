@@ -35,7 +35,7 @@ import Data.ByteString (ByteString)
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Diagnostic.Rendering.Prim
-import Text.Trifecta.Util
+import Text.Trifecta.Util.Combinators
 import Text.Trifecta.Parser.Class
 import Data.Array
 import System.Console.Terminfo.Color

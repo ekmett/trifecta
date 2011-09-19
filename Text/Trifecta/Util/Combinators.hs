@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Util
+-- Module      :  Text.Trifecta.Util.Combinators
 -- Copyright   :  (C) 2011 Edward Kmett,
 -- License     :  BSD-style (see the file LICENSE)
 --
@@ -9,14 +9,14 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Util 
+module Text.Trifecta.Util.Combinators
   ( argmin
   , argmax
   -- * ByteString conversions
   , fromLazy
   , toLazy
   , takeLine
-  , (<$!>) 
+  , (<$!>)
   ) where
 
 import Data.ByteString.Lazy as Lazy

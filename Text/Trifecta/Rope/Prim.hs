@@ -30,7 +30,7 @@ import Data.FingerTree as FingerTree
 import Data.Foldable (toList)
 import Data.Hashable
 import Data.Int (Int64)
-import Text.Trifecta.Util as Util
+import Text.Trifecta.Util.Combinators as Util
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
 

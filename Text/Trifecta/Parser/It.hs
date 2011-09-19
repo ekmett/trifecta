@@ -37,7 +37,7 @@ import Text.Trifecta.Rope.Prim as Rope
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Parser.Step
-import Text.Trifecta.Util as Util
+import Text.Trifecta.Util.Combinators as Util
 
 data It r a
   = Pure a 

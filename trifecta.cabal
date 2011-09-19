@@ -24,7 +24,6 @@ source-repository head
 library
   exposed-modules:
     Text.Trifecta
-    Text.Trifecta.ByteSet
     Text.Trifecta.CharSet
     Text.Trifecta.CharSet.Common
     Text.Trifecta.CharSet.Posix
@@ -93,9 +92,11 @@ library
     Text.Trifecta.Parser.Token.Style
     Text.Trifecta.Parser.Identifier
     Text.Trifecta.Parser.Identifier.Style
+    Text.Trifecta.Util.Array
+    Text.Trifecta.Util.ByteSet
 
   other-modules:
-    Text.Trifecta.Util
+    Text.Trifecta.Util.Combinators
 
   ghc-options: -Wall
 
@@ -109,6 +110,7 @@ library
     bifunctors           >= 0.1.2   && < 0.2,
     data-lens            >= 2.0.1   && < 2.1,
     data-lens-fd         >= 2.0     && < 2.1,
+    deepseq              >= 1.1.0.2 && < 1.2,
     hashable             >= 1.1.2.1 && < 1.2,
     bytestring           >= 0.9.1   && < 0.10,
     mtl                  >= 2.0.1   && < 2.1,

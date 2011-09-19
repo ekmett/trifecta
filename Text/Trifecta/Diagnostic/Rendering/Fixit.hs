@@ -28,7 +28,7 @@ import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Diagnostic.Rendering.Prim
 import Text.Trifecta.Diagnostic.Rendering.Span
 import Text.Trifecta.Parser.Class
-import Text.Trifecta.Util
+import Text.Trifecta.Util.Combinators
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Prelude hiding (span)

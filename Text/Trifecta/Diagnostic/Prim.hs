@@ -19,13 +19,11 @@ import Control.Applicative
 import Control.Comonad
 import Control.Monad (guard)
 import Control.Exception
-import Control.Monad.Writer.Class
 import Data.Functor.Apply
 import Data.Foldable
 import Data.Traversable
 import Data.List.NonEmpty hiding (map)
 import Data.Semigroup
-import Data.Semigroup.Reducer
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
 import Text.Trifecta.Rope.Bytes

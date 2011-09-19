@@ -25,7 +25,7 @@
 -------------------------------------------------------------------------------
 
 module Text.Trifecta.CharSet
-    ( 
+    (
     -- * Set type
       CharSet(..)
     -- * Operators
@@ -36,7 +36,7 @@ module Text.Trifecta.CharSet
     , member
     , notMember
     , overlaps, isSubsetOf
-    , isComplemented 
+    , isComplemented
     -- * Construction
     , build
     , empty
@@ -76,8 +76,8 @@ import Data.Array.Unboxed hiding (range)
 import Data.Data
 import Data.Function (on)
 import Data.IntSet (IntSet)
-import Text.Trifecta.ByteSet (ByteSet)
-import qualified Text.Trifecta.ByteSet as ByteSet
+import Text.Trifecta.Util.ByteSet (ByteSet)
+import qualified Text.Trifecta.Util.ByteSet as ByteSet
 import Data.Bits hiding (complement)
 import Data.Word
 import Data.ByteString.Internal (c2w)

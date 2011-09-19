@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, MagicHash #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.ByteSet
+-- Module      :  Text.Trifecta.Util.ByteSet
 -- Copyright   :  Edward Kmett 2011
 --                Bryan O'Sullivan 2008
 -- License     :  BSD3
@@ -14,7 +14,7 @@
 -- unboxed for efficiency and uses a lookup table. This is a fairly minimal
 -- API. You probably want to use CharSet.
 -----------------------------------------------------------------------------
-module Text.Trifecta.ByteSet
+module Text.Trifecta.Util.ByteSet
     (
     -- * Data type
       ByteSet(..)
