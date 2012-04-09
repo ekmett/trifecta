@@ -24,7 +24,6 @@ import Data.Functor.Plus
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Diagnostic.Level
 import Text.Trifecta.Diagnostic.Rendering.Prim
-import Text.PrettyPrint.Free
 
 data Err e
   = EmptyErr                  -- no error specified, unlocated

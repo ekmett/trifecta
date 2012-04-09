@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fspec-constr #-}
 -----------------------------------------------------------------------------
 -- |
@@ -277,7 +278,11 @@ instance Typeable CharSet where
   typeOf _ = mkTyConApp charSetTyCon []
 
 charSetTyCon :: TyCon
+#if __GLASGOW_HASKELL__ < 704
 charSetTyCon = mkTyCon "Text.Trifecta.CharSet.CharSet"
+#else
+charSetTyCon = mkTyCon3 "trifecta" "Text.Trifecta.CharSet" "CharSet"
+#endif
 {-# NOINLINE charSetTyCon #-}
 
 instance Data CharSet where

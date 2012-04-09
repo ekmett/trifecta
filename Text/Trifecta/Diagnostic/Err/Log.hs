@@ -15,7 +15,6 @@ module Text.Trifecta.Diagnostic.Err.Log
 
 import Data.Functor.Plus
 import Data.Semigroup
-import Text.PrettyPrint.Free hiding (empty)
 import Text.Trifecta.Diagnostic.Prim
 import Text.Trifecta.Highlight.Prim
 import Data.Semigroup.Union (union, empty)

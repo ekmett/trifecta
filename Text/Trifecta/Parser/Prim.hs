@@ -31,7 +31,7 @@ import Data.Function
 import Data.Semigroup
 import Data.Foldable
 import qualified Data.List as List
-import Data.Functor.Bind (Apply(..), Bind((>>-)))
+import Data.Functor.Bind (Bind((>>-)))
 import qualified Text.Trifecta.IntervalMap as IntervalMap
 import Data.Set as Set hiding (empty, toList)
 import Data.ByteString as Strict hiding (empty)

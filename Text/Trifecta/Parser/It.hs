@@ -30,7 +30,6 @@ import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
 import Data.Functor.Bind
-import Data.Functor.Plus
 import Data.Profunctor
 import Data.Key as Key
 import Text.Trifecta.Rope.Prim as Rope

@@ -76,7 +76,7 @@ class (Alternative m, MonadPlus m) => MonadParser m where
   -- | Lexeme parser |semi| parses the character \';\' and skips any
   -- trailing white space. Returns the character \';\'.
   semi :: m Char
-  semi = satisfyAscii (';'==) <?> ";"
+  semi = (satisfyAscii (';'==) <?> ";") <* (someSpace <|> pure ())
 
   -- | Used to emit an error on an unexpected token
   unexpected :: String -> m a

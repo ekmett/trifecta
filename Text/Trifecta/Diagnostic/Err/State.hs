@@ -9,14 +9,13 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Diagnostic.Err.State 
+module Text.Trifecta.Diagnostic.Err.State
   ( ErrState(..)
   ) where
 
 import Data.Functor.Plus
 import Data.Set as Set
 import Data.Semigroup
-import Text.PrettyPrint.Free
 import Text.Trifecta.Diagnostic.Err
 import Text.Trifecta.Diagnostic.Rendering.Caret
 
@@ -34,9 +33,9 @@ instance Alt ErrState where
 
 instance Plus ErrState where
   zero = ErrState mempty mempty
- 
+
 instance Semigroup (ErrState e) where
-  (<>) = (<!>) 
+  (<>) = (<!>)
 
 instance Monoid (ErrState e) where
   mempty = zero

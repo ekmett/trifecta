@@ -59,7 +59,6 @@ import Data.Semigroup.Reducer
 import Data.Semigroup.Union
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
-import Data.Functor.Apply
 import Data.Key
 import Data.Pointed
 
