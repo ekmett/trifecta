@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.50.2.1
+version:       0.51
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -103,29 +103,28 @@ library
   build-depends:
     base                 >= 4       && < 5,
     array                >= 0.3.0.2 && < 0.5,
-    containers           >= 0.3     && < 0.5,
+    containers           >= 0.3     && < 0.6,
     unordered-containers >= 0.2.1   && < 0.3,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.4.1.6 && < 0.5,
-    bifunctors           >= 0.1.3   && < 0.2,
-    data-lens            >= 2.0.3   && < 2.1,
-    data-lens-fd         >= 2.0.1   && < 2.1,
+    bifunctors           >= 0.1.3.1 && < 0.2,
+    data-lens            >= 2.0.3   && < 2.11,
+    data-lens-fd         >= 2.0.1   && < 2.11,
     deepseq              >= 1.2.0.1 && < 1.4,
     hashable             >= 1.1.2.1 && < 1.2,
     bytestring           >= 0.9.1   && < 0.10,
     mtl                  >= 2.0.1   && < 2.2,
-    semigroups           >= 0.8.2   && < 0.9,
+    semigroups           >= 0.8.3.1 && < 0.9,
     fingertree           >= 0.0.1   && < 0.1,
-    reducers             >= 0.2     && < 0.3,
-    profunctors          >= 0.1.2   && < 0.2,
+    reducers             >= 0.3     && < 0.4,
+    profunctors          >= 0.1.2.2 && < 0.2,
     utf8-string          >= 0.3.6   && < 0.4,
-    semigroupoids        >= 1.3.1   && < 1.4,
-    parallel             >= 3.2     && < 3.3,
-    pointed              >= 2.1     && < 2.2,
+    semigroupoids        >= 1.3.1.2 && < 1.4,
+    pointed              >= 2.1.0.1 && < 2.2,
     transformers         >= 0.2     && < 0.4,
-    kan-extensions       >= 2.4     && < 2.5,
+    kan-extensions       >= 2.4.0.1 && < 2.5,
     comonad              >= 1.1.1.3 && < 1.2,
     terminfo             >= 0.3.2   && < 0.4,
-    keys                 >= 2.1.3   && < 2.2,
-    wl-pprint-extras     >= 1.6.3   && < 1.7,
-    wl-pprint-terminfo   >= 0.8.3   && < 0.9
+    keys                 >= 2.1.3.1 && < 2.2,
+    wl-pprint-extras     >= 1.6.3.1 && < 1.7,
+    wl-pprint-terminfo   >= 0.8.3.1 && < 0.9
