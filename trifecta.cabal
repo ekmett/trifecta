@@ -15,6 +15,7 @@ description:
   A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
 
 build-type:    Simple
+
 extra-source-files: examples/RFC2616.hs .travis.yml
 
 source-repository head
