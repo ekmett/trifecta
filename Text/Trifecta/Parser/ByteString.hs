@@ -18,6 +18,8 @@
 module Text.Trifecta.Parser.ByteString
     ( parseFromFile
     , parseFromFileEx
+    , parseByteString
+    , parseTest
     ) where
 
 import Control.Applicative
@@ -68,13 +70,26 @@ parseFromFile p fn = do
 -- >
 
 parseFromFileEx :: Show a => (forall r. Parser r String a) -> String -> IO (Result TermDoc a)
-parseFromFileEx p fn = k <$> B.readFile fn where
-  k i = starve
-      $ feed (rope (F.fromList [LineDirective (UTF8.fromString fn) 0, strand i]))
+parseFromFileEx p fn = parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) <$> B.readFile fn
+
+-- | @parseByteString p delta i@ runs a parser @p@ on @i@.
+
+parseByteString :: Show a => (forall r. Parser r String a) -> Delta -> UTF8.ByteString -> Result TermDoc a
+parseByteString p delta inp = starve
+      $ feed inp
       $ stepParser (fmap prettyTerm)
                    (why prettyTerm)
-                   (release (Directed (UTF8.fromString fn) 0 0 0 0) *> p)
+                   (release delta *> p)
                    mempty
                    True
                    mempty
                    mempty
+
+
+parseTest :: Show a => (forall r. Parser r String a) -> String -> IO ()
+parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
+  Failure xs -> displayLn $ toList xs
+  Success xs a -> do
+    unless (Seq.null xs) $ displayLn $ toList xs
+    print a
+
