@@ -14,7 +14,6 @@ module Text.Trifecta.Parser.Prim
   ( Parser(..)
   , why
   , stepParser
-  , parseTest
   , manyAccum
   ) where
 
@@ -322,12 +321,3 @@ why pp (ErrState ss m) hs _ d bs
     errLoc (PanicErr r _) = Just $ delta r
     errLoc (Err (Diagnostic (Left _)  _ _ _)) = Nothing
     errLoc (Err (Diagnostic (Right r)  _ _ _)) =  Just $ delta r
-
-parseTest :: Show a => (forall r. Parser r String a) -> String -> IO ()
-parseTest p s = case starve
-                   $ feed (UTF8.fromString s)
-                   $ stepParser (fmap prettyTerm) (why prettyTerm) (release mempty *> p) mempty True mempty mempty of
-  Failure xs -> displayLn $ toList xs
-  Success xs a -> do
-    unless (Seq.null xs) $ displayLn $ toList xs
-    print a
