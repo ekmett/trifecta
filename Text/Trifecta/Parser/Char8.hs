@@ -49,8 +49,8 @@ import Control.Applicative
 import Control.Monad (guard)
 import Text.Trifecta.Parser.Class hiding (satisfy)
 import Text.Trifecta.Rope.Delta
-import Text.Trifecta.Util.ByteSet (ByteSet(..))
-import qualified Text.Trifecta.Util.ByteSet as ByteSet
+import Data.CharSet.ByteSet (ByteSet(..))
+import qualified Data.CharSet.ByteSet as ByteSet
 import qualified Data.ByteString as Strict
 import Data.ByteString.Internal (w2c,c2w)
 import qualified Data.ByteString.Char8 as Char8
