@@ -23,7 +23,6 @@ import Control.Monad.Trans.RWS.Lazy as Lazy
 import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
-import Data.Functor.Yoneda
 import Data.Monoid
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Class
@@ -66,6 +65,3 @@ instance MonadMark d m => MonadMark d (IdentityT m) where
   mark = lift mark
   release = lift . release
 
-instance MonadMark d m => MonadMark d (Yoneda m) where
-  mark = lift mark
-  release = lift . release

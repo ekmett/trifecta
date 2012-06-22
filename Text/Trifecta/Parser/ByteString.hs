@@ -35,8 +35,6 @@ import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Result
 import Data.Sequence as Seq
 import qualified Data.ByteString.UTF8 as UTF8
-import Text.Trifecta.Rope.Prim
-import qualified Data.FingerTree as F
 
 
 -- | @parseFromFile p filePath@ runs a parser @p@ on the
@@ -75,11 +73,11 @@ parseFromFileEx p fn = parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0)
 -- | @parseByteString p delta i@ runs a parser @p@ on @i@.
 
 parseByteString :: Show a => (forall r. Parser r String a) -> Delta -> UTF8.ByteString -> Result TermDoc a
-parseByteString p delta inp = starve
+parseByteString p d inp = starve
       $ feed inp
       $ stepParser (fmap prettyTerm)
                    (why prettyTerm)
-                   (release delta *> p)
+                   (release d *> p)
                    mempty
                    True
                    mempty

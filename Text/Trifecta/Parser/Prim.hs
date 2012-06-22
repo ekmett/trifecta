@@ -54,7 +54,6 @@ import Text.Trifecta.Parser.Result
 import Text.Trifecta.Rope.Delta as Delta
 import Text.Trifecta.Rope.Prim
 import Text.Trifecta.Rope.Bytes
-import System.Console.Terminfo.PrettyPrint
 
 data Parser r e a = Parser
   { unparser ::

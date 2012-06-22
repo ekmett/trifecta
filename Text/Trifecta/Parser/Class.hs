@@ -32,7 +32,6 @@ import Control.Monad.Trans.RWS.Lazy as Lazy
 import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Identity
-import Data.Functor.Yoneda
 import Data.Word
 import Data.ByteString as Strict
 import Data.Char (isSpace)
@@ -230,22 +229,6 @@ instance MonadParser m => MonadParser (IdentityT m) where
   position = lift position
   slicedWith f (IdentityT m) = IdentityT $ slicedWith f m
   lookAhead (IdentityT m) = IdentityT $ lookAhead m
-
-instance MonadParser m => MonadParser (Yoneda m) where
-  try = lift . try . lowerYoneda
-  labels m ss = lift $ labels (lowerYoneda m) ss
-  line = lift line
-  unexpected = lift . unexpected
-  satisfy = lift . satisfy
-  satisfy8 = lift . satisfy8
-  someSpace = lift someSpace
-  semi = lift semi
-  highlightInterval h s e  = lift $ highlightInterval h s e
-  nesting (Yoneda m) = Yoneda $ \f -> nesting (m f)
-  skipping = lift . skipping
-  position = lift position
-  slicedWith f = lift . slicedWith f . lowerYoneda
-  lookAhead = lift . lookAhead . lowerYoneda
 
 -- | Skip zero or more bytes worth of white space. More complex parsers are 
 -- free to consider comments as white space.
