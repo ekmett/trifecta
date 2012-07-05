@@ -21,7 +21,6 @@ module Text.Trifecta.Layout.Prim
   ) where
 
 import Data.Functor
-import Data.Lens.Common
 import Data.Foldable
 import Data.Semigroup.Foldable
 import Data.Semigroup.Traversable
@@ -56,11 +55,13 @@ data LayoutState = LayoutState
 defaultLayoutState :: LayoutState
 defaultLayoutState = LayoutState False []
 
-layoutBol :: Lens LayoutState Bool
-layoutBol = lens _layoutBol (\s l -> l { _layoutBol = s})
+layoutBol :: Functor f => (Bool -> f Bool) -> LayoutState -> f LayoutState
+layoutBol f (LayoutState b s) = (`LayoutState` s) <$> f b
+{-# INLINE layoutBol #-}
 
-layoutStack :: Lens LayoutState [LayoutContext]
-layoutStack = lens _layoutStack (\s l -> l { _layoutStack = s})
+layoutStack :: Functor f => ([LayoutContext] -> f [LayoutContext]) -> LayoutState -> f LayoutState
+layoutStack f (LayoutState b s) = LayoutState b <$> f s
+{-# INLINE layoutStack #-}
 
 data LayoutMark d = LayoutMark LayoutState d
 

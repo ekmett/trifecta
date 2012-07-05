@@ -90,15 +90,12 @@ instance Monad (It r) where
 instance Apply (It r) where (<.>) = (<*>) 
 instance Bind (It r) where (>>-) = (>>=) 
 
-instance Extend (It r) where
-  duplicate p@Pure{} = Pure p
-  duplicate p@(It _ k) = It p (duplicate . k)
-
-  extend f p@Pure{} = Pure (f p)
-  extend f p@(It _ k) = It (f p) (extend f . k)
-
 -- | It is a cofree comonad
 instance Comonad (It r) where
+  duplicate p@Pure{} = Pure p
+  duplicate p@(It _ k) = It p (duplicate . k)
+  extend f p@Pure{} = Pure (f p)
+  extend f p@(It _ k) = It (f p) (extend f . k)
   extract (Pure a) = a
   extract (It a _) = a
 

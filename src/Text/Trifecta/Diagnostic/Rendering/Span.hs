@@ -25,12 +25,9 @@ import Control.Applicative
 import Data.Hashable
 import Data.Semigroup
 import Data.Semigroup.Reducer
-import Data.Semigroup.Foldable
-import Data.Semigroup.Traversable
 import Data.Foldable
 import Data.Traversable
 import Control.Comonad
-import Data.Functor.Bind
 import Data.ByteString (ByteString)
 import Text.Trifecta.Rope.Bytes
 import Text.Trifecta.Rope.Delta
@@ -81,30 +78,15 @@ data Spanned a = a :~ Span deriving (Eq,Ord,Show)
 instance Functor Spanned where
   fmap f (a :~ s) = f a :~ s
 
-instance Extend Spanned where
-  extend f as@(_ :~ s) = f as :~ s
-
 instance Comonad Spanned where
+  extend f as@(_ :~ s) = f as :~ s
   extract (a :~ _) = a
-
-instance Apply Spanned where
-  (f :~ s) <.> (a :~ t) = f a :~ (s <> t)
-
-instance Bind Spanned where
-  (a :~ s) >>- f = case f a of
-     b :~ t -> b :~ (s <> t)
 
 instance Foldable Spanned where
   foldMap f (a :~ _) = f a
 
 instance Traversable Spanned where
   traverse f (a :~ s) = (:~ s) <$> f a
-
-instance Foldable1 Spanned where
-  foldMap1 f (a :~ _) = f a
-
-instance Traversable1 Spanned where
-  traverse1 f (a :~ s) = (:~ s) <$> f a
 
 instance Reducer (Spanned a) Rendering where
   unit = render

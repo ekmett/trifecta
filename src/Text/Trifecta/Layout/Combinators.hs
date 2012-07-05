@@ -22,22 +22,23 @@ module Text.Trifecta.Layout.Combinators
 
 import Control.Applicative
 import Control.Monad (guard)
-import Data.Lens.Common
 import Text.Trifecta.Rope.Delta
 import Text.Trifecta.Parser.Class
 import Text.Trifecta.Parser.Token.Combinators
 import qualified Text.Trifecta.Highlight.Prim as Highlight
 import Text.Trifecta.Layout.Class
 import Text.Trifecta.Layout.Prim
+import Data.Functor.Identity
 
-getLayout :: MonadLayout m => Lens LayoutState t -> m t
-getLayout l = layoutState $ \s -> (getL l s, s)
+-- getLayout :: MonadLayout m => Lens LayoutState t -> m t
+getLayout :: MonadLayout m => ((t -> Const t t') -> LayoutState -> Const t LayoutState) -> m t
+getLayout l = layoutState $ \s -> (getConst (l Const s), s)
 
-setLayout :: MonadLayout m => Lens LayoutState t -> t -> m ()
-setLayout l t = layoutState $ \s -> ((), setL l t s)
+setLayout :: MonadLayout m => ((t -> Identity t) -> LayoutState -> Identity LayoutState) -> t -> m ()
+setLayout l t = modLayout l (const t)
 
-modLayout :: MonadLayout m => Lens LayoutState t -> (t -> t) -> m ()
-modLayout l f = layoutState $ \s -> ((), modL l f s)
+modLayout :: MonadLayout m => ((t -> Identity t) -> LayoutState -> Identity LayoutState) -> (t -> t) -> m ()
+modLayout l f = layoutState $ \s -> ((), runIdentity $ l (Identity . f) s)
 
 disableLayout :: MonadLayout m => m a -> m a
 disableLayout p = do

@@ -26,11 +26,8 @@ import Control.Applicative
 import Control.Comonad
 import Data.ByteString (ByteString)
 import Data.Foldable
-import Data.Functor.Bind
 import Data.Hashable
 import Data.Semigroup
-import Data.Semigroup.Foldable
-import Data.Semigroup.Traversable
 import Data.Semigroup.Reducer
 import Data.Traversable
 import Prelude hiding (span)
@@ -63,7 +60,7 @@ addCaret p r = drawCaret p .# r
 
 caret :: MonadParser m => m Caret
 caret = Caret <$> position <*> line
-  
+
 careted :: MonadParser m => m a -> m (Careted a)
 careted p = do
   m <- position
@@ -94,9 +91,6 @@ data Careted a = a :^ Caret deriving (Eq,Ord,Show)
 instance Functor Careted where
   fmap f (a :^ s) = f a :^ s
 
-instance Extend Careted where
-  extend f as@(_ :^ s) = f as :^ s
-
 instance HasDelta (Careted a) where
   delta (_ :^ c) = delta c
 
@@ -104,6 +98,7 @@ instance HasBytes (Careted a) where
   bytes (_ :^ c) = bytes c
 
 instance Comonad Careted where
+  extend f as@(_ :^ s) = f as :^ s
   extract (a :^ _) = a
 
 instance Foldable Careted where
@@ -111,12 +106,6 @@ instance Foldable Careted where
 
 instance Traversable Careted where
   traverse f (a :^ s) = (:^ s) <$> f a
-
-instance Foldable1 Careted where
-  foldMap1 f (a :^ _) = f a
-
-instance Traversable1 Careted where
-  traverse1 f (a :^ s) = (:^ s) <$> f a
 
 instance Renderable (Careted a) where
   render (_ :^ a) = render a
