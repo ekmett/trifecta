@@ -45,7 +45,6 @@ library
   build-depends:
     array                >= 0.3.0.2 && < 0.5,
     base                 == 4.*,
-    bifunctors           == 3.0.*,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.4.1.6 && < 0.5,
     bytestring           >= 0.9.1   && < 0.11,
@@ -58,10 +57,7 @@ library
     keys                 == 3.0.*,
     mtl                  >= 2.0.1   && < 2.2,
     parsers              == 0.2.*,
-    pointed              == 3.0.*,
-    profunctors          == 3.0.*,
     reducers             == 3.0.*,
-    semigroupoids        == 3.0.*,
     semigroups           >= 0.8.3.1 && < 0.9,
     terminfo             >= 0.3.2   && < 0.4,
     transformers         >= 0.2     && < 0.4,

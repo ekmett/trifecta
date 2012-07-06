@@ -19,6 +19,7 @@ module Text.Trifecta.Highlight
   , withHighlight
   , HighlightDoc(..)
   , doc
+--  , Highlighter(..)
   ) where
 
 import Control.Applicative
@@ -138,3 +139,29 @@ instance ToHtml HighlightDoc where
       title $ toHtml t
       link ! rel "stylesheet" ! type_ "text/css" ! href (toValue css)
     body $ toHtml cs
+
+{-
+newtype Highlighter m a = Highlighter { runHighlighter :: IntervalMap Map Highlight -> m (a, IntervalMap Map Highlight) }
+  deriving (Functor)
+
+instance (Functor m, Monad m) => Applicative (Highlighter m) where
+  (<*>) = ap
+  pure = return
+
+instance (Functor m, MonadPlus m) => Alternative (Highlighter m) where
+  (<|>) = mplus
+  empty = mzero
+
+instance Monad m => Monad (Highlighter m) where
+  return a = Highlighter $ \s -> return (a, s)
+  Highlighter m >>= f = Highlighter $ \s -> m s >>= \(a, s') -> runHighlighter (f a) s'
+
+instance MonadTrans Highlighter where
+  lift m = Highlighter $ \s -> fmap (\a -> (a,s)) m
+
+instance MonadPlus m => MonadPlus (Highlighter m) where
+  mplus (Highlighter m) (Highligher n) = Highlighter $ \s -> m s `mplus` n s
+  mzero = Highlighter $ const mzero
+
+-- instance Parsing m => Parsing (Highlighter m) where
+-}

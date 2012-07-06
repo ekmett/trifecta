@@ -32,8 +32,6 @@ import Control.Monad
 import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
-import Data.Functor.Bind
-import Data.Profunctor
 import Data.Key as Key
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
@@ -52,13 +50,6 @@ instance Functor (It r) where
   fmap f (It a k) = It (f a) $ fmap f . k
 
 type instance Key (It r) = r
-
-instance Profunctor It where
-  lmap _ (Pure a) = Pure a
-  lmap f (It a k) = It a (lmap f . k . f)
-
-  rmap g (Pure a) = Pure (g a)
-  rmap g (It a k) = It (g a) (rmap g . k)
 
 instance Applicative (It r) where
   pure = Pure
@@ -88,8 +79,7 @@ instance Monad (It r) where
     It a' k' -> It (Key.index (f a') r) $ k' >=> f
     Pure a' -> simplifyIt (f a') r
 
-instance Apply (It r) where (<.>) = (<*>)
-instance Bind (It r) where (>>-) = (>>=)
+instance ComonadApply (It r) where (<@>) = (<*>)
 
 -- | It is a cofree comonad
 instance Comonad (It r) where

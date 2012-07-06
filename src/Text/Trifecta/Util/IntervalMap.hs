@@ -50,15 +50,12 @@ module Text.Trifecta.Util.IntervalMap
 import Control.Applicative hiding (empty)
 import qualified Data.FingerTree as FT
 import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
-import Data.Functor.Plus
 import Data.Traversable (Traversable(traverse))
 import Data.Foldable (Foldable(foldMap))
-import Data.Bifunctor
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Semigroup.Union
 import Data.Key
-import Data.Pointed
 
 ----------------------------------
 -- 4.8 Application: interval trees
@@ -96,18 +93,12 @@ instance Foldable Interval where
 instance Traversable Interval where
   traverse f (Interval a b) = Interval <$> f a <*> f b
 
-instance Pointed Interval where
-  point v = Interval v v
-
 data Node v a = Node (Interval v) a
 
 type instance Key (Node v) = Interval v
 
 instance Functor (Node v) where
   fmap f (Node i x) = Node i (f x)
-
-instance Bifunctor Node where
-  bimap f g (Node v a) = Node (fmap f v) (g a)
 
 instance Keyed (Node v) where
   mapWithKey f (Node i x) = Node i (f i x)
@@ -198,15 +189,9 @@ instance Ord v => Monoid (IntervalMap v a) where
   mempty = empty
   mappend = union
 
-instance Ord v => Alt (IntervalMap v) where
-  (<!>) = union
-
-instance Ord v => Plus (IntervalMap v) where
-  zero = empty
-
 -- | /O(n)/. Add a delta to each interval in the map
 offset :: (Ord v, Monoid v) => v -> IntervalMap v a -> IntervalMap v a
-offset v (IntervalMap m) = IntervalMap $ FT.fmap' (first (mappend v)) m
+offset v (IntervalMap m) = IntervalMap $ FT.fmap' (\(Node (Interval lo hi) a) -> Node (Interval (mappend v lo) (mappend v hi)) a) m
 
 -- | /O(1)/.  Interval map with a single entry.
 singleton :: Ord v => Interval v -> a -> IntervalMap v a

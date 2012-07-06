@@ -44,10 +44,7 @@ import Control.Monad (MonadPlus(..), ap, join, guard)
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8
 import Data.Foldable
-import Data.Functor.Apply
 import Data.Maybe (fromMaybe, isJust)
-import Data.Functor.Bind (Bind((>>-)))
-import Data.Functor.Plus as Plus
 import qualified Data.List as List
 import Data.Semigroup
 import Data.Semigroup.Reducer
@@ -97,19 +94,12 @@ instance Functor Parser where
   a <$ Parser m = Parser $ \ eo ee co -> m (\_ -> eo a) ee (\_ -> co a)
   {-# INLINE (<$) #-}
 
-instance Apply Parser where (<.>) = (<*>)
 instance Applicative Parser where
   pure a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
   {-# INLINE pure #-}
   (<*>) = ap
   {-# INLINE (<*>) #-}
 
-instance Alt Parser where
-  (<!>) = (<|>)
-  many p = Prelude.reverse <$> manyAccum (:) p
-  some p = p *> Plus.many p
-
-instance Plus Parser where zero = empty
 instance Alternative Parser where
   empty = Parser $ \_ ee _ _ _ _ -> ee mempty
   {-# INLINE empty #-}
@@ -127,7 +117,6 @@ instance Monoid (Parser a) where
   mappend = (<|>)
   mempty = empty
 
-instance Bind Parser where (>>-) = (>>=)
 instance Monad Parser where
   return a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
   {-# INLINE return #-}
@@ -253,21 +242,12 @@ instance Applicative Result where
   Failure xs <*> Success _  = Failure xs
   Failure xs <*> Failure ys = Failure $ above xs ys
 
-instance Apply Result where
-  (<.>) = (<*>)
-
-instance Alt Result where
-  Failure xs <!> Failure ys = Failure $ above xs ys
-  Success a  <!> Success _  = Success a
-  Success a  <!> Failure _  = Success a
-  Failure _  <!> Success a  = Success a
-
-instance Plus Result where
-  zero = Failure mempty
-
 instance Alternative Result where
-  (<|>) = (<!>)
-  empty = zero
+  Failure xs <|> Failure ys = Failure $ above xs ys
+  Success a  <|> Success _  = Success a
+  Success a  <|> Failure _  = Success a
+  Failure _  <|> Success a  = Success a
+  empty = Failure mempty
 
 data Step a
   = StepDone !Rope a

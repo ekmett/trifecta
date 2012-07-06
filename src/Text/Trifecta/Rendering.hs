@@ -57,14 +57,11 @@ import Data.ByteString as B hiding (groupBy, empty, any)
 import qualified Data.ByteString.UTF8 as UTF8
 import Data.Foldable
 import Data.Function (on)
-import Data.Functor.Bind
 import Data.Hashable
 import Data.Int (Int64)
 import Data.List (groupBy)
 import Data.Semigroup
-import Data.Semigroup.Foldable
 import Data.Semigroup.Reducer
-import Data.Semigroup.Traversable
 import Data.Traversable
 import Prelude as P hiding (span)
 import System.Console.Terminfo.Color
@@ -234,27 +231,14 @@ instance Comonad Rendered where
   extend f as@(_ :@ s) = f as :@ s
   extract (a :@ _) = a
 
-instance Apply Rendered where
-  (f :@ s) <.> (a :@ t) = f a :@ (s <> t)
-
 instance ComonadApply Rendered where
   (f :@ s) <@> (a :@ t) = f a :@ (s <> t)
-
-instance Bind Rendered where
-  (a :@ s) >>- f = case f a of
-     b :@ t -> b :@ (s <> t)
 
 instance Foldable Rendered where
   foldMap f (a :@ _) = f a
 
 instance Traversable Rendered where
   traverse f (a :@ s) = (:@ s) <$> f a
-
-instance Foldable1 Rendered where
-  foldMap1 f (a :@ _) = f a
-
-instance Traversable1 Rendered where
-  traverse1 f (a :@ s) = (:@ s) <$> f a
 
 instance Renderable (Rendered a) where
   render (_ :@ s) = s
@@ -312,6 +296,9 @@ instance Comonad Careted where
   extend f as@(_ :^ s) = f as :^ s
   extract (a :^ _) = a
 
+instance ComonadApply Careted where
+  (a :^ c) <@> (b :^ d) = a b :^ (c <> d)
+
 instance Foldable Careted where
   foldMap f (a :^ _) = f a
 
@@ -325,7 +312,6 @@ instance Reducer (Careted a) Rendering where
   unit = render
 
 instance Hashable a => Hashable (Careted a) where
-
 
 spanEffects :: [ScopedEffect]
 spanEffects  = [soft (Foreground Green)]
@@ -370,6 +356,9 @@ instance Comonad Spanned where
   extend f as@(_ :~ s) = f as :~ s
   extract (a :~ _) = a
 
+instance ComonadApply Spanned where
+  (a :~ c) <@> (b :~ d) = a b :~ (c <> d)
+
 instance Foldable Spanned where
   foldMap f (a :~ _) = f a
 
@@ -412,4 +401,3 @@ instance Reducer Fixit Rendering where
 
 instance Renderable Fixit where
   render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ rendering s bs
-
