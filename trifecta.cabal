@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       0.53
+version:       0.90
 license:       BSD3
 cabal-version: >= 1.6
 license-file:  LICENSE
@@ -9,10 +9,10 @@ maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 bug-reports:   http://github.com/ekmett/trifecta/issues
-copyright:     Copyright (C) 2010-2011 Edward A. Kmett
+copyright:     Copyright (C) 2010-2012 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
 description:
-  A modern unicode-aware parser combinator library with slicing and Clang-style colored diagnostics
+  A modern parser combinator library with slicing and Clang-style colored diagnostics
 
 build-type:    Simple
 
@@ -27,66 +27,14 @@ library
 
   exposed-modules:
     Text.Trifecta
-    Text.Trifecta.IntervalMap
+    Text.Trifecta.Combinators
+    Text.Trifecta.Delta
     Text.Trifecta.Rope
-    Text.Trifecta.Rope.Bytes
-    Text.Trifecta.Rope.Delta
-    Text.Trifecta.Rope.Prim
-    Text.Trifecta.Rope.Highlighted
-    Text.Trifecta.Diagnostic
-    Text.Trifecta.Diagnostic.Prim
-    Text.Trifecta.Diagnostic.Class
-    Text.Trifecta.Diagnostic.Combinators
-    Text.Trifecta.Diagnostic.Level
-    Text.Trifecta.Diagnostic.Err
-    Text.Trifecta.Diagnostic.Err.Log
-    Text.Trifecta.Diagnostic.Err.State
-    Text.Trifecta.Diagnostic.Rendering
-    Text.Trifecta.Diagnostic.Rendering.Prim
-    Text.Trifecta.Diagnostic.Rendering.Caret
-    Text.Trifecta.Diagnostic.Rendering.Fixit
-    Text.Trifecta.Diagnostic.Rendering.Span
+    Text.Trifecta.Rendering
     Text.Trifecta.Highlight
-    Text.Trifecta.Highlight.Class
-    Text.Trifecta.Highlight.Prim
-    Text.Trifecta.Highlight.Effects
-    Text.Trifecta.Highlight.Rendering.HTML
-    Text.Trifecta.Language
-    Text.Trifecta.Language.Class
-    Text.Trifecta.Language.Combinators
-    Text.Trifecta.Language.Prim
-    Text.Trifecta.Language.Monad
-    Text.Trifecta.Language.Style
-    Text.Trifecta.Layout
-    Text.Trifecta.Layout.Class
-    Text.Trifecta.Layout.Combinators
-    Text.Trifecta.Layout.Monad
-    Text.Trifecta.Layout.Prim
-    Text.Trifecta.Literate
-    Text.Trifecta.Literate.Class
-    Text.Trifecta.Literate.Prim
-    Text.Trifecta.Literate.Combinators
-    Text.Trifecta.Literate.Monad
     Text.Trifecta.Parser
-    Text.Trifecta.Parser.ByteString
-    Text.Trifecta.Parser.Char
-    Text.Trifecta.Parser.Char8
-    Text.Trifecta.Parser.Class
-    Text.Trifecta.Parser.Combinators
-    Text.Trifecta.Parser.Expr
-    Text.Trifecta.Parser.It
-    Text.Trifecta.Parser.Mark
-    Text.Trifecta.Parser.Perm
-    Text.Trifecta.Parser.Prim
-    Text.Trifecta.Parser.Result
-    Text.Trifecta.Parser.Rich
-    Text.Trifecta.Parser.Step
-    Text.Trifecta.Parser.Token
-    Text.Trifecta.Parser.Token.Combinators
-    Text.Trifecta.Parser.Token.Prim
-    Text.Trifecta.Parser.Token.Style
-    Text.Trifecta.Parser.Identifier
-    Text.Trifecta.Parser.Identifier.Style
+    Text.Trifecta.Util.It
+    Text.Trifecta.Util.IntervalMap
     Text.Trifecta.Util.Array
 
   other-modules:
@@ -95,28 +43,37 @@ library
   ghc-options: -Wall
 
   build-depends:
-    base                 == 4.*,
     array                >= 0.3.0.2 && < 0.5,
-    charset              >= 0.3.2.1 && < 0.4,
-    containers           >= 0.3     && < 0.6,
-    unordered-containers >= 0.2.1   && < 0.3,
+    base                 == 4.*,
+    bifunctors           == 3.0.*,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.4.1.6 && < 0.5,
-    bifunctors           == 3.0.*,
-    deepseq              >= 1.2.0.1 && < 1.4,
-    hashable             >= 1.1.2.1 && < 1.2,
     bytestring           >= 0.9.1   && < 0.11,
-    mtl                  >= 2.0.1   && < 2.2,
-    semigroups           >= 0.8.3.1 && < 0.9,
-    fingertree           >= 0.0.1   && < 0.1,
-    reducers             == 3.0.*,
-    profunctors          == 3.0.*,
-    utf8-string          >= 0.3.6   && < 0.4,
-    semigroupoids        == 3.0.*,
-    pointed              == 3.0.*,
-    transformers         >= 0.2     && < 0.4,
+    charset              >= 0.3.2.1 && < 0.4,
     comonad              == 3.0.*,
-    terminfo             >= 0.3.2   && < 0.4,
+    containers           >= 0.3     && < 0.6,
+    deepseq              >= 1.2.0.1 && < 1.4,
+    fingertree           >= 0.0.1   && < 0.1,
+    hashable             >= 1.1.2.1 && < 1.2,
     keys                 == 3.0.*,
+    mtl                  >= 2.0.1   && < 2.2,
+    parsers              == 0.2.*,
+    pointed              == 3.0.*,
+    profunctors          == 3.0.*,
+    reducers             == 3.0.*,
+    semigroupoids        == 3.0.*,
+    semigroups           >= 0.8.3.1 && < 0.9,
+    terminfo             >= 0.3.2   && < 0.4,
+    transformers         >= 0.2     && < 0.4,
+    unordered-containers >= 0.2.1   && < 0.3,
+    utf8-string          >= 0.3.6   && < 0.4,
     wl-pprint-extras     == 3.0.*,
     wl-pprint-terminfo   == 3.0.*
+
+  other-extensions:
+    BangPatterns CPP DeriveDataTypeable DeriveFoldable
+    DeriveFunctor DeriveTraversable FlexibleContexts
+    FlexibleInstances FunctionalDependencies MagicHash
+    MultiParamTypeClasses OverloadedStrings PatternGuards
+    Rank2Types TypeFamilies TypeSynonymInstances
+    UnboxedTuples UndecidableInstances

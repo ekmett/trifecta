@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Rope.Delta
+-- Module      :  Text.Trifecta.Delta
 -- Copyright   :  (C) 2011 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
@@ -9,9 +9,10 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Rope.Delta
+module Text.Trifecta.Delta
   ( Delta(..)
   , HasDelta(..)
+  , HasBytes(..)
   , nextTab
   , rewind
   , near
@@ -27,11 +28,19 @@ import Data.Word
 import Data.Foldable
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
-import Data.ByteString hiding (empty)
+import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
-import Text.Trifecta.Rope.Bytes
 import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
+
+class HasBytes t where
+  bytes :: t -> Int64
+
+instance HasBytes ByteString where
+  bytes = fromIntegral . Strict.length
+
+instance (Measured v a, HasBytes v) => HasBytes (FingerTree v a) where
+  bytes = bytes . measure
 
 data Delta
   = Columns   {-# UNPACK #-} !Int64 -- the number of characters
@@ -123,7 +132,7 @@ instance Semigroup Delta where
   Directed p l c t a <> Tab x y b           = Directed p l       (nextTab (c + x) + y)     (t + b ) (a + b)
   Directed p l _ t _ <> Lines m d t' b      = Directed p (l + m) d                         (t + t') b
   Directed _ _ _ t _ <> Directed p l c t' b = Directed p l       c                         (t + t') b
-  
+
 nextTab :: Int64 -> Int64
 nextTab x = x + (8 - mod x 8)
 {-# INLINE nextTab #-}

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Highlight
@@ -9,14 +10,131 @@
 -- Portability :  non-portable
 --
 ----------------------------------------------------------------------------
-module Text.Trifecta.Highlight 
-  ( 
-  -- * Text.Trifecta.Highlight.Class
-    Highlightable(..)
-  -- * Text.Trifecta.Highlight.Prim
-  , Highlight
-  , Highlights
+module Text.Trifecta.Highlight
+  ( Highlight
+  , HighlightedRope(..)
+  , highlightEffects
+  , pushToken
+  , popToken
+  , withHighlight
+  , HighlightDoc(..)
+  , doc
   ) where
 
-import Text.Trifecta.Highlight.Class
-import Text.Trifecta.Highlight.Prim
+import Control.Applicative
+import Data.Foldable as F
+import Data.Int (Int64)
+import Data.Key hiding ((!))
+import Data.List (sort)
+import Data.Semigroup
+import Data.Semigroup.Union
+import Prelude hiding (head)
+import System.Console.Terminfo.Color
+import System.Console.Terminfo.PrettyPrint
+import Text.Blaze
+import Text.Blaze.Html5 hiding (b,i)
+import Text.Blaze.Html5.Attributes hiding (title)
+import Text.Blaze.Internal
+import Text.Parser.Token.Highlight
+import Text.PrettyPrint.Free
+import Text.Trifecta.Util.IntervalMap as IM
+import Text.Trifecta.Delta
+import Text.Trifecta.Rope
+import qualified Data.ByteString.Lazy.Char8 as L
+import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
+
+highlightEffects :: Highlight -> [ScopedEffect]
+highlightEffects Comment                     = [soft $ Foreground Blue]
+highlightEffects ReservedIdentifier          = [soft $ Foreground Magenta, soft Bold]
+highlightEffects ReservedConstructor         = [soft $ Foreground Magenta, soft Bold]
+highlightEffects EscapeCode                  = [soft $ Foreground Magenta, soft Bold]
+highlightEffects Operator                    = [soft $ Foreground Yellow]
+highlightEffects CharLiteral                 = [soft $ Foreground Cyan]
+highlightEffects StringLiteral               = [soft $ Foreground Cyan]
+highlightEffects Constructor                 = [soft Bold]
+highlightEffects ReservedOperator            = [soft $ Foreground Yellow]
+highlightEffects ConstructorOperator         = [soft $ Foreground Yellow, soft Bold]
+highlightEffects ReservedConstructorOperator = [soft $ Foreground Yellow, soft Bold]
+highlightEffects _             = []
+
+pushToken, popToken :: Highlight -> TermDoc
+pushToken h = Prelude.foldr (\x b -> pure (Push x) <> b) mempty (highlightEffects h)
+popToken h  = Prelude.foldr (\_ b -> pure Pop      <> b) mempty (highlightEffects h)
+
+withHighlight :: Highlight -> TermDoc -> TermDoc
+withHighlight h d = pushToken h <> d <> popToken h
+
+data HighlightedRope = HighlightedRope
+  { ropeHighlights :: !(IM.IntervalMap Delta Highlight)
+  , ropeContent    :: {-# UNPACK #-} !Rope
+  }
+
+instance HasDelta HighlightedRope where
+  delta = delta . ropeContent
+
+instance HasBytes HighlightedRope where
+  bytes = bytes . ropeContent
+
+instance Semigroup HighlightedRope where
+  HighlightedRope h bs <> HighlightedRope h' bs' = HighlightedRope (h `union` IM.offset (delta bs) h') (bs <> bs')
+
+instance Monoid HighlightedRope where
+  mappend = (<>)
+  mempty = HighlightedRope mempty mempty
+
+data Located a = a :@ {-# UNPACK #-} !Int64
+infix 5 :@
+instance Eq (Located a) where
+  _ :@ m == _ :@ n = m == n
+instance Ord (Located a) where
+  compare (_ :@ m) (_ :@ n) = compare m n
+
+instance ToHtml HighlightedRope where
+  toHtml (HighlightedRope intervals r) = pre $ go 0 lbs effects where
+    lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
+    ln no = a ! name (toValue $ "line-" ++ show no) $ Empty
+    effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
+                     , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
+                            , preEscapedString "</span>" :@ bytes hi
+                            ]
+                     ] ++ mapWithKey (\k i -> ln k :@ i) (L.elemIndices '\n' lbs)
+    go _ cs [] = unsafeLazyByteString cs
+    go b cs ((eff :@ eb) : es)
+      | eb <= b = eff >> go b cs es
+      | otherwise = unsafeLazyByteString om >> go eb nom es
+         where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
+
+instance Pretty HighlightedRope where
+  pretty (HighlightedRope _ r) = hsep $ [ pretty bs | Strand bs _ <- F.toList (strands r)]
+
+instance PrettyTerm HighlightedRope where
+  prettyTerm (HighlightedRope intervals r) = go 0 lbs effects where
+    lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
+    effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
+                     , i <- [ pushToken tok :@ bytes lo
+                            , popToken tok  :@ bytes hi
+                            ]
+                     ]
+    go _ cs [] = prettyTerm (LazyUTF8.toString cs)
+    go b cs ((eff :@ eb) : es)
+      | eb <= b = eff <> go b cs es
+      | otherwise = prettyTerm (LazyUTF8.toString om) <> go eb nom es
+         where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
+
+-- | Represents a source file like an HsColour rendered document
+data HighlightDoc = HighlightDoc
+  { docTitle   :: String
+  , docCss     :: String -- href for the css file
+  , docContent :: HighlightedRope
+  }
+
+doc :: String -> HighlightedRope -> HighlightDoc
+doc t r = HighlightDoc t "trifecta.css" r
+
+instance ToHtml HighlightDoc where
+  toHtml (HighlightDoc t css cs) = docTypeHtml $ do
+    head $ do
+      preEscapedString "<!-- Generated by trifecta, http://github.com/ekmett/trifecta/ -->\n"
+      title $ toHtml t
+      link ! rel "stylesheet" ! type_ "text/css" ! href (toValue css)
+    body $ toHtml cs

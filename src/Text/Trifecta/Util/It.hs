@@ -1,8 +1,12 @@
-{-# LANGUAGE MultiParamTypeClasses, BangPatterns, MagicHash, UnboxedTuples, TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Parser.It
--- Copyright   :  (C) 2011 Edward Kmett
+-- Module      :  Text.Trifecta.Util.It
+-- Copyright   :  (C) 2011-2012 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
 -- Maintainer  :  Edward Kmett <ekmett@gmail.com>
@@ -11,7 +15,7 @@
 --
 -- harder, better, faster, stronger...
 ----------------------------------------------------------------------------
-module Text.Trifecta.Parser.It 
+module Text.Trifecta.Util.It
   ( It(Pure, It)
   , needIt
   , wantIt
@@ -20,7 +24,6 @@ module Text.Trifecta.Parser.It
   , fillIt
   , rewindIt
   , sliceIt
-  , stepIt
   ) where
 
 import Control.Applicative
@@ -32,14 +35,12 @@ import Data.ByteString.Lazy as Lazy
 import Data.Functor.Bind
 import Data.Profunctor
 import Data.Key as Key
-import Text.Trifecta.Rope.Prim as Rope
-import Text.Trifecta.Rope.Delta
-import Text.Trifecta.Rope.Bytes
-import Text.Trifecta.Parser.Step
+import Text.Trifecta.Rope
+import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
 
 data It r a
-  = Pure a 
+  = Pure a
   | It a (r -> It r a)
 
 instance Show a => Show (It r a) where
@@ -83,12 +84,12 @@ simplifyIt pa _       = pa
 instance Monad (It r) where
   return = Pure
   Pure a >>= f = f a
-  It a k >>= f = It (extract (f a)) $ \r -> case k r of 
+  It a k >>= f = It (extract (f a)) $ \r -> case k r of
     It a' k' -> It (Key.index (f a') r) $ k' >=> f
     Pure a' -> simplifyIt (f a') r
 
-instance Apply (It r) where (<.>) = (<*>) 
-instance Bind (It r) where (>>-) = (>>=) 
+instance Apply (It r) where (<.>) = (<*>)
+instance Bind (It r) where (>>-) = (>>=)
 
 -- | It is a cofree comonad
 instance Comonad (It r) where
@@ -100,13 +101,13 @@ instance Comonad (It r) where
   extract (It a _) = a
 
 needIt :: a -> (r -> Maybe a) -> It r a
-needIt z f = k where 
-  k = It z $ \r -> case f r of 
+needIt z f = k where
+  k = It z $ \r -> case f r of
     Just a -> Pure a
     Nothing -> k
 
 wantIt :: a -> (r -> (# Bool, a #)) -> It r a
-wantIt z f = It z k where 
+wantIt z f = It z k where
   k r = case f r of
     (# False, a #) -> It a k
     (# True,  a #) -> Pure a
@@ -120,23 +121,19 @@ runIt _ i (It a k) = i a k
 
 -- | Given a position, go there, and grab the text forward from that point
 fillIt :: r -> (Delta -> Strict.ByteString -> r) -> Delta -> It Rope r
-fillIt kf ks n = wantIt kf $ \r -> 
+fillIt kf ks n = wantIt kf $ \r ->
   (# bytes n < bytes (rewind (delta r))
-  ,  grabLine n r kf ks #) 
+  ,  grabLine n r kf ks #)
 
-stepIt :: It Rope a -> Step e a
-stepIt = go mempty where
-  go r (Pure a) = StepDone r mempty a
-  go r (It a k) = StepCont r (pure a) $ \s -> go s (k s)
-                                       
+
 -- | Return the text of the line that contains a given position
 rewindIt :: Delta -> It Rope (Maybe Strict.ByteString)
-rewindIt n = wantIt Nothing $ \r -> 
+rewindIt n = wantIt Nothing $ \r ->
   (# bytes n < bytes (rewind (delta r))
   ,  grabLine (rewind n) r Nothing $ const Just #)
 
 sliceIt :: Delta -> Delta -> It Rope Strict.ByteString
-sliceIt !i !j = wantIt mempty $ \r -> 
+sliceIt !i !j = wantIt mempty $ \r ->
   (# bj < bytes (rewind (delta r))
   ,  grabRest i r mempty $ const $ Util.fromLazy . Lazy.take (fromIntegral (bj - bi)) #)
   where
