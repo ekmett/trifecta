@@ -46,8 +46,8 @@ instance Measured Delta Strand where
   measure (LineDirective p l) = delta (Directed p l 0 0 0)
 
 instance Hashable Strand where
-  hash (Strand h _) = hashWithSalt 0 h
-  hash (LineDirective p l) = hash l `hashWithSalt` p
+  hashWithSalt salt (Strand h _) = hashWithSalt salt h
+  hashWithSalt salt (LineDirective p l) = hashWithSalt salt l `hashWithSalt` p
 
 instance HasDelta Strand where
   delta = measure
