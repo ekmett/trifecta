@@ -252,7 +252,7 @@ instance Renderable (Rendered a) where
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
 
 instance Hashable Caret where
-  hash (Caret d bs) = hash d `hashWithSalt` bs
+  hashWithSalt s (Caret d bs) = s `hashWithSalt` d `hashWithSalt` bs
 
 caretEffects :: [ScopedEffect]
 caretEffects = [soft (Foreground Green), soft Bold]
@@ -312,6 +312,7 @@ instance Reducer (Careted a) Rendering where
   unit = render
 
 instance Hashable a => Hashable (Careted a) where
+  hashWithSalt salt (a :^ s) = salt `hashWithSalt` a `hashWithSalt` s
 
 spanEffects :: [ScopedEffect]
 spanEffects  = [soft (Foreground Green)]
@@ -372,10 +373,10 @@ instance Renderable (Spanned a) where
   render (_ :~ s) = render s
 
 instance Hashable Span where
-  hash (Span s e bs) = hash s `hashWithSalt` e `hashWithSalt` bs
+  hashWithSalt salt (Span s e bs) = salt `hashWithSalt` s `hashWithSalt` e `hashWithSalt` bs
 
 instance Hashable a => Hashable (Spanned a) where
-  hash (a :~ s) = hash a `hashWithSalt` s
+  hashWithSalt salt (a :~ s) = salt `hashWithSalt` a `hashWithSalt` s
 
 -- > int main(int argc char ** argv) { int; }
 -- >                  ^
@@ -394,7 +395,7 @@ data Fixit = Fixit
   } deriving (Eq,Ord,Show)
 
 instance Hashable Fixit where
-  hash (Fixit s b) = hash s `hashWithSalt` b
+  hashWithSalt salt (Fixit s b) = salt `hashWithSalt` s `hashWithSalt` b
 
 instance Reducer Fixit Rendering where
   unit = render
