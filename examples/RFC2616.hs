@@ -38,8 +38,7 @@ requestLine = Request <$!> (highlight ReservedIdentifier (some token) <?> "reque
                        <*  skipHSpaces
                        <*> (highlight Identifier (some (satisfy (not . isHSpace))) <?> "url")
                        <*  skipHSpaces
-                       <*> (try (highlight ReservedIdentifier (string "HTTP/" *> many anyChar <* endOfLine)) <?> "protocol")
-                    -- <*> (try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine)) <?> "protocol")
+                       <*> (try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine)) <?> "protocol")
   where
     httpVersion :: (Monad m, CharParsing m) => m Char
     httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.' || c == '9'
