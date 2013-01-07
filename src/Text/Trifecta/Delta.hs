@@ -106,10 +106,10 @@ instance HasBytes Delta where
   bytes (Directed _ _ _ b _) = b
 
 instance Hashable Delta where
-  hash (Columns c a)        = 0 `hashWithSalt` c `hashWithSalt` a
-  hash (Tab x y a)          = 1 `hashWithSalt` x `hashWithSalt` y `hashWithSalt` a
-  hash (Lines l c b a)      = 2 `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
-  hash (Directed p l c b a) = 3 `hashWithSalt` p `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
+  hashWithSalt s (Columns c a)        = s `hashWithSalt` (0::Int) `hashWithSalt` c `hashWithSalt` a
+  hashWithSalt s (Tab x y a)          = s `hashWithSalt` (1::Int) `hashWithSalt` x `hashWithSalt` y `hashWithSalt` a
+  hashWithSalt s (Lines l c b a)      = s `hashWithSalt` (2::Int) `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
+  hashWithSalt s (Directed p l c b a) = s `hashWithSalt` (3::Int) `hashWithSalt` p `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
 
 instance Monoid Delta where
   mempty = Columns 0 0
