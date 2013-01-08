@@ -24,7 +24,7 @@ module Text.Trifecta.Combinators
   ) where
 
 import Control.Applicative
-import Control.Monad
+import Control.Monad (MonadPlus)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.RWS.Lazy as Lazy
@@ -41,7 +41,7 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Rendering
 import Prelude hiding (span)
 
-class TokenParsing m => DeltaParsing m where
+class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   -- | Retrieve the contents of the current line (from the beginning of the line)
   line     :: m ByteString
   position :: m Delta

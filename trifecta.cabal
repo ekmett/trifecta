@@ -66,11 +66,3 @@ library
     utf8-string          >= 0.3.6   && < 0.4,
     wl-pprint-extras     >= 3.3,
     wl-pprint-terminfo   >= 3.3
-
-  other-extensions:
-    BangPatterns CPP DeriveDataTypeable DeriveFoldable
-    DeriveFunctor DeriveTraversable FlexibleContexts
-    FlexibleInstances FunctionalDependencies MagicHash
-    MultiParamTypeClasses OverloadedStrings PatternGuards
-    Rank2Types TypeFamilies TypeSynonymInstances
-    UnboxedTuples UndecidableInstances
