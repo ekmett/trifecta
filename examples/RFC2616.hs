@@ -33,15 +33,15 @@ data Request = Request {
     , requestProtocol :: String
     } deriving (Eq, Ord, Show)
 
-requestLine :: TokenParsing m => m Request
+requestLine :: (Monad m, TokenParsing m) => m Request
 requestLine = Request <$!> (highlight ReservedIdentifier (some token) <?> "request method")
                        <*  skipHSpaces
                        <*> (highlight Identifier (some (satisfy (not . isHSpace))) <?> "url")
                        <*  skipHSpaces
-                       -- <*> try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine) <?> "protocol")
                        <*> (try (highlight ReservedIdentifier (string "HTTP/" *> many httpVersion <* endOfLine)) <?> "protocol")
- where
-  httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.' || c == '9'
+  where
+    httpVersion :: (Monad m, CharParsing m) => m Char
+    httpVersion = satisfy $ \c -> c == '1' || c == '0' || c == '.' || c == '9'
 
 endOfLine :: CharParsing m => m ()
 endOfLine = (string "\r\n" *> pure ()) <|> (char '\n' *> pure ())
@@ -51,14 +51,14 @@ data Header = Header {
     , headerValue :: [String]
     } deriving (Eq, Ord, Show)
 
-messageHeader :: TokenParsing m => m Header
+messageHeader :: (Monad m, TokenParsing m) => m Header
 messageHeader = (\h b c -> Header h (b : c))
             <$!> (highlight ReservedIdentifier (some token)  <?> "header name")
              <*  highlight Operator (char ':') <* skipHSpaces
              <*> (highlight Identifier (manyTill anyChar endOfLine) <?> "header value")
              <*> (many (skipHSpaces *> manyTill anyChar endOfLine) <?> "blank line")
 
-request :: TokenParsing m => m (Request, [Header])
+request :: (Monad m, TokenParsing m) => m (Request, [Header])
 request = (,) <$> requestLine <*> many messageHeader <* endOfLine
 
 lumpy arg = do
