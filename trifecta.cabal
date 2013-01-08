@@ -14,7 +14,7 @@ synopsis:      A modern parser combinator library with convenient diagnostics
 description:
   A modern parser combinator library with slicing and Clang-style colored diagnostics
 
-build-type:    Simple
+build-type:    Custom
 
 extra-source-files: examples/RFC2616.hs .travis.yml README.markdown
 
@@ -67,3 +67,17 @@ library
     utf8-string          >= 0.3.6   && < 0.4,
     wl-pprint-extras     >= 3.3,
     wl-pprint-terminfo   >= 3.3
+
+test-suite doctests
+  type:    exitcode-stdio-1.0
+  main-is: doctests.hs
+  build-depends:
+    base,
+    directory >= 1.0,
+    doctest >= 0.9.1,
+    filepath
+  ghc-options: -Wall -threaded
+  if impl(ghc<7.6.1)
+    ghc-options: -Werror
+  hs-source-dirs: tests
+
