@@ -47,7 +47,7 @@ instance Measured Delta Strand where
   measure (Strand _ s) = delta s
   measure (LineDirective p l) = delta (Directed p l 0 0 0)
 
-instance Hashable Strand where
+instance Hashable Strand
 
 instance HasDelta Strand where
   delta = measure

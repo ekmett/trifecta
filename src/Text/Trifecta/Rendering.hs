@@ -350,6 +350,9 @@ instance Semigroup Span where
 instance Reducer Span Rendering where
   unit = render
 
+instance Hashable Span
+
+
 data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance Functor Spanned where
@@ -374,7 +377,6 @@ instance Reducer (Spanned a) Rendering where
 instance Renderable (Spanned a) where
   render (_ :~ s) = render s
 
-instance Hashable Span
 instance Hashable a => Hashable (Spanned a)
 
 -- > int main(int argc char ** argv) { int; }
