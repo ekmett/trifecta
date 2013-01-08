@@ -21,7 +21,7 @@
 --
 ----------------------------------------------------------------------------
 module Text.Trifecta.Rendering
-  ( Rendering(..)
+  ( Rendering(Rendering)
   , HasRendering(..)
   , nullRendering
   , emptyRendering

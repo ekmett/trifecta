@@ -1,4 +1,25 @@
 language: haskell
+before_install:
+  # Uncomment whenever hackage is down.
+  # - mkdir -p ~/.cabal && cp travis/config ~/.cabal/config && cabal update
+
+  # grab lens 3.8
+  - git clone https://github.com/ekmett/lens.git
+  - cd lens
+  - travis/cabal-apt-install --only-dependencies --force-reinstall
+  - cabal install
+  - cd ..
+
+  # Try installing some of the build-deps with apt-get for speed.
+  - travis/cabal-apt-install --only-dependencies --force-reinstall $mode
+
+install:
+  - cabal configure $mode
+  - cabal build
+
+script:
+  - $script
+
 notifications:
   irc:
     channels:
@@ -6,3 +27,6 @@ notifications:
     skip_join: true
     template:
       - "\x0313trifecta\x03/\x0306%{branch}\x03 \x0314%{commit}\x03 %{build_url} %{message}"
+
+env:
+  - mode="--enable-tests" script="cabal test --show-details=always"
