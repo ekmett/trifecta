@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Delta
@@ -24,12 +25,14 @@ import Control.Applicative
 import Data.Semigroup
 import Data.Hashable
 import Data.Int
+import Data.Data
 import Data.Word
 import Data.Foldable
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
+import GHC.Generics
 import Text.PrettyPrint.Free hiding (column)
 import System.Console.Terminfo.PrettyPrint
 
@@ -57,7 +60,7 @@ data Delta
               {-# UNPACK #-} !Int64 -- the number of characters since the last newline
               {-# UNPACK #-} !Int64 -- number of bytes
               {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
-  deriving Show
+  deriving (Show, Data, Typeable, Generic)
 
 instance Eq Delta where
   (==) = (==) `on` bytes
@@ -106,10 +109,10 @@ instance HasBytes Delta where
   bytes (Directed _ _ _ b _) = b
 
 instance Hashable Delta where
-  hash (Columns c a)        = 0 `hashWithSalt` c `hashWithSalt` a
-  hash (Tab x y a)          = 1 `hashWithSalt` x `hashWithSalt` y `hashWithSalt` a
-  hash (Lines l c b a)      = 2 `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
-  hash (Directed p l c b a) = 3 `hashWithSalt` p `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
+  hashWithSalt n (Columns c a)        = n `hashWithSalt` (0 :: Int) `hashWithSalt` c `hashWithSalt` a
+  hashWithSalt n (Tab x y a)          = n `hashWithSalt` (1 :: Int) `hashWithSalt` x `hashWithSalt` y `hashWithSalt` a
+  hashWithSalt n (Lines l c b a)      = n `hashWithSalt` (2 :: Int) `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
+  hashWithSalt n (Directed p l c b a) = n `hashWithSalt` (3 :: Int) `hashWithSalt` p `hashWithSalt` l `hashWithSalt` c `hashWithSalt` b `hashWithSalt` a
 
 instance Monoid Delta where
   mempty = Columns 0 0

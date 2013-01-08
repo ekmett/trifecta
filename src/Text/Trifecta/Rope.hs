@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, PatternGuards #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, PatternGuards, DeriveDataTypeable, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Rope
@@ -27,16 +27,18 @@ import qualified Data.ByteString as Strict
 import qualified Data.ByteString.Lazy as Lazy
 import qualified Data.ByteString.UTF8 as UTF8
 import Data.FingerTree as FingerTree
+import GHC.Generics
 import Data.Foldable (toList)
 import Data.Hashable
 import Data.Int (Int64)
 import Text.Trifecta.Util.Combinators as Util
 import Text.Trifecta.Delta
+import Data.Data
 
 data Strand
   = Strand        {-# UNPACK #-} !ByteString !Delta
   | LineDirective {-# UNPACK #-} !ByteString {-# UNPACK #-} !Int64
-  deriving Show
+  deriving (Show, Data, Typeable, Generic)
 
 strand :: ByteString -> Strand
 strand bs = Strand bs (delta bs)
@@ -46,8 +48,6 @@ instance Measured Delta Strand where
   measure (LineDirective p l) = delta (Directed p l 0 0 0)
 
 instance Hashable Strand where
-  hash (Strand h _) = hashWithSalt 0 h
-  hash (LineDirective p l) = hash l `hashWithSalt` p
 
 instance HasDelta Strand where
   delta = measure

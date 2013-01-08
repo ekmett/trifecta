@@ -24,6 +24,7 @@ module Text.Trifecta.Combinators
   ) where
 
 import Control.Applicative
+import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.RWS.Lazy as Lazy
@@ -51,61 +52,59 @@ class TokenParsing m => DeltaParsing m where
   {-# INLINE rend #-}
   -- | grab the remainder of the current line
   restOfLine :: DeltaParsing m => m ByteString
-  restOfLine = do
-    m <- position
-    Strict.drop (fromIntegral (columnByte m)) <$> line
+  restOfLine = Strict.drop . fromIntegral . columnByte <$> position <*> line
   {-# INLINE restOfLine #-}
 
-instance DeltaParsing m => DeltaParsing (Lazy.StateT s m) where
+instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Lazy.StateT s m) where
   line = lift line
   position = lift position
   slicedWith f (Lazy.StateT m) = Lazy.StateT $ \s -> slicedWith (\(a,s') b -> (f a b, s')) $ m s
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance DeltaParsing m => DeltaParsing (Strict.StateT s m) where
+instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Strict.StateT s m) where
   line = lift line
   position = lift position
   slicedWith f (Strict.StateT m) = Strict.StateT $ \s -> slicedWith (\(a,s') b -> (f a b, s')) $ m s
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance DeltaParsing m => DeltaParsing (ReaderT e m) where
+instance (MonadPlus m, DeltaParsing m) => DeltaParsing (ReaderT e m) where
   line = lift line
   position = lift position
   slicedWith f (ReaderT m) = ReaderT $ slicedWith f . m
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance (DeltaParsing m, Monoid w) => DeltaParsing (Strict.WriterT w m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Strict.WriterT w m) where
   line = lift line
   position = lift position
   slicedWith f (Strict.WriterT m) = Strict.WriterT $ slicedWith (\(a,s') b -> (f a b, s')) m
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance (DeltaParsing m, Monoid w) => DeltaParsing (Lazy.WriterT w m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.WriterT w m) where
   line = lift line
   position = lift position
   slicedWith f (Lazy.WriterT m) = Lazy.WriterT $ slicedWith (\(a,s') b -> (f a b, s')) m
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance (DeltaParsing m, Monoid w) => DeltaParsing (Lazy.RWST r w s m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.RWST r w s m) where
   line = lift line
   position = lift position
   slicedWith f (Lazy.RWST m) = Lazy.RWST $ \r s -> slicedWith (\(a,s',w) b -> (f a b, s',w)) $ m r s
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance (DeltaParsing m, Monoid w) => DeltaParsing (Strict.RWST r w s m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Strict.RWST r w s m) where
   line = lift line
   position = lift position
   slicedWith f (Strict.RWST m) = Strict.RWST $ \r s -> slicedWith (\(a,s',w) b -> (f a b, s',w)) $ m r s
   rend = lift rend
   restOfLine = lift restOfLine
 
-instance DeltaParsing m => DeltaParsing (IdentityT m) where
+instance (MonadPlus m, DeltaParsing m) => DeltaParsing (IdentityT m) where
   line = lift line
   position = lift position
   slicedWith f (IdentityT m) = IdentityT $ slicedWith f m
@@ -122,11 +121,7 @@ caret = Caret <$> position <*> line
 {-# INLINE caret #-}
 
 careted :: DeltaParsing m => m a -> m (Careted a)
-careted p = do
-  m <- position
-  l <- line
-  a <- p
-  return $ a :^ Caret m l
+careted p = (\m l a -> a :^ Caret m l) <$> position <*> line <*> p
 {-# INLINE careted #-}
 
 span :: DeltaParsing m => m a -> m Span
@@ -147,34 +142,34 @@ class (DeltaParsing m, HasDelta d) => MarkParsing d m | m -> d where
   -- | Seek a previously marked location
   release :: d -> m ()
 
-instance MarkParsing d m => MarkParsing d (Lazy.StateT s m) where
+instance (MonadPlus m, MarkParsing d m) => MarkParsing d (Lazy.StateT s m) where
   mark = lift mark
   release = lift . release
 
-instance MarkParsing d m => MarkParsing d (Strict.StateT s m) where
+instance (MonadPlus m, MarkParsing d m) => MarkParsing d (Strict.StateT s m) where
   mark = lift mark
   release = lift . release
 
-instance MarkParsing d m => MarkParsing d (ReaderT e m) where
+instance (MonadPlus m, MarkParsing d m) => MarkParsing d (ReaderT e m) where
   mark = lift mark
   release = lift . release
 
-instance (MarkParsing d m, Monoid w) => MarkParsing d (Strict.WriterT w m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Strict.WriterT w m) where
   mark = lift mark
   release = lift . release
 
-instance (MarkParsing d m, Monoid w) => MarkParsing d (Lazy.WriterT w m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Lazy.WriterT w m) where
   mark = lift mark
   release = lift . release
 
-instance (MarkParsing d m, Monoid w) => MarkParsing d (Lazy.RWST r w s m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Lazy.RWST r w s m) where
   mark = lift mark
   release = lift . release
 
-instance (MarkParsing d m, Monoid w) => MarkParsing d (Strict.RWST r w s m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Strict.RWST r w s m) where
   mark = lift mark
   release = lift . release
 
-instance MarkParsing d m => MarkParsing d (IdentityT m) where
+instance (MonadPlus m, MarkParsing d m) => MarkParsing d (IdentityT m) where
   mark = lift mark
   release = lift . release

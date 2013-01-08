@@ -1,6 +1,8 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Rendering
@@ -55,6 +57,7 @@ import Control.Monad.State
 import Data.Array
 import Data.ByteString as B hiding (groupBy, empty, any)
 import qualified Data.ByteString.UTF8 as UTF8
+import Data.Data
 import Data.Foldable
 import Data.Function (on)
 import Data.Hashable
@@ -63,6 +66,7 @@ import Data.List (groupBy)
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Traversable
+import GHC.Generics
 import Prelude as P hiding (span)
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
@@ -249,10 +253,9 @@ instance Renderable (Rendered a) where
 -- > foo.c:8:36: note
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^
-data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
+data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
-instance Hashable Caret where
-  hash (Caret d bs) = hash d `hashWithSalt` bs
+instance Hashable Caret
 
 caretEffects :: [ScopedEffect]
 caretEffects = [soft (Foreground Green), soft Bold]
@@ -281,7 +284,7 @@ instance Semigroup Caret where
 renderingCaret :: Delta -> ByteString -> Rendering
 renderingCaret d bs = addCaret d $ rendering d bs
 
-data Careted a = a :^ Caret deriving (Eq,Ord,Show)
+data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance Functor Careted where
   fmap f (a :^ s) = f a :^ s
@@ -311,7 +314,7 @@ instance Renderable (Careted a) where
 instance Reducer (Careted a) Rendering where
   unit = render
 
-instance Hashable a => Hashable (Careted a) where
+instance Hashable a => Hashable (Careted a)
 
 spanEffects :: [ScopedEffect]
 spanEffects  = [soft (Foreground Green)]
@@ -336,7 +339,7 @@ drawSpan s e d a
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
-data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show)
+data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance Renderable Span where
   render (Span s e bs) = addSpan s e $ rendering s bs
@@ -347,7 +350,7 @@ instance Semigroup Span where
 instance Reducer Span Rendering where
   unit = render
 
-data Spanned a = a :~ Span deriving (Eq,Ord,Show)
+data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance Functor Spanned where
   fmap f (a :~ s) = f a :~ s
@@ -371,11 +374,8 @@ instance Reducer (Spanned a) Rendering where
 instance Renderable (Spanned a) where
   render (_ :~ s) = render s
 
-instance Hashable Span where
-  hash (Span s e bs) = hash s `hashWithSalt` e `hashWithSalt` bs
-
-instance Hashable a => Hashable (Spanned a) where
-  hash (a :~ s) = hash a `hashWithSalt` s
+instance Hashable Span
+instance Hashable a => Hashable (Spanned a)
 
 -- > int main(int argc char ** argv) { int; }
 -- >                  ^
@@ -390,11 +390,10 @@ addFixit s e rpl r = drawFixit s e rpl .# r
 
 data Fixit = Fixit
   { fixitSpan        :: {-# UNPACK #-} !Span
-  , fixitReplacement  :: {-# UNPACK #-} !ByteString 
-  } deriving (Eq,Ord,Show)
+  , fixitReplacement :: !ByteString
+  } deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
-instance Hashable Fixit where
-  hash (Fixit s b) = hash s `hashWithSalt` b
+instance Hashable Fixit
 
 instance Reducer Fixit Rendering where
   unit = render

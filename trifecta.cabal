@@ -44,27 +44,28 @@ library
 
   build-depends:
     array                >= 0.3.0.2 && < 0.5,
-    base                 == 4.*,
+    base                 >= 4.4 && < 5,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.4.1.6 && < 0.5,
     bytestring           >= 0.9.1   && < 0.11,
-    charset              >= 0.3.2.1 && < 0.4,
+    charset              >= 0.3.2.1,
     comonad              == 3.0.*,
     containers           >= 0.3     && < 0.6,
     deepseq              >= 1.2.0.1 && < 1.4,
     fingertree           >= 0.0.1   && < 0.1,
-    hashable             >= 1.1.2.1 && < 1.2,
-    keys                 == 3.0.*,
+    ghc-prim,
+    hashable             >= 1.2     && < 1.3,
+    keys                 >= 3,
     mtl                  >= 2.0.1   && < 2.2,
-    parsers              == 0.2.*,
-    reducers             == 3.0.*,
-    semigroups           >= 0.8.3.1 && < 0.9,
+    parsers              >= 0.4.1,
+    reducers             >= 3,
+    semigroups           >= 0.8.3.1,
     terminfo             >= 0.3.2   && < 0.4,
     transformers         >= 0.2     && < 0.4,
     unordered-containers >= 0.2.1   && < 0.3,
     utf8-string          >= 0.3.6   && < 0.4,
-    wl-pprint-extras     == 3.0.*,
-    wl-pprint-terminfo   == 3.0.*
+    wl-pprint-extras     >= 3.3,
+    wl-pprint-terminfo   >= 3.3
 
   other-extensions:
     BangPatterns CPP DeriveDataTypeable DeriveFoldable
