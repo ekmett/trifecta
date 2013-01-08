@@ -26,6 +26,7 @@ module Text.Trifecta.Parser
   , Result(..)
   -- * Recoverable Parsing Errors
   , Err(..), HasErr(..)
+  , explain
   -- * Feeding a parser more more input
   , Step(..)
   , feed

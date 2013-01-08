@@ -17,9 +17,9 @@
 module Text.Trifecta.Combinators
   ( DeltaParsing(..)
   , sliced
-  , caret, careted
-  , span, spanned
-  , fixit
+  , careting, careted
+  , spanning, spanned
+  , fixiting
   , MarkParsing(..)
   ) where
 
@@ -116,25 +116,25 @@ sliced :: DeltaParsing m => m a -> m ByteString
 sliced = slicedWith (\_ bs -> bs)
 {-# INLINE sliced #-}
 
-caret :: DeltaParsing m => m Caret
-caret = Caret <$> position <*> line
-{-# INLINE caret #-}
+careting :: DeltaParsing m => m Caret
+careting = Caret <$> position <*> line
+{-# INLINE careting #-}
 
 careted :: DeltaParsing m => m a -> m (Careted a)
 careted p = (\m l a -> a :^ Caret m l) <$> position <*> line <*> p
 {-# INLINE careted #-}
 
-span :: DeltaParsing m => m a -> m Span
-span p = (\s l e -> Span s e l) <$> position <*> line <*> (p *> position)
-{-# INLINE span #-}
+spanning :: DeltaParsing m => m a -> m Span
+spanning p = (\s l e -> Span s e l) <$> position <*> line <*> (p *> position)
+{-# INLINE spanning #-}
 
 spanned :: DeltaParsing m => m a -> m (Spanned a)
 spanned p = (\s l a e -> a :~ Span s e l) <$> position <*> line <*> p <*> position
 {-# INLINE spanned #-}
 
-fixit :: DeltaParsing m => m Strict.ByteString -> m Fixit
-fixit p = (\(r :~ s) -> Fixit s r) <$> spanned p
-{-# INLINE fixit #-}
+fixiting :: DeltaParsing m => m Strict.ByteString -> m Fixit
+fixiting p = (\(r :~ s) -> Fixit s r) <$> spanned p
+{-# INLINE fixiting #-}
 
 class (DeltaParsing m, HasDelta d) => MarkParsing d m | m -> d where
   -- | mark the current location so it can be used in constructing a span, or for later seeking

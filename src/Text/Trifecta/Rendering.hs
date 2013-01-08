@@ -31,6 +31,7 @@ module Text.Trifecta.Rendering
   , Rendered(..)
   -- * Carets
   , Caret(..)
+  , HasCaret(..)
   , Careted(..)
   , drawCaret
   , addCaret
@@ -38,12 +39,14 @@ module Text.Trifecta.Rendering
   , renderingCaret
   -- * Spans
   , Span(..)
+  , HasSpan(..)
   , Spanned(..)
   , spanEffects
   , drawSpan
   , addSpan
   -- * Fixits
   , Fixit(..)
+  , HasFixit(..)
   , drawFixit
   , addFixit
   -- * Drawing primitives
@@ -259,6 +262,12 @@ instance Renderable (Rendered a) where
 -- >                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
+class HasCaret t where
+  caret :: Lens' t Caret
+
+instance HasCaret Caret where
+  caret = id
+
 instance Hashable Caret
 
 caretEffects :: [ScopedEffect]
@@ -289,6 +298,9 @@ renderingCaret :: Delta -> ByteString -> Rendering
 renderingCaret d bs = addCaret d $ rendered d bs
 
 data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Typeable,Generic)
+
+instance HasCaret (Careted a) where
+  caret f (a :^ c) = (a :^) <$> f c
 
 instance Functor Careted where
   fmap f (a :^ s) = f a :^ s
@@ -345,6 +357,12 @@ addSpan s e r = drawSpan s e .# r
 
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
+class HasSpan t where
+  span :: Lens' t Span
+
+instance HasSpan Span where
+  span = id
+
 instance Renderable Span where
   render (Span s e bs) = addSpan s e $ rendered s bs
 
@@ -356,8 +374,10 @@ instance Reducer Span Rendering where
 
 instance Hashable Span
 
-
 data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
+
+instance HasSpan (Spanned a) where
+  span f (a :~ c) = (a :~) <$> f c
 
 instance Functor Spanned where
   fmap f (a :~ s) = f a :~ s
@@ -395,9 +415,14 @@ addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
 addFixit s e rpl r = drawFixit s e rpl .# r
 
 data Fixit = Fixit
-  { fixitSpan        :: {-# UNPACK #-} !Span
-  , fixitReplacement :: !ByteString
+  { _fixitSpan        :: {-# UNPACK #-} !Span
+  , _fixitReplacement :: !ByteString
   } deriving (Eq,Ord,Show,Data,Typeable,Generic)
+
+makeClassy ''Fixit
+
+instance HasSpan Fixit where
+  span = fixitSpan
 
 instance Hashable Fixit
 
