@@ -48,7 +48,7 @@ class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   -- | run a parser, grabbing all of the text between its start and end points
   slicedWith :: (a -> Strict.ByteString -> r) -> m a -> m r
   rend :: DeltaParsing m => m Rendering
-  rend = rendering <$> position <*> line
+  rend = rendered <$> position <*> line
   {-# INLINE rend #-}
   -- | grab the remainder of the current line
   restOfLine :: DeltaParsing m => m ByteString

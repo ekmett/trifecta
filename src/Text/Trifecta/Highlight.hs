@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Highlight
@@ -12,17 +13,19 @@
 ----------------------------------------------------------------------------
 module Text.Trifecta.Highlight
   ( Highlight
-  , HighlightedRope(..)
+  , HighlightedRope(HighlightedRope)
+  , HasHighlightedRope(..)
   , highlightEffects
   , pushToken
   , popToken
   , withHighlight
-  , HighlightDoc(..)
+  , HighlightDoc(HighlightDoc)
+  , HasHighlightDoc(..)
   , doc
---  , Highlighter(..)
   ) where
 
 import Control.Applicative
+import Control.Lens
 import Data.Foldable as F
 import Data.Int (Int64)
 import Data.Key hiding ((!))
@@ -33,7 +36,8 @@ import Prelude hiding (head)
 import System.Console.Terminfo.Color
 import System.Console.Terminfo.PrettyPrint
 import Text.Blaze
-import Text.Blaze.Html5 hiding (b,i)
+import Text.Blaze.Html5 hiding (a,b,i)
+import qualified Text.Blaze.Html5 as Html5
 import Text.Blaze.Html5.Attributes hiding (title)
 import Text.Blaze.Internal
 import Text.Parser.Token.Highlight
@@ -66,15 +70,17 @@ withHighlight :: Highlight -> TermDoc -> TermDoc
 withHighlight h d = pushToken h <> d <> popToken h
 
 data HighlightedRope = HighlightedRope
-  { ropeHighlights :: !(IM.IntervalMap Delta Highlight)
-  , ropeContent    :: {-# UNPACK #-} !Rope
+  { _ropeHighlights :: !(IM.IntervalMap Delta Highlight)
+  , _ropeContent    :: {-# UNPACK #-} !Rope
   }
 
+makeClassy ''HighlightedRope
+
 instance HasDelta HighlightedRope where
-  delta = delta . ropeContent
+  delta = delta . _ropeContent
 
 instance HasBytes HighlightedRope where
-  bytes = bytes . ropeContent
+  bytes = bytes . _ropeContent
 
 instance Semigroup HighlightedRope where
   HighlightedRope h bs <> HighlightedRope h' bs' = HighlightedRope (h `union` IM.offset (delta bs) h') (bs <> bs')
@@ -93,7 +99,7 @@ instance Ord (Located a) where
 instance ToHtml HighlightedRope where
   toHtml (HighlightedRope intervals r) = pre $ go 0 lbs effects where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
-    ln no = a ! name (toValue $ "line-" ++ show no) $ Empty
+    ln no = Html5.a ! name (toValue $ "line-" ++ show no) $ Empty
     effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
                      , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
                             , preEscapedString "</span>" :@ bytes hi
@@ -124,10 +130,12 @@ instance PrettyTerm HighlightedRope where
 
 -- | Represents a source file like an HsColour rendered document
 data HighlightDoc = HighlightDoc
-  { docTitle   :: String
-  , docCss     :: String -- href for the css file
-  , docContent :: HighlightedRope
+  { _docTitle   :: String
+  , _docCss     :: String -- href for the css file
+  , _docContent :: HighlightedRope
   }
+
+makeClassy ''HighlightDoc
 
 doc :: String -> HighlightedRope -> HighlightDoc
 doc t r = HighlightDoc t "trifecta.css" r

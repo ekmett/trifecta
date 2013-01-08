@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
@@ -21,10 +22,11 @@
 ----------------------------------------------------------------------------
 module Text.Trifecta.Rendering
   ( Rendering(..)
+  , HasRendering(..)
   , nullRendering
   , emptyRendering
   , Source(..)
-  , rendering
+  , rendered
   , Renderable(..)
   , Rendered(..)
   -- * Carets
@@ -53,6 +55,7 @@ module Text.Trifecta.Rendering
 
 import Control.Applicative
 import Control.Comonad
+import Control.Lens
 import Control.Monad.State
 import Data.Array
 import Data.ByteString as B hiding (groupBy, empty, any)
@@ -65,7 +68,6 @@ import Data.Int (Int64)
 import Data.List (groupBy)
 import Data.Semigroup
 import Data.Semigroup.Reducer
-import Data.Traversable
 import GHC.Generics
 import Prelude as P hiding (span)
 import System.Console.Terminfo.Color
@@ -105,12 +107,14 @@ draw e y n xs a0
        | otherwise = id
 
 data Rendering = Rendering
-  { renderingDelta    :: !Delta                 -- focus, the render will keep this visible
-  , renderingLineLen   :: {-# UNPACK #-} !Int64 -- actual line length
-  , renderingLineBytes :: {-# UNPACK #-} !Int64 -- line length in bytes
-  , renderingLine     :: Lines -> Lines
-  , renderingOverlays :: Delta -> Lines -> Lines
+  { _renderingDelta    :: !Delta                 -- focus, the render will keep this visible
+  , _renderingLineLen   :: {-# UNPACK #-} !Int64 -- actual line length
+  , _renderingLineBytes :: {-# UNPACK #-} !Int64 -- line length in bytes
+  , _renderingLine     :: Lines -> Lines
+  , _renderingOverlays :: Delta -> Lines -> Lines
   }
+
+makeClassy ''Rendering
 
 {-
 instance Highlightable Rendering where
@@ -145,7 +149,7 @@ nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
 emptyRendering :: Rendering
-emptyRendering = rendering (Columns 0 0) ""
+emptyRendering = rendered (Columns 0 0) ""
 
 instance Semigroup Rendering where
   -- an unprincipled hack
@@ -161,7 +165,7 @@ ifNear d f d' l | near d d' = f l
                 | otherwise = l
 
 instance HasDelta Rendering where
-  delta = renderingDelta
+  delta = _renderingDelta
 
 class Renderable t where
   render :: t -> Rendering
@@ -191,8 +195,8 @@ instance Source ByteString where
   source = source . UTF8.toString
 
 -- | create a drawing surface
-rendering :: Source s => Delta -> s -> Rendering
-rendering del s = case source s of
+rendered :: Source s => Delta -> s -> Rendering
+rendered del s = case source s of
   (len, lb, dc) -> Rendering del len lb dc (\_ l -> l)
 
 (.#) :: (Delta -> Lines -> Lines) -> Rendering -> Rendering
@@ -273,7 +277,7 @@ instance HasDelta Caret where
   delta (Caret d _) = d
 
 instance Renderable Caret where
-  render (Caret d bs) = addCaret d $ rendering d bs
+  render (Caret d bs) = addCaret d $ rendered d bs
 
 instance Reducer Caret Rendering where
   unit = render
@@ -282,7 +286,7 @@ instance Semigroup Caret where
   a <> _ = a
 
 renderingCaret :: Delta -> ByteString -> Rendering
-renderingCaret d bs = addCaret d $ rendering d bs
+renderingCaret d bs = addCaret d $ rendered d bs
 
 data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
@@ -342,7 +346,7 @@ addSpan s e r = drawSpan s e .# r
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance Renderable Span where
-  render (Span s e bs) = addSpan s e $ rendering s bs
+  render (Span s e bs) = addSpan s e $ rendered s bs
 
 instance Semigroup Span where
   Span s _ b <> Span _ e _ = Span s e b
@@ -401,4 +405,4 @@ instance Reducer Fixit Rendering where
   unit = render
 
 instance Renderable Fixit where
-  render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ rendering s bs
+  render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ rendered s bs

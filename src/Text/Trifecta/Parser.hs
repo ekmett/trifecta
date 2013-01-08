@@ -1,12 +1,13 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE TemplateHaskell #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Parser
@@ -24,7 +25,7 @@ module Text.Trifecta.Parser
   -- * Parse Results
   , Result(..)
   -- * Recoverable Parsing Errors
-  , Err(..)
+  , Err(..), HasErr(..)
   -- * Feeding a parser more more input
   , Step(..)
   , feed
@@ -40,6 +41,7 @@ module Text.Trifecta.Parser
   ) where
 
 import Control.Applicative as Alternative
+import Control.Lens
 import Control.Monad (MonadPlus(..), ap, join, guard)
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8
@@ -50,7 +52,6 @@ import Data.Semigroup
 import Data.Semigroup.Reducer
 -- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)
-import Data.Traversable
 import System.Console.Terminfo.PrettyPrint
 import Text.Parser.Combinators
 import Text.Parser.Char
@@ -63,10 +64,13 @@ import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
 data Err = Err
-  { reason   :: Maybe TermDoc
-  , aux      :: [TermDoc]
-  , expected :: Set String
+  { _reason   :: Maybe TermDoc
+  , _aux      :: [TermDoc]
+  , _expected :: Set String
   }
+
+makeClassy ''Err
+
 
 instance Semigroup Err where
   Err md mds mes <> Err nd nds nes
@@ -123,8 +127,8 @@ instance Monad Parser where
   Parser m >>= k = Parser $ \ eo ee co ce d bs ->
     m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce d bs) ee
       (\a es d' bs' -> unparser (k a)
-         (\b e' -> co b (es <> expected e') d' bs')
-         (\e -> ce (explain (rendering d' bs') e { expected = expected e <> es }))
+         (\b e' -> co b (es <> _expected e') d' bs')
+         (\e -> ce (explain (rendered d' bs') e { _expected = _expected e <> es }))
          co ce d' bs') ce d bs
   {-# INLINE (>>=) #-}
   (>>) = (*>)
@@ -138,8 +142,8 @@ instance MonadPlus Parser where
 
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
-  let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
-      manyErr d' bs' _ e  = ce $ explain (rendering d' bs') (e <> failing "'many' applied to a parser that accepted an empty string")
+  let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (_expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
+      manyErr d' bs' _ e  = ce $ explain (rendered d' bs') (e <> failing "'many' applied to a parser that accepted an empty string")
   in p (manyErr d bs) (eo []) (walk []) ce d bs
 
 liftIt :: It Rope a -> Parser a
@@ -152,8 +156,8 @@ instance Parsing Parser where
   try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ -> ee mempty)
   {-# INLINE try #-}
   Parser m <?> nm = Parser $ \ eo ee -> m
-     (\a e -> eo a (if isJust (reason e) then e { expected = Set.singleton nm } else e))
-     (\e -> ee e { expected = Set.singleton nm })
+     (\a e -> eo a (if isJust (_reason e) then e { _expected = Set.singleton nm } else e))
+     (\e -> ee e { _expected = Set.singleton nm })
   {-# INLINE (<?>) #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
   {-# INLINE skipMany #-}
@@ -184,7 +188,7 @@ instance DeltaParsing Parser where
   {-# INLINE line #-}
   position = Parser $ \eo _ _ _ d _ -> eo d mempty
   {-# INLINE position #-}
-  rend = Parser $ \eo _ _ _ d bs -> eo (rendering d bs) mempty
+  rend = Parser $ \eo _ _ _ d bs -> eo (rendered d bs) mempty
   {-# INLINE rend #-}
   slicedWith f p = do
     m <- position
@@ -299,12 +303,12 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   co a es d bs = Pure (CO a es d bs)
   ce doc       = Pure (CE doc)
   go r (Pure (EO a _))     = StepDone r a
-  go r (Pure (EE e))       = StepFail r $ explain (rendering d0 bs0) e
+  go r (Pure (EE e))       = StepFail r $ explain (rendered d0 bs0) e
   go r (Pure (CO a _ _ _)) = StepDone r a
   go r (Pure (CE d))       = StepFail r d
   go r (It ma k)           = StepCont r (case ma of
                                 EO a _     -> Success a
-                                EE e       -> Failure $ explain (rendering d0 bs0) e
+                                EE e       -> Failure $ explain (rendered d0 bs0) e
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
                               ) (go <*> k)
