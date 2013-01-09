@@ -152,7 +152,7 @@ nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
 emptyRendering :: Rendering
-emptyRendering = rendered (Columns 0 0) ""
+emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
 
 instance Semigroup Rendering where
   -- an unprincipled hack

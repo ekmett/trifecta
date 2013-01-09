@@ -224,8 +224,8 @@ explain r (Err mm as es)
     withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
     expecting = text "expected:" <+> fillSep (punctuate (Pretty.char ',') (text <$> now))
     report txt = vsep $ [prettyTerm (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
-                <|> prettyTerm r <$ guard (not (nullRendering r))
-                <|> as
+             <|> prettyTerm r <$ guard (not (nullRendering r))
+             <|> as
 
 data Result a
   = Success a
