@@ -42,7 +42,7 @@ module Text.Trifecta.Parser
   ) where
 
 import Control.Applicative as Alternative
-import Control.Lens
+import Control.Lens hiding (snoc, cons)
 import Control.Monad (MonadPlus(..), ap, join, guard)
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8

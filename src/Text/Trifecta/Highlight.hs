@@ -97,7 +97,7 @@ instance Ord (Located a) where
   compare (_ :@ m) (_ :@ n) = compare m n
 
 instance ToMarkup HighlightedRope where
-  toMarkup (HighlightedRope intervals r) = pre $ go 0 lbs effects where
+  toMarkup (HighlightedRope intervals r) = Html5.pre $ go 0 lbs effects where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
     ln no = Html5.a ! name (toValue $ "line-" ++ show no) $ Empty
     effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
