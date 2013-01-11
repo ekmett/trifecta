@@ -65,9 +65,9 @@ import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
 data Err = Err
-  { _reason   :: Maybe TermDoc
-  , _aux      :: [TermDoc]
-  , _expected :: Set String
+  { _reason    :: Maybe TermDoc
+  , _footnotes :: [TermDoc]
+  , _expected  :: Set String
   }
 
 makeClassy ''Err
