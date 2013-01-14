@@ -37,6 +37,7 @@ module Text.Trifecta.Parser
   -- * Parsing
   , parseFromFile
   , parseFromFileEx
+  , parseString
   , parseByteString
   , parseTest
   ) where
@@ -349,6 +350,9 @@ parseFromFileEx p fn = parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0)
 
 parseByteString :: Show a => Parser a -> Delta -> UTF8.ByteString -> Result a
 parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
+
+parseString :: Show a => Parser a -> Delta -> String -> Result a
+parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
 parseTest :: Show a => Parser a -> String -> IO ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
