@@ -67,7 +67,7 @@ library
     unordered-containers >= 0.2.1   && < 0.3,
     utf8-string          >= 0.3.6   && < 0.4,
     wl-pprint-extras     >= 3.3,
-    wl-pprint-terminfo   >= 3.3
+    wl-pprint-terminfo   >= 3.3.1
 
 test-suite doctests
   type:    exitcode-stdio-1.0

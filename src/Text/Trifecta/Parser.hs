@@ -45,6 +45,7 @@ module Text.Trifecta.Parser
 import Control.Applicative as Alternative
 import Control.Lens hiding (snoc, cons)
 import Control.Monad (MonadPlus(..), ap, join, guard)
+import Control.Monad.IO.Class
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8
 import Data.Foldable
@@ -130,7 +131,7 @@ instance Monad Parser where
     m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce d bs) ee
       (\a es d' bs' -> unparser (k a)
          (\b e' -> co b (es <> _expected e') d' bs')
-         (\e -> ce (explain (rendered d' bs') e { _expected = _expected e <> es }))
+         (\e -> ce (explain (renderingCaret d' bs') e { _expected = _expected e <> es }))
          co ce d' bs') ce d bs
   {-# INLINE (>>=) #-}
   (>>) = (*>)
@@ -145,7 +146,7 @@ instance MonadPlus Parser where
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
   let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (_expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
-      manyErr d' bs' _ e  = ce $ explain (rendered d' bs') (e <> failing "'many' applied to a parser that accepted an empty string")
+      manyErr d' bs' _ e  = ce $ explain (renderingCaret d' bs') (e <> failing "'many' applied to a parser that accepted an empty string")
   in p (manyErr d bs) (eo []) (walk []) ce d bs
 
 liftIt :: It Rope a -> Parser a
@@ -305,12 +306,12 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   co a es d bs = Pure (CO a es d bs)
   ce doc       = Pure (CE doc)
   go r (Pure (EO a _))     = StepDone r a
-  go r (Pure (EE e))       = StepFail r $ explain (rendered d0 bs0) e
+  go r (Pure (EE e))       = StepFail r $ explain (renderingCaret d0 bs0) e
   go r (Pure (CO a _ _ _)) = StepDone r a
   go r (Pure (CE d))       = StepFail r d
   go r (It ma k)           = StepCont r (case ma of
                                 EO a _     -> Success a
-                                EE e       -> Failure $ explain (rendered d0 bs0) e
+                                EE e       -> Failure $ explain (renderingCaret d0 bs0) e
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
                               ) (go <*> k)
@@ -325,12 +326,14 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
 -- >     Nothing -> return ()
 -- >     Just a  -> print $ sum a
 
-parseFromFile :: Show a => Parser a -> String -> IO (Maybe a)
+parseFromFile :: (MonadIO m, Show a) => Parser a -> String -> m (Maybe a)
 parseFromFile p fn = do
   result <- parseFromFileEx p fn
   case result of
-     Success a  -> return (Just a)
-     Failure xs -> Nothing <$ displayLn xs
+   Success a  -> return (Just a)
+   Failure xs -> do
+     displayLn xs
+     return Nothing
 
 -- | @parseFromFileEx p filePath@ runs a parser @p@ on the
 -- input read from @filePath@ using 'ByteString.readFile'. Returns all diagnostic messages
@@ -343,8 +346,10 @@ parseFromFile p fn = do
 -- >     Success a  -> print (sum a)
 -- >
 
-parseFromFileEx :: Show a => Parser a -> String -> IO (Result a)
-parseFromFileEx p fn = parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) <$> Strict.readFile fn
+parseFromFileEx :: (MonadIO m, Show a) => Parser a -> String -> m (Result a)
+parseFromFileEx p fn = do
+  s <- liftIO $ Strict.readFile fn
+  return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
 
 -- | @parseByteString p delta i@ runs a parser @p@ on @i@.
 
@@ -354,7 +359,7 @@ parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty
 parseString :: Show a => Parser a -> Delta -> String -> Result a
 parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
-parseTest :: Show a => Parser a -> String -> IO ()
+parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
   Failure xs -> displayLn xs
-  Success a  -> print a
+  Success a  -> liftIO (print a)
