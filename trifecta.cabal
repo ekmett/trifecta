@@ -59,7 +59,7 @@ library
     keys                 >= 3,
     lens                 >= 3.8,
     mtl                  >= 2.0.1   && < 2.2,
-    parsers              >= 0.4.1,
+    parsers              >= 0.5,
     reducers             >= 3,
     semigroups           >= 0.8.3.1,
     terminfo             >= 0.3.2   && < 0.4,

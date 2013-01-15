@@ -58,6 +58,7 @@ import Data.Set as Set hiding (empty, toList)
 import System.Console.Terminfo.PrettyPrint
 import Text.Parser.Combinators
 import Text.Parser.Char
+import Text.Parser.LookAhead
 import Text.Parser.Token
 import Text.PrettyPrint.Free as Pretty hiding (line)
 import Text.Trifecta.Combinators
@@ -155,6 +156,7 @@ liftIt m = Parser $ \ eo _ _ _ _ _ -> do
   eo a mempty
 {-# INLINE liftIt #-}
 
+
 instance Parsing Parser where
   try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ -> ee mempty)
   {-# INLINE try #-}
@@ -164,12 +166,14 @@ instance Parsing Parser where
   {-# INLINE (<?>) #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
   {-# INLINE skipMany #-}
-  lookAhead (Parser m) = Parser $ \eo ee _ -> m eo ee (\a _ _ _ -> eo a mempty)
-  {-# INLINE lookAhead #-}
   unexpected s = Parser $ \ _ ee _ _ _ _ -> ee $ failing $ "unexpected " ++ s
   {-# INLINE unexpected #-}
   eof = notFollowedBy anyChar <?> "end of input"
   {-# INLINE eof #-}
+
+instance LookAheadParsing Parser where
+  lookAhead (Parser m) = Parser $ \eo ee _ -> m eo ee (\a _ _ _ -> eo a mempty)
+  {-# INLINE lookAhead #-}
 
 instance CharParsing Parser where
   satisfy f = Parser $ \ _ ee co _ d bs ->
@@ -325,8 +329,7 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
 -- >   case result of
 -- >     Nothing -> return ()
 -- >     Just a  -> print $ sum a
-
-parseFromFile :: (MonadIO m, Show a) => Parser a -> String -> m (Maybe a)
+parseFromFile :: MonadIO m => Parser a -> String -> m (Maybe a)
 parseFromFile p fn = do
   result <- parseFromFileEx p fn
   case result of
@@ -346,17 +349,17 @@ parseFromFile p fn = do
 -- >     Success a  -> print (sum a)
 -- >
 
-parseFromFileEx :: (MonadIO m, Show a) => Parser a -> String -> m (Result a)
+parseFromFileEx :: MonadIO m => Parser a -> String -> m (Result a)
 parseFromFileEx p fn = do
   s <- liftIO $ Strict.readFile fn
   return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
 
 -- | @parseByteString p delta i@ runs a parser @p@ on @i@.
 
-parseByteString :: Show a => Parser a -> Delta -> UTF8.ByteString -> Result a
+parseByteString :: Parser a -> Delta -> UTF8.ByteString -> Result a
 parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
-parseString :: Show a => Parser a -> Delta -> String -> Result a
+parseString :: Parser a -> Delta -> String -> Result a
 parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
