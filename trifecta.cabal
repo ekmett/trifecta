@@ -38,11 +38,14 @@ library
     Text.Trifecta.Util.Array
 
   other-modules:
+    Text.Trifecta.Instances
     Text.Trifecta.Util.Combinators
 
   ghc-options: -Wall
 
   build-depends:
+    ansi-wl-pprint       >= 0.6.5   && < 0.7,
+    ansi-terminal        >= 0.6     && < 0.7,
     array                >= 0.3.0.2 && < 0.5,
     base                 >= 4.4 && < 5,
     blaze-builder        >= 0.3.0.1 && < 0.4,
@@ -62,12 +65,9 @@ library
     parsers              >= 0.5,
     reducers             >= 3,
     semigroups           >= 0.8.3.1,
-    terminfo             >= 0.3.2   && < 0.4,
     transformers         >= 0.2     && < 0.4,
     unordered-containers >= 0.2.1   && < 0.3,
-    utf8-string          >= 0.3.6   && < 0.4,
-    wl-pprint-extras     >= 3.3,
-    wl-pprint-terminfo   >= 3.4
+    utf8-string          >= 0.3.6   && < 0.4
 
 test-suite doctests
   type:    exitcode-stdio-1.0

@@ -21,7 +21,6 @@ module Text.Trifecta.Delta
   , columnByte
   ) where
 
-import Control.Applicative
 import Data.Semigroup
 import Data.Hashable
 import Data.Int
@@ -33,8 +32,8 @@ import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
 import GHC.Generics
-import Text.PrettyPrint.Free hiding (column)
-import System.Console.Terminfo.PrettyPrint
+import Text.Trifecta.Instances ()
+import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>))
 
 class HasBytes t where
   bytes :: t -> Int64
@@ -72,10 +71,7 @@ instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
 
 instance Pretty Delta where
-  pretty p = prettyTerm p *> empty
-
-instance PrettyTerm Delta where
-  prettyTerm d = case d of
+  pretty d = case d of
     Columns c _ -> k f 0 c
     Tab x y _ -> k f 0 (nextTab x + y)
     Lines l c _ _ -> k f l c
@@ -84,7 +80,7 @@ instance PrettyTerm Delta where
       k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
       f = "(interactive)"
 
-int64 :: Int64 -> Doc e
+int64 :: Int64 -> Doc
 int64 = pretty . show
 
 column :: HasDelta t => t -> Int64

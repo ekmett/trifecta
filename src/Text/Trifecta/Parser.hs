@@ -55,21 +55,22 @@ import Data.Semigroup
 import Data.Semigroup.Reducer
 -- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)
-import System.Console.Terminfo.PrettyPrint
+import System.IO
 import Text.Parser.Combinators
 import Text.Parser.Char
 import Text.Parser.LookAhead
 import Text.Parser.Token
-import Text.PrettyPrint.Free as Pretty hiding (line)
+import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
 import Text.Trifecta.Combinators
+import Text.Trifecta.Instances ()
 import Text.Trifecta.Rendering
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
 data Err = Err
-  { _reason    :: Maybe TermDoc
-  , _footnotes :: [TermDoc]
+  { _reason    :: Maybe Doc
+  , _footnotes :: [Doc]
   , _expected  :: Set String
   }
 
@@ -92,7 +93,7 @@ newtype Parser a = Parser
     (a -> Err -> It Rope r) ->
     (Err -> It Rope r) ->
     (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
-    (TermDoc -> It Rope r) ->                                -- committed err
+    (Doc -> It Rope r) ->                                -- committed err
     Delta -> ByteString -> It Rope r
   }
 
@@ -218,9 +219,9 @@ instance MarkParsing Delta Parser where
             else co () mempty d' mempty
         | otherwise -> ee mempty
 
-explain :: Rendering -> Err -> TermDoc
+explain :: Rendering -> Err -> Doc
 explain r (Err mm as es)
-  | Set.null es = report (withEx empty)
+  | Set.null es = report (withEx mempty)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
   | otherwise   = report expecting
   where
@@ -229,32 +230,28 @@ explain r (Err mm as es)
     spaceHack xs = List.filter (/= "") xs
     withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
     expecting = text "expected:" <+> fillSep (punctuate (Pretty.char ',') (text <$> now))
-    report txt = vsep $ [prettyTerm (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
-             <|> prettyTerm r <$ guard (not (nullRendering r))
+    report txt = vsep $ [pretty (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
+             <|> pretty r <$ guard (not (nullRendering r))
              <|> as
 
 data Result a
   = Success a
-  | Failure TermDoc
+  | Failure Doc
   deriving (Show,Functor,Foldable,Traversable)
 
 instance Show a => Pretty (Result a) where
   pretty (Success a)  = pretty (show a)
   pretty (Failure xs) = pretty xs
 
-instance Show a => PrettyTerm (Result a) where
-  prettyTerm (Success a) = pretty (show a)
-  prettyTerm (Failure xs) = prettyTerm xs
-
 instance Applicative Result where
   pure = Success
   Success f  <*> Success a  = Success (f a)
   Success _  <*> Failure ys = Failure ys
   Failure xs <*> Success _  = Failure xs
-  Failure xs <*> Failure ys = Failure $ above xs ys
+  Failure xs <*> Failure ys = Failure $ vsep [xs, ys]
 
 instance Alternative Result where
-  Failure xs <|> Failure ys = Failure $ above xs ys
+  Failure xs <|> Failure ys = Failure $ vsep [xs, ys]
   Success a  <|> Success _  = Success a
   Success a  <|> Failure _  = Success a
   Failure _  <|> Success a  = Success a
@@ -262,7 +259,7 @@ instance Alternative Result where
 
 data Step a
   = StepDone !Rope a
-  | StepFail !Rope TermDoc
+  | StepFail !Rope Doc
   | StepCont !Rope (Result a) (Rope -> Step a)
 
 instance Show a => Show (Step a) where
@@ -301,7 +298,7 @@ data Stepping a
   = EO a Err
   | EE Err
   | CO a (Set String) Delta ByteString
-  | CE TermDoc
+  | CE Doc
 
 stepParser :: Parser a -> Delta -> ByteString -> Step a
 stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
@@ -335,7 +332,7 @@ parseFromFile p fn = do
   case result of
    Success a  -> return (Just a)
    Failure xs -> do
-     displayLn xs
+     liftIO $ displayIO stdout $ renderPretty 0.8 80 $ xs <> linebreak
      return Nothing
 
 -- | @parseFromFileEx p filePath@ runs a parser @p@ on the
@@ -364,5 +361,5 @@ parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mem
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
-  Failure xs -> displayLn xs
+  Failure xs -> liftIO $ displayIO stdout $ renderPretty 0.8 80 $ xs <> linebreak -- TODO: retrieve columns
   Success a  -> liftIO (print a)

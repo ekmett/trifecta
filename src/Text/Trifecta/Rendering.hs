@@ -59,7 +59,6 @@ module Text.Trifecta.Rendering
 import Control.Applicative
 import Control.Comonad
 import Control.Lens
-import Control.Monad.State
 import Data.Array
 import Data.ByteString as B hiding (groupBy, empty, any)
 import qualified Data.ByteString.UTF8 as UTF8
@@ -68,23 +67,70 @@ import Data.Foldable
 import Data.Function (on)
 import Data.Hashable
 import Data.Int (Int64)
+import Data.Maybe
 import Data.List (groupBy)
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import GHC.Generics
 import Prelude as P hiding (span)
-import System.Console.Terminfo.Color
-import System.Console.Terminfo.PrettyPrint
-import Text.PrettyPrint.Free hiding (column)
--- import Text.Trifecta.Highlight
+import System.Console.ANSI
+import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>), (<$>))
 import Text.Trifecta.Delta
+import Text.Trifecta.Instances ()
 import Text.Trifecta.Util.Combinators
--- import Text.Trifecta.Util.IntervalMap
 
-outOfRangeEffects :: [ScopedEffect] -> [ScopedEffect]
-outOfRangeEffects xs = soft Bold : xs
+outOfRangeEffects :: [SGR] -> [SGR]
+outOfRangeEffects xs = SetConsoleIntensity BoldIntensity : xs
 
-type Lines = Array (Int,Int64) ([ScopedEffect], Char)
+sgr :: [SGR] -> Doc -> Doc
+sgr xs0 = go (P.reverse xs0) where
+  go []                                         = id
+  go (SetConsoleIntensity NormalIntensity : xs) = debold . go xs
+  go (SetConsoleIntensity BoldIntensity   : xs) = bold . go xs
+  go (SetUnderlining NoUnderline          : xs) = deunderline . go xs
+  go (SetUnderlining SingleUnderline      : xs) = underline . go xs
+  go (SetColor f i c                      : xs) = case f of
+    Foreground -> case i of
+      Dull -> case c of
+        Black   -> dullblack . go xs
+        Red     -> dullred . go xs
+        Green   -> dullgreen . go xs
+        Yellow  -> dullyellow . go xs
+        Blue    -> dullblue . go xs
+        Magenta -> dullmagenta . go xs
+        Cyan    -> dullcyan . go xs
+        White   -> dullwhite . go xs
+      Vivid -> case c of
+        Black   -> black . go xs
+        Red     -> red . go xs
+        Green   -> green . go xs
+        Yellow  -> yellow . go xs
+        Blue    -> blue . go xs
+        Magenta -> magenta . go xs
+        Cyan    -> cyan . go xs
+        White   -> white . go xs
+    Background -> case i of
+      Dull -> case c of
+        Black   -> ondullblack . go xs
+        Red     -> ondullred . go xs
+        Green   -> ondullgreen . go xs
+        Yellow  -> ondullyellow . go xs
+        Blue    -> ondullblue . go xs
+        Magenta -> ondullmagenta . go xs
+        Cyan    -> ondullcyan . go xs
+        White   -> ondullwhite . go xs
+      Vivid -> case c of
+        Black   -> onblack . go xs
+        Red     -> onred . go xs
+        Green   -> ongreen . go xs
+        Yellow  -> onyellow . go xs
+        Blue    -> onblue . go xs
+        Magenta -> onmagenta . go xs
+        Cyan    -> oncyan . go xs
+        White   -> onwhite . go xs
+  go (_                                   : xs) = go xs
+
+type Lines = Array (Int,Int64) ([SGR], Char)
 
 (///) :: Ix i => Array i e -> [(i, e)] -> Array i e
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
@@ -96,7 +142,7 @@ grow y a
   where old@((t,lo),(b,hi)) = bounds a
         new = ((min t y,lo),(max b y,hi))
 
-draw :: [ScopedEffect] -> Int -> Int64 -> String -> Lines -> Lines
+draw :: [SGR] -> Int -> Int64 -> String -> Lines -> Lines
 draw e y n xs a0
   | P.null xs = a0
   | otherwise = gt $ lt (a /// out)
@@ -118,30 +164,6 @@ data Rendering = Rendering
   }
 
 makeClassy ''Rendering
-
-{-
-instance Highlightable Rendering where
-  addHighlights intervals (Rendering d ll lb l o) = Rendering d ll lb l' o where
-    d' = rewind d
-    l' = P.foldr (.) l [ recolor (eff tok) (column lo <$ guard (near d lo)) (column hi <$ guard (near d hi))
-                             | (Interval lo hi, tok) <- intersections d' (d' <> Columns ll lb) intervals ]
-    eff t _ = highlightEffects t
-
--- | fill the interval from [n .. m) with a given effect
-recolor :: ([ScopedEffect] -> [ScopedEffect]) -> Maybe Int64 -> Maybe Int64 -> Lines -> Lines
-recolor f n0 m0 a0
-  | m <= n = a0
-  | otherwise = a /// P.map rc [n .. m - 1]
-  where
-    ((_,lo),(_,hi)) = bounds a
-    n = maybe lo id n0
-    m = maybe (hi + 1) id m0
-    a = grow 0 a0
-    rc i = (yi, (f e, c)) -- only if not isSpace?
-      where
-        yi = (0, i)
-        (e,c) = a ! yi
--}
 
 instance Show Rendering where
   showsPrec d (Rendering p ll lb _ _) = showParen (d > 10) $
@@ -182,7 +204,7 @@ class Source t where
 instance Source String where
   source s
     | P.elem '\n' s = ( ls, bs, draw [] 0 0 s')
-    | otherwise           = ( ls + fromIntegral (P.length end), bs, draw [soft (Foreground Blue), soft Bold] 0 ls end . draw [] 0 0 s')
+    | otherwise           = ( ls + fromIntegral (P.length end), bs, draw [SetColor Foreground Vivid Blue, SetConsoleIntensity BoldIntensity] 0 ls end . draw [] 0 0 s')
     where
       end = "<EOF>"
       s' = go 0 s
@@ -206,16 +228,13 @@ rendered del s = case source s of
 f .# Rendering d ll lb s g = Rendering d ll lb s $ \e l -> f e $ g e l
 
 instance Pretty Rendering where
-  pretty r = prettyTerm r >>= const empty
-
-instance PrettyTerm Rendering where
-  prettyTerm (Rendering d ll _ l f) = nesting $ \k -> columns $ \n -> go (fromIntegral (n - k)) where
+  pretty (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
     go cols = align (vsep (P.map ln [t..b])) where
       (lo, hi) = window (column d) ll (min (max (cols - 2) 30) 200)
       a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
       ln y = hcat
-           $ P.map (\g -> P.foldr with (pretty (P.map snd g)) (fst (P.head g)))
+           $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
            $ groupBy ((==) `on` fst)
            [ a ! (y,i) | i <- [lo..hi] ]
 
@@ -270,8 +289,8 @@ instance HasCaret Caret where
 
 instance Hashable Caret
 
-caretEffects :: [ScopedEffect]
-caretEffects = [soft (Foreground Green), soft Bold]
+caretEffects :: [SGR]
+caretEffects = [SetColor Foreground Vivid Green]
 
 drawCaret :: Delta -> Delta -> Lines -> Lines
 drawCaret p = ifNear p $ draw caretEffects 1 (fromIntegral (column p)) "^"
@@ -332,8 +351,8 @@ instance Reducer (Careted a) Rendering where
 
 instance Hashable a => Hashable (Careted a)
 
-spanEffects :: [ScopedEffect]
-spanEffects  = [soft (Foreground Green)]
+spanEffects :: [SGR]
+spanEffects  = [SetColor Foreground Dull Green]
 
 drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
 drawSpan s e d a
@@ -407,7 +426,7 @@ instance Hashable a => Hashable (Spanned a)
 -- >                  ^
 -- >                  ,
 drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
-drawFixit s e rpl d a = ifNear l (draw [soft (Foreground Blue)] 2 (fromIntegral (column l)) rpl) d 
+drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIntegral (column l)) rpl) d
                       $ drawSpan s e d a
   where l = argmin bytes s e
 

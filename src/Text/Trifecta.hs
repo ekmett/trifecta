@@ -18,7 +18,6 @@ module Text.Trifecta
   , module Text.Parser.Combinators
   , module Text.Parser.Char
   , module Text.Parser.Token
-  , module System.Console.Terminfo.PrettyPrint
   ) where
 
 import Text.Trifecta.Rendering
@@ -29,4 +28,3 @@ import Text.Trifecta.Rope
 import Text.Parser.Combinators
 import Text.Parser.Char
 import Text.Parser.Token
-import System.Console.Terminfo.PrettyPrint

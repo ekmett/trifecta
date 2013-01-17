@@ -15,16 +15,12 @@ module Text.Trifecta.Highlight
   ( Highlight
   , HighlightedRope(HighlightedRope)
   , HasHighlightedRope(..)
-  , highlightEffects
-  , pushToken
-  , popToken
   , withHighlight
   , HighlightDoc(HighlightDoc)
   , HasHighlightDoc(..)
   , doc
   ) where
 
-import Control.Applicative
 import Control.Lens
 import Data.Foldable as F
 import Data.Int (Int64)
@@ -33,41 +29,38 @@ import Data.List (sort)
 import Data.Semigroup
 import Data.Semigroup.Union
 import Prelude hiding (head)
-import System.Console.Terminfo.Color
-import System.Console.Terminfo.PrettyPrint
 import Text.Blaze
 import Text.Blaze.Html5 hiding (a,b,i)
 import qualified Text.Blaze.Html5 as Html5
-import Text.Blaze.Html5.Attributes hiding (title)
+import Text.Blaze.Html5.Attributes hiding (title,id)
 import Text.Blaze.Internal
 import Text.Parser.Token.Highlight
-import Text.PrettyPrint.Free
+import Text.PrettyPrint.ANSI.Leijen hiding ((<>))
 import Text.Trifecta.Util.IntervalMap as IM
 import Text.Trifecta.Delta
 import Text.Trifecta.Rope
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
 
-highlightEffects :: Highlight -> [ScopedEffect]
-highlightEffects Comment                     = [soft $ Foreground Blue]
-highlightEffects ReservedIdentifier          = [soft $ Foreground Magenta, soft Bold]
-highlightEffects ReservedConstructor         = [soft $ Foreground Magenta, soft Bold]
-highlightEffects EscapeCode                  = [soft $ Foreground Magenta, soft Bold]
-highlightEffects Operator                    = [soft $ Foreground Yellow]
-highlightEffects CharLiteral                 = [soft $ Foreground Cyan]
-highlightEffects StringLiteral               = [soft $ Foreground Cyan]
-highlightEffects Constructor                 = [soft Bold]
-highlightEffects ReservedOperator            = [soft $ Foreground Yellow]
-highlightEffects ConstructorOperator         = [soft $ Foreground Yellow, soft Bold]
-highlightEffects ReservedConstructorOperator = [soft $ Foreground Yellow, soft Bold]
-highlightEffects _             = []
+withHighlight :: Highlight -> Doc -> Doc
+withHighlight Comment                     = blue
+withHighlight ReservedIdentifier          = magenta
+withHighlight ReservedConstructor         = magenta
+withHighlight EscapeCode                  = magenta
+withHighlight Operator                    = yellow
+withHighlight CharLiteral                 = cyan
+withHighlight StringLiteral               = cyan
+withHighlight Constructor                 = bold
+withHighlight ReservedOperator            = yellow
+withHighlight ConstructorOperator         = yellow
+withHighlight ReservedConstructorOperator = yellow
+withHighlight _                           = id
 
-pushToken, popToken :: Highlight -> TermDoc
-pushToken h = Prelude.foldr (\x b -> pure (Push x) <> b) mempty (highlightEffects h)
-popToken h  = Prelude.foldr (\_ b -> pure Pop      <> b) mempty (highlightEffects h)
-
-withHighlight :: Highlight -> TermDoc -> TermDoc
-withHighlight h d = pushToken h <> d <> popToken h
+{-
+pushToken, popToken :: Highlight -> Doc
+pushToken h = Prelude.foldr (\x b -> pure (Push x) <> b) mempty (withHighlight h)
+popToken h  = Prelude.foldr (\_ b -> pure Pop      <> b) mempty (withHighlight h)
+-}
 
 data HighlightedRope = HighlightedRope
   { _ropeHighlights :: !(IM.IntervalMap Delta Highlight)
@@ -112,20 +105,20 @@ instance ToMarkup HighlightedRope where
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
 
 instance Pretty HighlightedRope where
-  pretty (HighlightedRope _ r) = hsep $ [ pretty bs | Strand bs _ <- F.toList (strands r)]
-
-instance PrettyTerm HighlightedRope where
-  prettyTerm (HighlightedRope intervals r) = go 0 lbs effects where
+  pretty (HighlightedRope _intervals r) = go 0 lbs effects where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
+    effects = error "pretty HighlightRope effects"
+{-
     effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
                      , i <- [ pushToken tok :@ bytes lo
                             , popToken tok  :@ bytes hi
                             ]
                      ]
-    go _ cs [] = prettyTerm (LazyUTF8.toString cs)
+-}
+    go _ cs [] = pretty (LazyUTF8.toString cs)
     go b cs ((eff :@ eb) : es)
       | eb <= b = eff <> go b cs es
-      | otherwise = prettyTerm (LazyUTF8.toString om) <> go eb nom es
+      | otherwise = pretty (LazyUTF8.toString om) <> go eb nom es
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
 
 -- | Represents a source file like an HsColour rendered document
