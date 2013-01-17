@@ -105,21 +105,14 @@ instance ToMarkup HighlightedRope where
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
 
 instance Pretty HighlightedRope where
-  pretty (HighlightedRope _intervals r) = go 0 lbs effects where
+  pretty (HighlightedRope intervals r) = go mempty lbs boundaries where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
-    effects = error "pretty HighlightRope effects"
-{-
-    effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
-                     , i <- [ pushToken tok :@ bytes lo
-                            , popToken tok  :@ bytes hi
-                            ]
-                     ]
--}
-    go _ cs [] = pretty (LazyUTF8.toString cs)
-    go b cs ((eff :@ eb) : es)
-      | eb <= b = eff <> go b cs es
-      | otherwise = pretty (LazyUTF8.toString om) <> go eb nom es
-         where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
+    ints = intersections mempty (delta r) intervals
+    boundaries = sort [ i | (Interval lo hi, _) <- ints, i <- [ lo, hi ] ]
+    dominated l h = Prelude.foldr (fmap . withHighlight . snd) id (dominators l h intervals)
+    go l cs [] = dominated l (delta r) $ pretty (LazyUTF8.toString cs)
+    go l cs (h:es) = dominated l h (pretty (LazyUTF8.toString om)) <> go h nom es
+      where (om,nom) = L.splitAt (fromIntegral (bytes h - bytes l)) cs
 
 -- | Represents a source file like an HsColour rendered document
 data HighlightDoc = HighlightDoc
