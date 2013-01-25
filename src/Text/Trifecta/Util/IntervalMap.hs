@@ -48,14 +48,13 @@ module Text.Trifecta.Util.IntervalMap
   ) where
 
 import Control.Applicative hiding (empty)
+import Control.Lens hiding ((<|),(|>))
 import qualified Data.FingerTree as FT
 import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
-import Data.Traversable (Traversable(traverse))
 import Data.Foldable (Foldable(foldMap))
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Semigroup.Union
-import Data.Key
 
 ----------------------------------
 -- 4.8 Application: interval trees
@@ -95,25 +94,23 @@ instance Traversable Interval where
 
 data Node v a = Node (Interval v) a
 
-type instance Key (Node v) = Interval v
-
 instance Functor (Node v) where
   fmap f (Node i x) = Node i (f x)
 
-instance Keyed (Node v) where
-  mapWithKey f (Node i x) = Node i (f i x)
+instance FunctorWithIndex (Interval v) (Node v) where
+  imap f (Node i x) = Node i (f i x)
 
 instance Foldable (Node v) where
   foldMap f (Node _ x) = f x
 
-instance FoldableWithKey (Node v) where
-  foldMapWithKey f (Node k v) = f k v
+instance FoldableWithIndex (Interval v) (Node v) where
+  ifoldMap f (Node k v) = f k v
 
 instance Traversable (Node v) where
   traverse f (Node i x) = Node i <$> f x
 
-instance TraversableWithKey (Node v) where
-  traverseWithKey f (Node i x) = Node i <$> f i x
+instance TraversableWithIndex (Interval v) (Node v) where
+  itraverse f (Node i x) = Node i <$> f i x
 
 -- rightmost interval (including largest lower bound) and largest upper bound.
 data IntInterval v = NoInterval | IntInterval (Interval v) v
@@ -134,27 +131,25 @@ instance Ord v => Measured (IntInterval v) (Node v a) where
 newtype IntervalMap v a = IntervalMap { runIntervalMap :: FingerTree (IntInterval v) (Node v a) }
 -- ordered lexicographically by interval
 
-type instance Key (IntervalMap v) = Interval v
-
 instance Functor (IntervalMap v) where
   fmap f (IntervalMap t) = IntervalMap (FT.unsafeFmap (fmap f) t)
 
-instance Keyed (IntervalMap v) where
-  mapWithKey f (IntervalMap t) = IntervalMap (FT.unsafeFmap (mapWithKey f) t)
+instance FunctorWithIndex (Interval v) (IntervalMap v) where
+  imap f (IntervalMap t) = IntervalMap (FT.unsafeFmap (imap f) t)
 
 instance Foldable (IntervalMap v) where
   foldMap f (IntervalMap t) = foldMap (foldMap f) t
 
-instance FoldableWithKey (IntervalMap v) where
-  foldMapWithKey f (IntervalMap t) = foldMap (foldMapWithKey f) t
+instance FoldableWithIndex (Interval v) (IntervalMap v) where
+  ifoldMap f (IntervalMap t) = foldMap (ifoldMap f) t
 
 instance Traversable (IntervalMap v) where
   traverse f (IntervalMap t) =
      IntervalMap <$> FT.unsafeTraverse (traverse f) t
 
-instance TraversableWithKey (IntervalMap v) where
-  traverseWithKey f (IntervalMap t) =
-     IntervalMap <$> FT.unsafeTraverse (traverseWithKey f) t
+instance TraversableWithIndex (Interval v) (IntervalMap v) where
+  itraverse f (IntervalMap t) =
+     IntervalMap <$> FT.unsafeTraverse (itraverse f) t
 
 instance Ord v => Measured (IntInterval v) (IntervalMap v a) where
   measure (IntervalMap m) = measure m

@@ -32,7 +32,6 @@ import Control.Monad
 import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
-import Data.Key as Key
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
@@ -49,8 +48,6 @@ instance Functor (It r) where
   fmap f (Pure a) = Pure $ f a
   fmap f (It a k) = It (f a) $ fmap f . k
 
-type instance Key (It r) = r
-
 instance Applicative (It r) where
   pure = Pure
   Pure f  <*> Pure a  = Pure $ f a
@@ -58,15 +55,9 @@ instance Applicative (It r) where
   It f kf <*> Pure a  = It (f a) $ fmap ($a) . kf
   It f kf <*> It a ka = It (f a) $ \r -> kf r <*> ka r
 
-instance Indexable (It r) where
-  index (Pure a) _ = a
-  index (It _ k) r = extract (k r)
-
-instance Lookup (It r) where
-  lookup = lookupDefault
-
-instance Zip (It r) where
-  zipWith = liftA2
+indexIt :: It r a -> r -> a
+indexIt (Pure a) _ = a
+indexIt (It _ k) r = extract (k r)
 
 simplifyIt :: It r a -> r -> It r a
 simplifyIt (It _ k) r = k r
@@ -76,7 +67,7 @@ instance Monad (It r) where
   return = Pure
   Pure a >>= f = f a
   It a k >>= f = It (extract (f a)) $ \r -> case k r of
-    It a' k' -> It (Key.index (f a') r) $ k' >=> f
+    It a' k' -> It (indexIt (f a') r) $ k' >=> f
     Pure a' -> simplifyIt (f a') r
 
 instance ComonadApply (It r) where (<@>) = (<*>)

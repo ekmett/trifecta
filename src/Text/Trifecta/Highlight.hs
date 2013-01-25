@@ -24,7 +24,6 @@ module Text.Trifecta.Highlight
 import Control.Lens
 import Data.Foldable as F
 import Data.Int (Int64)
-import Data.Key hiding ((!))
 import Data.List (sort)
 import Data.Semigroup
 import Data.Semigroup.Union
@@ -97,7 +96,7 @@ instance ToMarkup HighlightedRope where
                      , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
                             , preEscapedString "</span>" :@ bytes hi
                             ]
-                     ] ++ mapWithKey (\k i -> ln k :@ i) (L.elemIndices '\n' lbs)
+                     ] ++ imap (\k i -> ln k :@ i) (L.elemIndices '\n' lbs)
     go _ cs [] = unsafeLazyByteString cs
     go b cs ((eff :@ eb) : es)
       | eb <= b = eff >> go b cs es
