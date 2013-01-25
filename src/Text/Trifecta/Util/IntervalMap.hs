@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.IntervalMap
--- Copyright   :  (c) Edward Kmett 2011-2012
+-- Copyright   :  (c) Edward Kmett 2011-2013
 --                (c) Ross Paterson 2008
 -- License     :  BSD-style
 -- Maintainer  :  ekmett@gmail.com

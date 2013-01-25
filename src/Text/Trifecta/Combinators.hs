@@ -6,7 +6,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Combinators
--- Copyright   :  (c) Edward Kmett 2011-2012
+-- Copyright   :  (c) Edward Kmett 2011-2013
 -- License     :  BSD3
 --
 -- Maintainer  :  ekmett@gmail.com
