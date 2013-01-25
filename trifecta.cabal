@@ -44,7 +44,7 @@ library
   ghc-options: -Wall
 
   build-depends:
-    ansi-wl-pprint       >= 0.6.5   && < 0.7,
+    ansi-wl-pprint       >= 0.6.6   && < 0.7,
     ansi-terminal        >= 0.6     && < 0.7,
     array                >= 0.3.0.2 && < 0.5,
     base                 >= 4.4     && < 5,
