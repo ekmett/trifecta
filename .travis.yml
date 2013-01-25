@@ -3,13 +3,6 @@ before_install:
   # Uncomment whenever hackage is down.
   # - mkdir -p ~/.cabal && cp travis/config ~/.cabal/config && cabal update
 
-  # grab lens 3.8
-  - git clone https://github.com/ekmett/lens.git
-  - cd lens
-  - travis/cabal-apt-install --only-dependencies --force-reinstall --constraint="hashable >= 1.2"
-  - cabal install --force-reinstall --constraint="hashable >= 1.2"
-  - cd ..
-
   # Try installing some of the build-deps with apt-get for speed.
   - travis/cabal-apt-install --only-dependencies --force-reinstall $mode
 
