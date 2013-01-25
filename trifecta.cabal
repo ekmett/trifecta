@@ -29,13 +29,14 @@ library
     Text.Trifecta
     Text.Trifecta.Combinators
     Text.Trifecta.Delta
-    Text.Trifecta.Rope
-    Text.Trifecta.Rendering
     Text.Trifecta.Highlight
     Text.Trifecta.Parser
-    Text.Trifecta.Util.It
-    Text.Trifecta.Util.IntervalMap
+    Text.Trifecta.Rendering
+    Text.Trifecta.Result
+    Text.Trifecta.Rope
     Text.Trifecta.Util.Array
+    Text.Trifecta.Util.IntervalMap
+    Text.Trifecta.Util.It
 
   other-modules:
     Text.Trifecta.Instances
