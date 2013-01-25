@@ -76,7 +76,6 @@ data Err = Err
 
 makeClassy ''Err
 
-
 instance Semigroup Err where
   Err md mds mes <> Err nd nds nes
     = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes)
@@ -87,6 +86,22 @@ instance Monoid Err where
 
 failing :: String -> Err
 failing m = Err (Just (fillSep (pretty <$> words m))) [] mempty
+
+explain :: Rendering -> Err -> Doc
+explain r (Err mm as es)
+  | Set.null es = report (withEx mempty)
+  | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
+  | otherwise   = report expecting
+  where
+    now = spaceHack $ List.nub $ toList es
+    spaceHack [""] = ["space"]
+    spaceHack xs = List.filter (/= "") xs
+    withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
+    expecting = text "expected:" <+> fillSep (punctuate (Pretty.char ',') (text <$> now))
+    report txt = vsep $ [pretty (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
+             <|> pretty r <$ guard (not (nullRendering r))
+             <|> as
+
 
 newtype Parser a = Parser
   { unparser :: forall r.
@@ -121,10 +136,13 @@ instance Alternative Parser where
 
 instance Semigroup (Parser a) where
   (<>) = (<|>)
+  {-# INLINE (<>) #-}
 
 instance Monoid (Parser a) where
   mappend = (<|>)
+  {-# INLINE mappend #-}
   mempty = empty
+  {-# INLINE mempty #-}
 
 instance Monad Parser where
   return a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
@@ -143,7 +161,9 @@ instance Monad Parser where
 
 instance MonadPlus Parser where
   mzero = empty
+  {-# INLINE mzero #-}
   mplus = (<|>)
+  {-# INLINE mplus #-}
 
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
@@ -156,7 +176,6 @@ liftIt m = Parser $ \ eo _ _ _ _ _ -> do
   a <- m
   eo a mempty
 {-# INLINE liftIt #-}
-
 
 instance Parsing Parser where
   try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ -> ee mempty)
@@ -205,7 +224,6 @@ instance DeltaParsing Parser where
     f a <$> liftIt (sliceIt m r)
   {-# INLINE slicedWith #-}
 
-
 instance MarkParsing Delta Parser where
   mark = position
   {-# INLINE mark #-}
@@ -219,21 +237,6 @@ instance MarkParsing Delta Parser where
             else co () mempty d' mempty
         | otherwise -> ee mempty
 
-explain :: Rendering -> Err -> Doc
-explain r (Err mm as es)
-  | Set.null es = report (withEx mempty)
-  | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
-  | otherwise   = report expecting
-  where
-    now = spaceHack $ List.nub $ toList es
-    spaceHack [""] = ["space"]
-    spaceHack xs = List.filter (/= "") xs
-    withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
-    expecting = text "expected:" <+> fillSep (punctuate (Pretty.char ',') (text <$> now))
-    report txt = vsep $ [pretty (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
-             <|> pretty r <$ guard (not (nullRendering r))
-             <|> as
-
 data Result a
   = Success a
   | Failure Doc
@@ -245,17 +248,21 @@ instance Show a => Pretty (Result a) where
 
 instance Applicative Result where
   pure = Success
+  {-# INLINE pure #-}
   Success f  <*> Success a  = Success (f a)
   Success _  <*> Failure ys = Failure ys
   Failure xs <*> Success _  = Failure xs
   Failure xs <*> Failure ys = Failure $ vsep [xs, ys]
+  {-# INLINE (<*>) #-}
 
 instance Alternative Result where
   Failure xs <|> Failure ys = Failure $ vsep [xs, ys]
   Success a  <|> Success _  = Success a
   Success a  <|> Failure _  = Success a
   Failure _  <|> Success a  = Success a
+  {-# INLINE (<|>) #-}
   empty = Failure mempty
+  {-# INLINE empty #-}
 
 data Step a
   = StepDone !Rope a
@@ -279,20 +286,24 @@ feed :: Reducer t Rope => t -> Step r -> Step r
 feed t (StepDone r a)    = StepDone (snoc r t) a
 feed t (StepFail r xs)   = StepFail (snoc r t) xs
 feed t (StepCont r _ k)  = k (snoc r t)
+{-# INLINE feed #-}
 
 starve :: Step a -> Result a
 starve (StepDone _ a)    = Success a
 starve (StepFail _ xs)   = Failure xs
 starve (StepCont _ z _)  = z
+{-# INLINE starve #-}
 
 stepResult :: Rope -> Result a -> Step a
 stepResult r (Success a)  = StepDone r a
 stepResult r (Failure xs) = StepFail r xs
+{-# INLINE stepResult #-}
 
 stepIt :: It Rope a -> Step a
 stepIt = go mempty where
   go r (Pure a) = StepDone r a
   go r (It a k) = StepCont r (pure a) $ \s -> go s (k s)
+{-# INLINE stepIt #-}
 
 data Stepping a
   = EO a Err
@@ -316,6 +327,7 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
                               ) (go <*> k)
+{-# INLINE stepParser #-}
 
 -- | @parseFromFile p filePath@ runs a parser @p@ on the
 -- input read from @filePath@ using 'ByteString.readFile'. All diagnostic messages
