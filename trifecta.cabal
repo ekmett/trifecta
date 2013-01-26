@@ -2,7 +2,7 @@ name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
 version:       1.0
 license:       BSD3
-cabal-version: >= 1.6
+cabal-version: >= 1.10
 license-file:  LICENSE
 author:        Edward A. Kmett
 maintainer:    Edward A. Kmett <ekmett@gmail.com>
@@ -23,8 +23,6 @@ source-repository head
   location: git://github.com/ekmett/trifecta.git
 
 library
-  hs-source-dirs: src
-
   exposed-modules:
     Text.Trifecta
     Text.Trifecta.Combinators
@@ -41,8 +39,6 @@ library
   other-modules:
     Text.Trifecta.Instances
     Text.Trifecta.Util.Combinators
-
-  ghc-options: -Wall
 
   build-depends:
     ansi-wl-pprint       >= 0.6.6   && < 0.7,
@@ -69,16 +65,22 @@ library
     unordered-containers >= 0.2.1   && < 0.3,
     utf8-string          >= 0.3.6   && < 0.4
 
+  default-language: Haskell2010
+  hs-source-dirs:   src
+  ghc-options:      -O2 -threaded -Wall
+
+
 test-suite doctests
-  type:    exitcode-stdio-1.0
-  main-is: doctests.hs
+  type:             exitcode-stdio-1.0
+  main-is:          doctests.hs
+  ghc-options:      -Wall -threaded
+  hs-source-dirs:   tests
+  default-language: Haskell2010
   build-depends:
     base,
     directory >= 1.0,
     doctest >= 0.9.1,
     filepath
-  ghc-options: -Wall -threaded
+
   if impl(ghc<7.6.1)
     ghc-options: -Werror
-  hs-source-dirs: tests
-
