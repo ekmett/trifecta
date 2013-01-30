@@ -41,6 +41,7 @@ import Text.Trifecta.Rope
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
 
+-- | Convert a 'Highlight' into a coloration on a 'Doc'.
 withHighlight :: Highlight -> Doc -> Doc
 withHighlight Comment                     = blue
 withHighlight ReservedIdentifier          = magenta
@@ -55,12 +56,7 @@ withHighlight ConstructorOperator         = yellow
 withHighlight ReservedConstructorOperator = yellow
 withHighlight _                           = id
 
-{-
-pushToken, popToken :: Highlight -> Doc
-pushToken h = Prelude.foldr (\x b -> pure (Push x) <> b) mempty (withHighlight h)
-popToken h  = Prelude.foldr (\_ b -> pure Pop      <> b) mempty (withHighlight h)
--}
-
+-- | A 'HighlightedRope' is a 'Rope' with an associated 'IntervalMap' full of highlighted regions.
 data HighlightedRope = HighlightedRope
   { _ropeHighlights :: !(IM.IntervalMap Delta Highlight)
   , _ropeContent    :: {-# UNPACK #-} !Rope
@@ -122,6 +118,7 @@ data HighlightDoc = HighlightDoc
 
 makeClassy ''HighlightDoc
 
+-- | Generate an HTML document from a title and a 'HighlightedRope'.
 doc :: String -> HighlightedRope -> HighlightDoc
 doc t r = HighlightDoc t "trifecta.css" r
 
@@ -132,29 +129,3 @@ instance ToMarkup HighlightDoc where
       title $ toHtml t
       link ! rel "stylesheet" ! type_ "text/css" ! href (toValue css)
     body $ toHtml cs
-
-{-
-newtype Highlighter m a = Highlighter { runHighlighter :: IntervalMap Map Highlight -> m (a, IntervalMap Map Highlight) }
-  deriving (Functor)
-
-instance (Functor m, Monad m) => Applicative (Highlighter m) where
-  (<*>) = ap
-  pure = return
-
-instance (Functor m, MonadPlus m) => Alternative (Highlighter m) where
-  (<|>) = mplus
-  empty = mzero
-
-instance Monad m => Monad (Highlighter m) where
-  return a = Highlighter $ \s -> return (a, s)
-  Highlighter m >>= f = Highlighter $ \s -> m s >>= \(a, s') -> runHighlighter (f a) s'
-
-instance MonadTrans Highlighter where
-  lift m = Highlighter $ \s -> fmap (\a -> (a,s)) m
-
-instance MonadPlus m => MonadPlus (Highlighter m) where
-  mplus (Highlighter m) (Highligher n) = Highlighter $ \s -> m s `mplus` n s
-  mzero = Highlighter $ const mzero
-
--- instance Parsing m => Parsing (Highlighter m) where
--}
