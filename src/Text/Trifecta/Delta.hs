@@ -83,6 +83,7 @@ instance Pretty Delta where
 int64 :: Int64 -> Doc
 int64 = pretty . show
 
+-- | Retrieve the character offset within the current line from this 'Delta'.
 column :: HasDelta t => t -> Int64
 column t = case delta t of
   Columns c _ -> c
@@ -91,6 +92,7 @@ column t = case delta t of
   Directed _ _ c _ _ -> c
 {-# INLINE column #-}
 
+-- | Retrieve the byte offset within the current line from this 'Delta'.
 columnByte :: Delta -> Int64
 columnByte (Columns _ b) = b
 columnByte (Tab _ _ b) = b
@@ -128,16 +130,19 @@ instance Semigroup Delta where
   Directed p l _ t _ <> Lines m d t' b      = Directed p (l + m) d                         (t + t') b
   Directed _ _ _ t _ <> Directed p l c t' b = Directed p l       c                         (t + t') b
 
+-- | Increment a column number to the next tabstop.
 nextTab :: Int64 -> Int64
 nextTab x = x + (8 - mod x 8)
 {-# INLINE nextTab #-}
 
+-- | Rewind a 'Delta' to the beginning of the line.
 rewind :: Delta -> Delta
 rewind (Lines n _ b d)      = Lines n 0 (b - d) 0
 rewind (Directed p n _ b d) = Directed p n 0 (b - d) 0
 rewind _                    = Columns 0 0
 {-# INLINE rewind #-}
 
+-- | Should we show two things with a 'Delta' on the same line?
 near :: (HasDelta s, HasDelta t) => s -> t -> Bool
 near s t = rewind (delta s) == rewind (delta t)
 {-# INLINE near #-}
