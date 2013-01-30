@@ -41,13 +41,14 @@ import Data.Foldable
 import Data.Maybe (fromMaybe, isJust)
 import qualified Data.List as List
 import Data.Semigroup
--- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)
 import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
 import Text.Trifecta.Instances ()
 import Text.Trifecta.Rendering
 import Text.Trifecta.Delta as Delta
 
+-- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
+-- at the current location. This does not, however, include the actual location.
 data Err = Err
   { _reason    :: Maybe Doc
   , _footnotes :: [Doc]
@@ -59,14 +60,21 @@ makeClassy ''Err
 instance Semigroup Err where
   Err md mds mes <> Err nd nds nes
     = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes)
+  {-# INLINE (<>) #-}
 
 instance Monoid Err where
   mempty = Err Nothing [] mempty
+  {-# INLINE mempty #-}
   mappend = (<>)
+  {-# INLINE mappend #-}
 
+-- | Generate a simple 'Err' word-wrapping the supplied message.
+ that word-wraps
 failing :: String -> Err
 failing m = Err (Just (fillSep (pretty <$> words m))) [] mempty
+{-# INLINE failing #-}
 
+-- | Convert a location and an 'Err' into a 'Doc'
 explain :: Rendering -> Err -> Doc
 explain r (Err mm as es)
   | Set.null es = report (withEx mempty)
@@ -82,11 +90,13 @@ explain r (Err mm as es)
              <|> pretty r <$ guard (not (nullRendering r))
              <|> as
 
+-- | The result of parsing. Either we succeeded or something went wrong.
 data Result a
   = Success a
   | Failure Doc
   deriving (Show,Functor,Foldable,Traversable)
 
+-- | A 'Prism' that lets you embed or retrieve a 'Result' in a potentially larger type.
 class AsResult p f s t a b | s -> a, t -> b, s b -> t, t a -> s where
   _Result :: Overloaded p f s t (Result a) (Result b)
 
@@ -94,12 +104,14 @@ instance AsResult p f (Result a) (Result b) a b where
   _Result = id
   {-# INLINE _Result #-}
 
+-- | The 'Prism' for the 'Success' constructor of 'Result'
 _Success :: (AsResult p f s t a b, Choice p, Applicative f) => Overloaded p f s t a b
 _Success = _Result . dimap seta (either id id) . right' . rmap (fmap Success) where
   seta (Success a) = Right a
   seta (Failure d) = Left (pure (Failure d))
 {-# INLINE _Success #-}
 
+-- | The 'Prism' for the 'Failure' constructor of 'Result'
 _Failure :: (AsResult p f s s a a, Choice p, Applicative f) => Overloaded' p f s Doc
 _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) where
   seta (Failure d) = Right d
