@@ -69,7 +69,6 @@ instance Monoid Err where
   {-# INLINE mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
- that word-wraps
 failing :: String -> Err
 failing m = Err (Just (fillSep (pretty <$> words m))) [] mempty
 {-# INLINE failing #-}
