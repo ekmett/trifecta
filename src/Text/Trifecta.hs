@@ -18,6 +18,7 @@ module Text.Trifecta
   , module Text.Parser.Combinators
   , module Text.Parser.Char
   , module Text.Parser.Token
+  , module Text.Parser.Result
   ) where
 
 import Text.Trifecta.Rendering
@@ -28,3 +29,4 @@ import Text.Trifecta.Rope
 import Text.Parser.Combinators
 import Text.Parser.Char
 import Text.Parser.Token
+import Text.Parser.Result
