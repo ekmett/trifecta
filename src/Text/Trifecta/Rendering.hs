@@ -60,8 +60,7 @@ import Control.Applicative
 import Control.Comonad
 import Control.Lens
 import Data.Array
-import Data.ByteString as B hiding (groupBy, empty, any)
-import qualified Data.ByteString.UTF8 as UTF8
+import Data.Text as B hiding (groupBy, empty, any)
 import Data.Data
 import Data.Foldable
 import Data.Function (on)
@@ -158,7 +157,7 @@ draw e y n xs a0
 data Rendering = Rendering
   { _renderingDelta    :: !Delta                 -- focus, the render will keep this visible
   , _renderingLineLen   :: {-# UNPACK #-} !Int64 -- actual line length
-  , _renderingLineBytes :: {-# UNPACK #-} !Int64 -- line length in bytes
+  , _renderingLineUnits :: {-# UNPACK #-} !Int64 -- line length in units
   , _renderingLine     :: Lines -> Lines
   , _renderingOverlays :: Delta -> Lines -> Lines
   }
@@ -199,7 +198,7 @@ instance Renderable Rendering where
   render = id
 
 class Source t where
-  source :: t -> (Int64, Int64, Lines -> Lines) {- the number of (padded) columns, number of bytes, and the the line -}
+  source :: t -> (Int64, Int64, Lines -> Lines) {- the number of (padded) columns, number of units, and the the line -}
 
 instance Source String where
   source s
@@ -208,7 +207,7 @@ instance Source String where
     where
       end = "<EOF>"
       s' = go 0 s
-      bs = fromIntegral $ B.length $ UTF8.fromString $ P.takeWhile (/='\n') s
+      bs = fromIntegral $ B.length $ pack $ P.takeWhile (/='\n') s
       ls = fromIntegral $ P.length s'
       go n ('\t':xs) = let t = 8 - mod n 8 in P.replicate t ' ' ++ go (n + t) xs
       go _ ('\n':_)  = []
@@ -216,8 +215,8 @@ instance Source String where
       go _ []        = []
 
 
-instance Source ByteString where
-  source = source . UTF8.toString
+instance Source Text where
+  source = source . unpack
 
 -- | create a drawing surface
 rendered :: Source s => Delta -> s -> Rendering
@@ -254,8 +253,8 @@ instance Functor Rendered where
 instance HasDelta (Rendered a) where
   delta = delta . render
 
-instance HasBytes (Rendered a) where
-  bytes = bytes . delta
+instance HasUnits (Rendered a) where
+  units = units . delta
 
 instance Comonad Rendered where
   extend f as@(_ :@ s) = f as :@ s
@@ -279,7 +278,7 @@ instance Renderable (Rendered a) where
 -- > foo.c:8:36: note
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^
-data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Caret = Caret !Delta {-# UNPACK #-} !Text deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasCaret t where
   caret :: Lens' t Caret
@@ -298,8 +297,8 @@ drawCaret p = ifNear p $ draw caretEffects 1 (fromIntegral (column p)) "^"
 addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
 
-instance HasBytes Caret where
-  bytes = bytes . delta
+instance HasUnits Caret where
+  units = units . delta
 
 instance HasDelta Caret where
   delta (Caret d _) = d
@@ -313,7 +312,7 @@ instance Reducer Caret Rendering where
 instance Semigroup Caret where
   a <> _ = a
 
-renderingCaret :: Delta -> ByteString -> Rendering
+renderingCaret :: Delta -> Text -> Rendering
 renderingCaret d bs = addCaret d $ rendered d bs
 
 data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Typeable,Generic)
@@ -327,8 +326,8 @@ instance Functor Careted where
 instance HasDelta (Careted a) where
   delta (_ :^ c) = delta c
 
-instance HasBytes (Careted a) where
-  bytes (_ :^ c) = bytes c
+instance HasUnits (Careted a) where
+  units (_ :^ c) = units c
 
 instance Comonad Careted where
   extend f as@(_ :^ s) = f as :^ s
@@ -362,8 +361,8 @@ drawSpan s e d a
   | otherwise = a
   where
     go = draw spanEffects 1 . fromIntegral
-    l = argmin bytes s e
-    h = argmax bytes s e
+    l = argmin units s e
+    h = argmax units s e
     nl = near l d
     nh = near h d
     rep = P.replicate . fromIntegral
@@ -374,7 +373,7 @@ drawSpan s e d a
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
-data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Span = Span !Delta !Delta {-# UNPACK #-} !Text deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
   span :: Lens' t Span
@@ -428,14 +427,14 @@ instance Hashable a => Hashable (Spanned a)
 drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
 drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIntegral (column l)) rpl) d
                       $ drawSpan s e d a
-  where l = argmin bytes s e
+  where l = argmin units s e
 
 addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
 addFixit s e rpl r = drawFixit s e rpl .# r
 
 data Fixit = Fixit
   { _fixitSpan        :: {-# UNPACK #-} !Span
-  , _fixitReplacement :: !ByteString
+  , _fixitReplacement :: !Text
   } deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 makeClassy ''Fixit
@@ -449,4 +448,4 @@ instance Reducer Fixit Rendering where
   unit = render
 
 instance Renderable Fixit where
-  render (Fixit (Span s e bs) r) = addFixit s e (UTF8.toString r) $ rendered s bs
+  render (Fixit (Span s e bs) r) = addFixit s e (unpack r) $ rendered s bs

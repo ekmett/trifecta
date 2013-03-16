@@ -12,15 +12,17 @@
 module Text.Trifecta.Util.Combinators
   ( argmin
   , argmax
-  -- * ByteString conversions
+  -- * Text conversions
   , fromLazy
   , toLazy
   , takeLine
+  -- * Misc.
   , (<$!>)
   ) where
 
-import Data.ByteString.Lazy as Lazy
-import Data.ByteString as Strict
+import Control.Lens
+import Data.Text.Lazy as Lazy
+import Data.Text as Strict
 
 argmin :: Ord b => (a -> b) -> a -> a -> a
 argmin f a b
@@ -34,19 +36,23 @@ argmax f a b
   | otherwise = b
 {-# INLINE argmax #-}
 
-fromLazy :: Lazy.ByteString -> Strict.ByteString
-fromLazy = Strict.concat . Lazy.toChunks
-     
-toLazy :: Strict.ByteString -> Lazy.ByteString
-toLazy = Lazy.fromChunks . return
+fromLazy :: Lazy.Text -> Strict.Text
+fromLazy = Lazy.toStrict
+{-# INLINE fromLazy #-}
 
-takeLine :: Lazy.ByteString -> Lazy.ByteString
-takeLine s = case Lazy.elemIndex 10 s of
+toLazy :: Strict.Text -> Lazy.Text
+toLazy = Lazy.fromStrict
+{-# INLINE toLazy #-}
+
+takeLine :: Lazy.Text -> Lazy.Text
+takeLine s = case s^?each.filtered (=='\n').asIndex of
   Just i -> Lazy.take (i + 1) s
   Nothing -> s
+-- TODO: speed this up!
+{-# INLINE takeLine #-}
 
 infixl 4 <$!>
 (<$!>) :: Monad m => (a -> b) -> m a -> m b
 f <$!> m = do
-  a <- m 
+  a <- m
   return $! f a

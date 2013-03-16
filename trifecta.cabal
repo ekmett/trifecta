@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       1.0
+version:       1.1
 license:       BSD3
 cabal-version: >= 1.10
 license-file:  LICENSE
@@ -61,6 +61,7 @@ library
     parsers              >= 0.5     && < 1,
     reducers             == 3.*,
     semigroups           >= 0.8.3.1 && < 1,
+    text,
     transformers         >= 0.2     && < 0.4,
     unordered-containers >= 0.2.1   && < 0.3,
     utf8-string          >= 0.3.6   && < 0.4

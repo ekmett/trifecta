@@ -33,15 +33,15 @@ module Text.Trifecta.Parser
   , parseFromFile
   , parseFromFileEx
   , parseString
-  , parseByteString
+  , parseText
   , parseTest
   ) where
 
 import Control.Applicative as Alternative
 import Control.Monad (MonadPlus(..), ap, join)
 import Control.Monad.IO.Class
-import Data.ByteString as Strict hiding (empty, snoc)
-import Data.ByteString.UTF8 as UTF8
+import Data.Text as Strict hiding (empty, snoc)
+import Data.Text.IO as Text
 import Data.Maybe (isJust)
 import Data.Semigroup
 import Data.Semigroup.Reducer
@@ -65,9 +65,9 @@ newtype Parser a = Parser
   { unparser :: forall r.
     (a -> Err -> It Rope r) ->
     (Err -> It Rope r) ->
-    (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
+    (a -> Set String -> Delta -> Text -> It Rope r) -> -- committed success
     (Doc -> It Rope r) ->                                -- committed err
-    Delta -> ByteString -> It Rope r
+    Delta -> Text -> It Rope r
   }
 
 instance Functor Parser where
@@ -155,7 +155,7 @@ instance LookAheadParsing Parser where
 
 instance CharParsing Parser where
   satisfy f = Parser $ \ _ ee co _ d bs ->
-    case UTF8.uncons $ Strict.drop (fromIntegral (columnByte d)) bs of
+    case uncons $ Strict.drop (fromIntegral (columnUnits d)) bs of
       Nothing        -> ee (failing "unexpected EOF")
       Just (c, xs)
         | not (f c)       -> ee mempty
@@ -190,7 +190,7 @@ instance MarkParsing Delta Parser where
     case mbs of
       Just bs' -> co () mempty d' bs'
       Nothing
-        | bytes d' == bytes (rewind d) + fromIntegral (Strict.length bs) -> if near d d'
+        | units d' == units (rewind d) + fromIntegral (Strict.length bs) -> if near d d'
             then co () mempty d' bs
             else co () mempty d' mempty
         | otherwise -> ee mempty
@@ -239,10 +239,10 @@ stepIt = go mempty where
 data Stepping a
   = EO a Err
   | EE Err
-  | CO a (Set String) Delta ByteString
+  | CO a (Set String) Delta Text
   | CE Doc
 
-stepParser :: Parser a -> Delta -> ByteString -> Step a
+stepParser :: Parser a -> Delta -> Text -> Step a
 stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   eo a e       = Pure (EO a e)
   ee e         = Pure (EE e)
@@ -261,7 +261,7 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
 {-# INLINE stepParser #-}
 
 -- | @parseFromFile p filePath@ runs a parser @p@ on the
--- input read from @filePath@ using 'ByteString.readFile'. All diagnostic messages
+-- input read from @filePath@ using 'Text.readFile'. All diagnostic messages
 -- emitted over the course of the parse attempt are shown to the user on the console.
 --
 -- > main = do
@@ -279,7 +279,7 @@ parseFromFile p fn = do
      return Nothing
 
 -- | @parseFromFileEx p filePath@ runs a parser @p@ on the
--- input read from @filePath@ using 'ByteString.readFile'. Returns all diagnostic messages
+-- input read from @filePath@ using 'Text.readFile'. Returns all diagnostic messages
 -- emitted over the course of the parse and the answer if the parse was successful.
 --
 -- > main = do
@@ -291,18 +291,18 @@ parseFromFile p fn = do
 
 parseFromFileEx :: MonadIO m => Parser a -> String -> m (Result a)
 parseFromFileEx p fn = do
-  s <- liftIO $ Strict.readFile fn
-  return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
+  s <- liftIO $ Text.readFile fn
+  return $ parseText p (Directed (pack fn) 0 0 0 0) s
 
--- | @parseByteString p delta i@ runs a parser @p@ on @i@.
+-- | @parseText p delta i@ runs a parser @p@ on @i@.
 
-parseByteString :: Parser a -> Delta -> UTF8.ByteString -> Result a
-parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
+parseText :: Parser a -> Delta -> Text -> Result a
+parseText p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
 parseString :: Parser a -> Delta -> String -> Result a
 parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
-parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
+parseTest p s = case parseText p mempty (pack s) of
   Failure xs -> liftIO $ displayIO stdout $ renderPretty 0.8 80 $ xs <> linebreak -- TODO: retrieve columns
   Success a  -> liftIO (print a)

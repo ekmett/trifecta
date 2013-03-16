@@ -38,8 +38,7 @@ import Text.PrettyPrint.ANSI.Leijen hiding ((<>))
 import Text.Trifecta.Util.IntervalMap as IM
 import Text.Trifecta.Delta
 import Text.Trifecta.Rope
-import qualified Data.ByteString.Lazy.Char8 as L
-import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
+import qualified Data.Text.Lazy as L
 
 -- | Convert a 'Highlight' into a coloration on a 'Doc'.
 withHighlight :: Highlight -> Doc -> Doc
@@ -67,8 +66,8 @@ makeClassy ''HighlightedRope
 instance HasDelta HighlightedRope where
   delta = delta . _ropeContent
 
-instance HasBytes HighlightedRope where
-  bytes = bytes . _ropeContent
+instance HasUnits HighlightedRope where
+  units = units . _ropeContent
 
 instance Semigroup HighlightedRope where
   HighlightedRope h bs <> HighlightedRope h' bs' = HighlightedRope (h `union` IM.offset (delta bs) h') (bs <> bs')
@@ -89,14 +88,14 @@ instance ToMarkup HighlightedRope where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
     ln no = Html5.a ! name (toValue $ "line-" ++ show no) $ Empty
     effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
-                     , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
-                            , preEscapedString "</span>" :@ bytes hi
+                     , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ units lo
+                            , preEscapedString "</span>" :@ units hi
                             ]
-                     ] ++ imap (\k i -> ln k :@ i) (L.elemIndices '\n' lbs)
-    go _ cs [] = unsafeLazyByteString cs
+                     ] ++ imap (\k i -> ln k :@ i) (lbs^..each.filtered (=='\n').asIndex)
+    go _ cs [] = lazyText cs
     go b cs ((eff :@ eb) : es)
       | eb <= b = eff >> go b cs es
-      | otherwise = unsafeLazyByteString om >> go eb nom es
+      | otherwise = lazyText om >> go eb nom es
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
 
 instance Pretty HighlightedRope where
@@ -105,9 +104,9 @@ instance Pretty HighlightedRope where
     ints = intersections mempty (delta r) intervals
     boundaries = sort [ i | (Interval lo hi, _) <- ints, i <- [ lo, hi ] ]
     dominated l h = Prelude.foldr (fmap . withHighlight . snd) id (dominators l h intervals)
-    go l cs [] = dominated l (delta r) $ pretty (LazyUTF8.toString cs)
-    go l cs (h:es) = dominated l h (pretty (LazyUTF8.toString om)) <> go h nom es
-      where (om,nom) = L.splitAt (fromIntegral (bytes h - bytes l)) cs
+    go l cs [] = dominated l (delta r) $ pretty (L.unpack cs)
+    go l cs (h:es) = dominated l h (pretty (L.unpack om)) <> go h nom es
+      where (om,nom) = L.splitAt (fromIntegral (units h - units l)) cs
 
 -- | Represents a source file like an HsColour rendered document
 data HighlightDoc = HighlightDoc

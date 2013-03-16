@@ -34,7 +34,7 @@ import Control.Monad.Trans.State.Lazy as Lazy
 import Control.Monad.Trans.State.Strict as Strict
 import Control.Monad.Trans.Writer.Lazy as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
-import Data.ByteString as Strict hiding (span)
+import Data.Text as Strict hiding (span)
 import Data.Semigroup
 import Text.Parser.Token
 import Text.Trifecta.Delta
@@ -48,13 +48,13 @@ import Prelude hiding (span)
 -- 3) the ability to use 'sliced' on any parser.
 class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   -- | Retrieve the contents of the current line (from the beginning of the line)
-  line     :: m ByteString
+  line     :: m Text
 
   -- | Retrieve the current position as a 'Delta'.
   position :: m Delta
 
   -- | Run a parser, grabbing all of the text between its start and end points
-  slicedWith :: (a -> Strict.ByteString -> r) -> m a -> m r
+  slicedWith :: (a -> Strict.Text -> r) -> m a -> m r
 
   -- | Retrieve a 'Rendering' of the current linem noting this position, but not
   -- placing a 'Caret' there.
@@ -63,8 +63,8 @@ class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   {-# INLINE rend #-}
 
   -- | Grab the remainder of the current line
-  restOfLine :: DeltaParsing m => m ByteString
-  restOfLine = Strict.drop . fromIntegral . columnByte <$> position <*> line
+  restOfLine :: DeltaParsing m => m Text
+  restOfLine = Strict.drop . fromIntegral . columnUnits <$> position <*> line -- TODO: fix! this is dropping codepoints as columns!
   {-# INLINE restOfLine #-}
 
 instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Lazy.StateT s m) where
@@ -164,7 +164,7 @@ instance (MonadPlus m, DeltaParsing m) => DeltaParsing (IdentityT m) where
   {-# INLINE restOfLine #-}
 
 -- | Run a parser, grabbing all of the text between its start and end points and discarding the original result
-sliced :: DeltaParsing m => m a -> m ByteString
+sliced :: DeltaParsing m => m a -> m Text
 sliced = slicedWith (\_ bs -> bs)
 {-# INLINE sliced #-}
 
@@ -189,7 +189,7 @@ spanned p = (\s l a e -> a :~ Span s e l) <$> position <*> line <*> p <*> positi
 {-# INLINE spanned #-}
 
 -- | Grab a fixit.
-fixiting :: DeltaParsing m => m Strict.ByteString -> m Fixit
+fixiting :: DeltaParsing m => m Strict.Text -> m Fixit
 fixiting p = (\(r :~ s) -> Fixit s r) <$> spanned p
 {-# INLINE fixiting #-}
 

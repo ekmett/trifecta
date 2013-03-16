@@ -30,8 +30,8 @@ import Control.Applicative
 import Control.Comonad
 import Control.Monad
 import Data.Semigroup
-import Data.ByteString as Strict
-import Data.ByteString.Lazy as Lazy
+import Data.Text as Strict
+import Data.Text.Lazy as Lazy
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
@@ -101,22 +101,22 @@ runIt _ i (It a k) = i a k
 -- * Rope specifics
 
 -- | Given a position, go there, and grab the text forward from that point
-fillIt :: r -> (Delta -> Strict.ByteString -> r) -> Delta -> It Rope r
+fillIt :: r -> (Delta -> Strict.Text -> r) -> Delta -> It Rope r
 fillIt kf ks n = wantIt kf $ \r ->
-  (# bytes n < bytes (rewind (delta r))
+  (# units n < units (rewind (delta r))
   ,  grabLine n r kf ks #)
 
 
 -- | Return the text of the line that contains a given position
-rewindIt :: Delta -> It Rope (Maybe Strict.ByteString)
+rewindIt :: Delta -> It Rope (Maybe Strict.Text)
 rewindIt n = wantIt Nothing $ \r ->
-  (# bytes n < bytes (rewind (delta r))
+  (# units n < units (rewind (delta r))
   ,  grabLine (rewind n) r Nothing $ const Just #)
 
-sliceIt :: Delta -> Delta -> It Rope Strict.ByteString
+sliceIt :: Delta -> Delta -> It Rope Strict.Text
 sliceIt !i !j = wantIt mempty $ \r ->
-  (# bj < bytes (rewind (delta r))
+  (# bj < units (rewind (delta r))
   ,  grabRest i r mempty $ const $ Util.fromLazy . Lazy.take (fromIntegral (bj - bi)) #)
   where
-    bi = bytes i
-    bj = bytes j
+    bi = units i
+    bj = units j

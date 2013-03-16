@@ -13,12 +13,12 @@
 module Text.Trifecta.Delta
   ( Delta(..)
   , HasDelta(..)
-  , HasBytes(..)
+  , HasUnits(..)
   , nextTab
   , rewind
   , near
   , column
-  , columnByte
+  , columnUnits
   ) where
 
 import Data.Semigroup
@@ -29,43 +29,42 @@ import Data.Word
 import Data.Foldable
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
-import Data.ByteString as Strict hiding (empty)
-import qualified Data.ByteString.UTF8 as UTF8
+import Data.Text as Strict hiding (empty)
 import GHC.Generics
 import Text.Trifecta.Instances ()
 import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>))
 
-class HasBytes t where
-  bytes :: t -> Int64
+class HasUnits t where
+  units :: t -> Int64
 
-instance HasBytes ByteString where
-  bytes = fromIntegral . Strict.length
+instance HasUnits Text where
+  units = fromIntegral . Strict.length
 
-instance (Measured v a, HasBytes v) => HasBytes (FingerTree v a) where
-  bytes = bytes . measure
+instance (Measured v a, HasUnits v) => HasUnits (FingerTree v a) where
+  units = units . measure
 
 data Delta
   = Columns   {-# UNPACK #-} !Int64 -- the number of characters
-              {-# UNPACK #-} !Int64 -- the number of bytes
+              {-# UNPACK #-} !Int64 -- the number of UTF-16 code units
   | Tab       {-# UNPACK #-} !Int64 -- the number of characters before the tab
               {-# UNPACK #-} !Int64 -- the number of characters after the tab
-              {-# UNPACK #-} !Int64 -- the number of bytes
+              {-# UNPACK #-} !Int64 -- the number of UTF-16 code units
   | Lines     {-# UNPACK #-} !Int64 -- the number of newlines contained
               {-# UNPACK #-} !Int64 -- the number of characters since the last newline
-              {-# UNPACK #-} !Int64 -- number of bytes
-              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
-  | Directed  !ByteString           -- current file name
+              {-# UNPACK #-} !Int64 -- number of units
+              {-# UNPACK #-} !Int64 -- the number of UTF-16 code units since the last newline
+  | Directed  !Text                 -- current file name
               {-# UNPACK #-} !Int64 -- the number of lines since the last line directive
               {-# UNPACK #-} !Int64 -- the number of characters since the last newline
-              {-# UNPACK #-} !Int64 -- number of bytes
-              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
+              {-# UNPACK #-} !Int64 -- number of UTF-16 code units
+              {-# UNPACK #-} !Int64 -- the number of code units since the last newline
   deriving (Show, Data, Typeable, Generic)
 
 instance Eq Delta where
-  (==) = (==) `on` bytes
+  (==) = (==) `on` units
 
 instance Ord Delta where
-  compare = compare `on` bytes
+  compare = compare `on` units
 
 instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
@@ -75,7 +74,7 @@ instance Pretty Delta where
     Columns c _ -> k f 0 c
     Tab x y _ -> k f 0 (nextTab x + y)
     Lines l c _ _ -> k f l c
-    Directed fn l c _ _ -> k (UTF8.toString fn) l c
+    Directed fn l c _ _ -> k (Strict.unpack fn) l c
     where
       k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
       f = "(interactive)"
@@ -93,18 +92,18 @@ column t = case delta t of
 {-# INLINE column #-}
 
 -- | Retrieve the byte offset within the current line from this 'Delta'.
-columnByte :: Delta -> Int64
-columnByte (Columns _ b) = b
-columnByte (Tab _ _ b) = b
-columnByte (Lines _ _ _ b) = b
-columnByte (Directed _ _ _ _ b) = b
-{-# INLINE columnByte #-}
+columnUnits :: Delta -> Int64
+columnUnits (Columns _ b) = b
+columnUnits (Tab _ _ b) = b
+columnUnits (Lines _ _ _ b) = b
+columnUnits (Directed _ _ _ _ b) = b
+{-# INLINE columnUnits #-}
 
-instance HasBytes Delta where
-  bytes (Columns _ b) = b
-  bytes (Tab _ _ b) = b
-  bytes (Lines _ _ b _) = b
-  bytes (Directed _ _ _ b _) = b
+instance HasUnits Delta where
+  units (Columns _ b) = b
+  units (Tab _ _ b) = b
+  units (Lines _ _ b _) = b
+  units (Directed _ _ _ b _) = b
 
 instance Hashable Delta
 
@@ -157,10 +156,8 @@ instance HasDelta Char where
   delta '\t' = Tab 0 0 1
   delta '\n' = Lines 1 0 1 0
   delta c
-    | o <= 0x7f   = Columns 1 1
-    | o <= 0x7ff  = Columns 1 2
-    | o <= 0xffff = Columns 1 3
-    | otherwise   = Columns 1 4
+    | o <= 0xffff = Columns 1 1
+    | otherwise   = Columns 1 2
     where o = fromEnum c
 
 instance HasDelta Word8 where
@@ -171,7 +168,7 @@ instance HasDelta Word8 where
     | n >= 0xc0 && n <= 0xf4 = Columns 1 1
     | otherwise              = Columns 0 1
 
-instance HasDelta ByteString where
+instance HasDelta Text where
   delta = foldMap delta . unpack
 
 instance (Measured v a, HasDelta v) => HasDelta (FingerTree v a) where

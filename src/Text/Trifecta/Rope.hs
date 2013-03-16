@@ -22,10 +22,9 @@ module Text.Trifecta.Rope
 
 import Data.Semigroup
 import Data.Semigroup.Reducer
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as Strict
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.ByteString.UTF8 as UTF8
+import Data.Text (Text)
+import qualified Data.Text as Strict
+import qualified Data.Text.Lazy as Lazy
 import Data.FingerTree as FingerTree
 import GHC.Generics
 import Data.Foldable (toList)
@@ -36,11 +35,11 @@ import Text.Trifecta.Delta
 import Data.Data
 
 data Strand
-  = Strand        {-# UNPACK #-} !ByteString !Delta
-  | LineDirective {-# UNPACK #-} !ByteString {-# UNPACK #-} !Int64
+  = Strand        {-# UNPACK #-} !Text !Delta
+  | LineDirective {-# UNPACK #-} !Text {-# UNPACK #-} !Int64
   deriving (Show, Data, Typeable, Generic)
 
-strand :: ByteString -> Strand
+strand :: Text -> Strand
 strand bs = Strand bs (delta bs)
 
 instance Measured Delta Strand where
@@ -52,9 +51,9 @@ instance Hashable Strand
 instance HasDelta Strand where
   delta = measure
 
-instance HasBytes Strand where
-  bytes (Strand _ d) = bytes d
-  bytes _            = 0
+instance HasUnits Strand where
+  units (Strand _ d) = units d
+  units _            = 0
 
 data Rope = Rope !Delta !(FingerTree Delta Strand) deriving Show
 
@@ -65,21 +64,21 @@ strands :: Rope -> FingerTree Delta Strand
 strands (Rope _ r) = r
 
 -- | grab a the contents of a rope from a given location up to a newline
-grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
-grabRest i t kf ks = trim (delta l) (bytes i - bytes l) (toList r) where
+grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.Text -> r) -> r
+grabRest i t kf ks = trim (delta l) (units i - units l) (toList r) where
   trim j 0 (Strand h _ : xs) = go j h xs
   trim _ k (Strand h _ : xs) = go i (Strict.drop (fromIntegral k) h) xs
   trim j k (p          : xs) = trim (j <> delta p) k xs 
   trim _ _ []                = kf
   go j h s = ks j $ Lazy.fromChunks $ h : [ a | Strand a _ <- s ]
-  (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t
+  (l, r) = FingerTree.split (\b -> units b > units i) $ strands t
 
 -- | grab a the contents of a rope from a given location up to a newline
-grabLine :: Delta -> Rope -> r -> (Delta -> Strict.ByteString -> r) -> r
+grabLine :: Delta -> Rope -> r -> (Delta -> Strict.Text -> r) -> r
 grabLine i t kf ks = grabRest i t kf $ \c -> ks c . Util.fromLazy . Util.takeLine
 
-instance HasBytes Rope where
-  bytes = bytes . measure
+instance HasUnits Rope where
+  units = units . measure
 
 instance HasDelta Rope where
   delta = measure
@@ -102,12 +101,12 @@ instance Reducer Strand Rope where
   cons s (Rope mt t) = Rope (delta s `mappend` mt) (s <| t)
   snoc (Rope mt t) !s = Rope (mt `mappend` delta s) (t |> s)
 
-instance Reducer Strict.ByteString Rope where
+instance Reducer Strict.Text Rope where
   unit = unit . strand
   cons = cons . strand
   snoc r = snoc r . strand
 
 instance Reducer [Char] Rope where
-  unit = unit . strand . UTF8.fromString
-  cons = cons . strand . UTF8.fromString
-  snoc r = snoc r . strand . UTF8.fromString
+  unit = unit . strand . Strict.pack
+  cons = cons . strand . Strict.pack
+  snoc r = snoc r . strand . Strict.pack
