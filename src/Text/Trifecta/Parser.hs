@@ -114,7 +114,7 @@ instance Monad Parser where
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
-  fail s = Parser $ \ _ ee _ _ _ _ -> ee (failing s)
+  fail s = Parser $ \ _ ee _ _ _ _ -> ee (failed s)
   {-# INLINE fail #-}
 
 instance MonadPlus Parser where
@@ -126,7 +126,7 @@ instance MonadPlus Parser where
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
   let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (_expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
-      manyErr d' bs' _ e  = ce $ explain (renderingCaret d' bs') (e <> failing "'many' applied to a parser that accepted an empty string")
+      manyErr d' bs' _ e  = ce $ explain (renderingCaret d' bs') (e <> failed "'many' applied to a parser that accepted an empty string")
   in p (manyErr d bs) (eo []) (walk []) ce d bs
 
 liftIt :: It Rope a -> Parser a
@@ -144,7 +144,7 @@ instance Parsing Parser where
   {-# INLINE (<?>) #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
   {-# INLINE skipMany #-}
-  unexpected s = Parser $ \ _ ee _ _ _ _ -> ee $ failing $ "unexpected " ++ s
+  unexpected s = Parser $ \ _ ee _ _ _ _ -> ee $ failed $ "unexpected " ++ s
   {-# INLINE unexpected #-}
   eof = notFollowedBy anyChar <?> "end of input"
   {-# INLINE eof #-}
@@ -156,7 +156,7 @@ instance LookAheadParsing Parser where
 instance CharParsing Parser where
   satisfy f = Parser $ \ _ ee co _ d bs ->
     case uncons $ Strict.drop (fromIntegral (columnUnits d)) bs of
-      Nothing        -> ee (failing "unexpected EOF")
+      Nothing        -> ee (failed "unexpected EOF")
       Just (c, xs)
         | not (f c)       -> ee mempty
         | Strict.null xs  -> let !ddc = d <> delta c

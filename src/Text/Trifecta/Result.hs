@@ -31,7 +31,7 @@ module Text.Trifecta.Result
   -- * Parsing Errors
   , Err(..), HasErr(..)
   , explain
-  , failing
+  , failed
   ) where
 
 import Control.Applicative as Alternative
@@ -69,9 +69,9 @@ instance Monoid Err where
   {-# INLINE mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
-failing :: String -> Err
-failing m = Err (Just (fillSep (pretty <$> words m))) [] mempty
-{-# INLINE failing #-}
+failed :: String -> Err
+failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty
+{-# INLINE failed #-}
 
 -- | Convert a location and an 'Err' into a 'Doc'
 explain :: Rendering -> Err -> Doc
