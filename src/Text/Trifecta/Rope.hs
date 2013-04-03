@@ -29,14 +29,13 @@ import Data.FingerTree as FingerTree
 import GHC.Generics
 import Data.Foldable (toList)
 import Data.Hashable
-import Data.Int (Int64)
 import Text.Trifecta.Util.Combinators as Util
 import Text.Trifecta.Delta
 import Data.Data
 
 data Strand
   = Strand        {-# UNPACK #-} !Text !Delta
-  | LineDirective {-# UNPACK #-} !Text {-# UNPACK #-} !Int64
+  | Skipping !Delta
   deriving (Show, Data, Typeable, Generic)
 
 strand :: Text -> Strand
@@ -44,7 +43,7 @@ strand bs = Strand bs (delta bs)
 
 instance Measured Delta Strand where
   measure (Strand _ s) = delta s
-  measure (LineDirective p l) = delta (Directed p l 0 0 0)
+  measure (Skipping d) = d
 
 instance Hashable Strand
 

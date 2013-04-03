@@ -14,6 +14,7 @@ module Text.Trifecta
   , module Text.Trifecta.Highlight
   , module Text.Trifecta.Parser
   , module Text.Trifecta.Combinators
+  , module Text.Trifecta.Result
   , module Text.Trifecta.Rope
   , module Text.Parser.Combinators
   , module Text.Parser.Char
@@ -24,6 +25,7 @@ import Text.Trifecta.Rendering
 import Text.Trifecta.Highlight
 import Text.Trifecta.Parser
 import Text.Trifecta.Combinators
+import Text.Trifecta.Result
 import Text.Trifecta.Rope
 import Text.Parser.Combinators
 import Text.Parser.Char
