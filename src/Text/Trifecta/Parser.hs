@@ -149,6 +149,10 @@ instance Parsing Parser where
   eof = notFollowedBy anyChar <?> "end of input"
   {-# INLINE eof #-}
 
+instance Errable Parser where
+  raiseErr e = Parser $ \ _ ee _ _ _ _ -> ee e
+  {-# INLINE raiseErr #-}
+
 instance LookAheadParsing Parser where
   lookAhead (Parser m) = Parser $ \eo ee _ -> m eo ee (\a _ _ _ -> eo a mempty)
   {-# INLINE lookAhead #-}
