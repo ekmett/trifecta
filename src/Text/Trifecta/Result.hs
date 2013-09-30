@@ -29,7 +29,7 @@ module Text.Trifecta.Result
   , _Success
   , _Failure
   -- * Parsing Errors
-  , Err(..), HasErr(..)
+  , Err(..), HasErr(..), Errable(..)
   , explain
   , failed
   ) where
@@ -88,6 +88,9 @@ explain r (Err mm as es)
     report txt = vsep $ [pretty (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
              <|> pretty r <$ guard (not (nullRendering r))
              <|> as
+
+class Errable m where
+  raiseErr :: Err -> m a
 
 -- | The result of parsing. Either we succeeded or something went wrong.
 data Result a
