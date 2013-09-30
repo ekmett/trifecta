@@ -97,9 +97,9 @@ instance Semigroup (Parser a) where
   {-# INLINE (<>) #-}
 
 instance Monoid (Parser a) where
-  mappend = (<|>)
+  mappend = liftA2 mappend
   {-# INLINE mappend #-}
-  mempty = empty
+  mempty = pure mempty
   {-# INLINE mempty #-}
 
 instance Monad Parser where
