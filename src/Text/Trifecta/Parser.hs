@@ -92,11 +92,11 @@ instance Alternative Parser where
   {-# INLINE many #-}
   some p = (:) <$> p <*> Alternative.many p
 
-instance Semigroup (Parser a) where
-  (<>) = (<|>)
+instance Semigroup a => Semigroup (Parser a) where
+  (<>) = liftA2 (<>)
   {-# INLINE (<>) #-}
 
-instance Monoid (Parser a) where
+instance Monoid a => Monoid (Parser a) where
   mappend = liftA2 mappend
   {-# INLINE mappend #-}
   mempty = pure mempty
