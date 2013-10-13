@@ -1,3 +1,7 @@
+1.2.1.1
+-------
+* Updated `array` dependency for compatibility with GHC 7.8
+
 1.2.1
 -----
 * Bug fix for the `Monoid` instance in response to [issue #15](https://github.com/ekmett/trifecta/issues/14)

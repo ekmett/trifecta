@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       1.2.1
+version:       1.2.1.1
 license:       BSD3
 cabal-version: >= 1.10
 license-file:  LICENSE
@@ -43,14 +43,14 @@ library
   build-depends:
     ansi-wl-pprint       >= 0.6.6   && < 0.7,
     ansi-terminal        >= 0.6     && < 0.7,
-    array                >= 0.3.0.2 && < 0.5,
+    array                >= 0.3.0.2 && < 0.6,
     base                 >= 4.4     && < 5,
     blaze-builder        >= 0.3.0.1 && < 0.4,
     blaze-html           >= 0.5     && < 0.6,
     blaze-markup         >= 0.5     && < 0.6,
     bytestring           >= 0.9.1   && < 0.11,
     charset              >= 0.3.2.1 && < 1,
-    comonad              == 3.*,
+    comonad              >= 3       && < 4,
     containers           >= 0.3     && < 0.6,
     deepseq              >= 1.2.0.1 && < 1.4,
     fingertree           >= 0.0.1   && < 0.1,
@@ -59,7 +59,7 @@ library
     lens                 >= 3.8.2   && < 4,
     mtl                  >= 2.0.1   && < 2.2,
     parsers              >= 0.5     && < 1,
-    reducers             == 3.*,
+    reducers             >= 3       && < 4,
     semigroups           >= 0.8.3.1 && < 1,
     transformers         >= 0.2     && < 0.4,
     unordered-containers >= 0.2.1   && < 0.3,
@@ -79,7 +79,7 @@ test-suite doctests
   build-depends:
     base,
     directory >= 1.0,
-    doctest >= 0.9.1,
+    doctest   >= 0.9.1,
     filepath
 
   if impl(ghc<7.6.1)
