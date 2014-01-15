@@ -68,7 +68,7 @@ grabRest :: Delta -> Rope -> r -> (Delta -> Lazy.ByteString -> r) -> r
 grabRest i t kf ks = trim (delta l) (bytes i - bytes l) (toList r) where
   trim j 0 (Strand h _ : xs) = go j h xs
   trim _ k (Strand h _ : xs) = go i (Strict.drop (fromIntegral k) h) xs
-  trim j k (p          : xs) = trim (j <> delta p) k xs 
+  trim j k (p          : xs) = trim (j <> delta p) k xs
   trim _ _ []                = kf
   go j h s = ks j $ Lazy.fromChunks $ h : [ a | Strand a _ <- s ]
   (l, r) = FingerTree.split (\b -> bytes b > bytes i) $ strands t

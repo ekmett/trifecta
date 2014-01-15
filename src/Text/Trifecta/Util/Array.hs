@@ -187,7 +187,7 @@ indexM_ ary _i@(I# i#) =
 {-# INLINE indexM_ #-}
 
 unsafeFreeze :: MArray s a -> ST s (Array a)
-unsafeFreeze mary = 
+unsafeFreeze mary =
   ST $ \s -> case unsafeFreezeArray# (unMArray mary) s of
     (# s', ary #) -> (# s', array ary (lengthM mary) #)
 {-# INLINE unsafeFreeze #-}
@@ -238,7 +238,7 @@ copyM !src !sidx !dst !didx n =
   copy_loop sidx didx 0 where
   copy_loop !i !j !c
     | c >= n = return ()
-    | otherwise = do 
+    | otherwise = do
       b <- indexM_ src i
       write dst j b
       copy_loop (i+1) (j+1) (c+1)
@@ -254,7 +254,7 @@ insert ary idx b =
     copy ary 0 mary 0 idx
     write mary idx b
     copy ary idx mary (idx+1) (count-idx)
-    return mary 
+    return mary
   where !count = length ary
 {-# INLINE insert #-}
 

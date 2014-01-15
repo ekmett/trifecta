@@ -36,7 +36,7 @@ argmax f a b
 
 fromLazy :: Lazy.ByteString -> Strict.ByteString
 fromLazy = Strict.concat . Lazy.toChunks
-     
+
 toLazy :: Strict.ByteString -> Lazy.ByteString
 toLazy = Lazy.fromChunks . return
 
@@ -48,5 +48,5 @@ takeLine s = case Lazy.elemIndex 10 s of
 infixl 4 <$!>
 (<$!>) :: Monad m => (a -> b) -> m a -> m b
 f <$!> m = do
-  a <- m 
+  a <- m
   return $! f a
