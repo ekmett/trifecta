@@ -100,21 +100,21 @@ data Result a
 
 -- | A 'Prism' that lets you embed or retrieve a 'Result' in a potentially larger type.
 class AsResult p f s t a b | s -> a, t -> b, s b -> t, t a -> s where
-  _Result :: Overloaded p f s t (Result a) (Result b)
+  _Result :: Optic p f s t (Result a) (Result b)
 
 instance AsResult p f (Result a) (Result b) a b where
   _Result = id
   {-# INLINE _Result #-}
 
 -- | The 'Prism' for the 'Success' constructor of 'Result'
-_Success :: (AsResult p f s t a b, Choice p, Applicative f) => Overloaded p f s t a b
+_Success :: (AsResult p f s t a b, Choice p, Applicative f) => Optic p f s t a b
 _Success = _Result . dimap seta (either id id) . right' . rmap (fmap Success) where
   seta (Success a) = Right a
   seta (Failure d) = Left (pure (Failure d))
 {-# INLINE _Success #-}
 
 -- | The 'Prism' for the 'Failure' constructor of 'Result'
-_Failure :: (AsResult p f s s a a, Choice p, Applicative f) => Overloaded' p f s Doc
+_Failure :: (AsResult p f s s a a, Choice p, Applicative f) => Optic' p f s Doc
 _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) where
   seta (Failure d) = Right d
   seta (Success a) = Left (pure (Success a))
