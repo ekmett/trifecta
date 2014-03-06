@@ -1,3 +1,8 @@
+1.4
+---
+* Simplified AsResult
+* `lens` 4.0 compatibility
+
 1.2.1.1
 -------
 * Updated `array` dependency for compatibility with GHC 7.8
