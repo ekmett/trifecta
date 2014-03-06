@@ -1,3 +1,7 @@
+1.4.1
+-----
+* GHC 7.8.1 compatibility
+
 1.4
 ---
 * Simplified AsResult
