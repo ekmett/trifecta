@@ -12,7 +12,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Result
--- Copyright   :  (c) Edward Kmett 2011-2013
+-- Copyright   :  (c) Edward Kmett 2011-2014
 -- License     :  BSD3
 --
 -- Maintainer  :  ekmett@gmail.com

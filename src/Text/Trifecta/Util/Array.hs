@@ -2,7 +2,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.Array
--- Copyright   :  Edward Kmett 2011-2013
+-- Copyright   :  Edward Kmett 2011-2014
 --                Johan Tibell 2011
 -- License     :  BSD3
 --
