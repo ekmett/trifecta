@@ -56,7 +56,20 @@ import qualified Data.Traversable as Traversable
 import Control.Applicative (Applicative)
 import Control.DeepSeq
 import Control.Monad.ST
-import GHC.Exts
+import GHC.Exts (
+      Array#,
+      copyArray#,
+      copyMutableArray#,
+      indexArray#,
+      Int(I#),
+      MutableArray#,
+      newArray#,
+      readArray#,
+      sizeofArray#,
+      sizeofMutableArray#,
+      thawArray#,
+      unsafeFreezeArray#,
+      writeArray#)
 import GHC.ST (ST(..))
 import Prelude hiding (filter, foldr, length, map, read)
 
