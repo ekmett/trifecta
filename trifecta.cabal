@@ -16,7 +16,7 @@ description:
 
 build-type:    Custom
 
-extra-source-files: examples/RFC2616.hs .travis.yml README.markdown
+extra-source-files: examples/RFC2616.hs examples/RFC2616.txt .travis.yml README.markdown
 
 source-repository head
   type: git
