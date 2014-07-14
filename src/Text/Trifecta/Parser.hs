@@ -148,6 +148,8 @@ instance Parsing Parser where
   {-# INLINE unexpected #-}
   eof = notFollowedBy anyChar <?> "end of input"
   {-# INLINE eof #-}
+  notFollowedBy p = try (optional p >>= maybe (pure ()) (unexpected . show))
+  {-# INLINE notFollowedBy #-}
 
 instance Errable Parser where
   raiseErr e = Parser $ \ _ ee _ _ _ _ -> ee e
