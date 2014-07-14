@@ -67,7 +67,7 @@ class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   restOfLine = Strict.drop . fromIntegral . columnByte <$> position <*> line
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Lazy.StateT s m) where
+instance (MonadPlus m, DeltaParsing m, Show s) => DeltaParsing (Lazy.StateT s m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -79,7 +79,7 @@ instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Lazy.StateT s m) where
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m) => DeltaParsing (Strict.StateT s m) where
+instance (MonadPlus m, DeltaParsing m, Show s) => DeltaParsing (Strict.StateT s m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -103,7 +103,7 @@ instance (MonadPlus m, DeltaParsing m) => DeltaParsing (ReaderT e m) where
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Strict.WriterT w m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w, Show w) => DeltaParsing (Strict.WriterT w m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -115,7 +115,7 @@ instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Strict.WriterT
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.WriterT w m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w, Show w) => DeltaParsing (Lazy.WriterT w m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -127,7 +127,7 @@ instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.WriterT w
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.RWST r w s m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w, Show s, Show w) => DeltaParsing (Lazy.RWST r w s m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -139,7 +139,7 @@ instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Lazy.RWST r w 
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
-instance (MonadPlus m, DeltaParsing m, Monoid w) => DeltaParsing (Strict.RWST r w s m) where
+instance (MonadPlus m, DeltaParsing m, Monoid w, Show s, Show w) => DeltaParsing (Strict.RWST r w s m) where
   line = lift line
   {-# INLINE line #-}
   position = lift position
@@ -201,13 +201,13 @@ class (DeltaParsing m, HasDelta d) => MarkParsing d m | m -> d where
   -- | Seek a previously marked location
   release :: d -> m ()
 
-instance (MonadPlus m, MarkParsing d m) => MarkParsing d (Lazy.StateT s m) where
+instance (MonadPlus m, MarkParsing d m, Show s) => MarkParsing d (Lazy.StateT s m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release
   {-# INLINE release #-}
 
-instance (MonadPlus m, MarkParsing d m) => MarkParsing d (Strict.StateT s m) where
+instance (MonadPlus m, MarkParsing d m, Show s) => MarkParsing d (Strict.StateT s m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release
@@ -219,25 +219,25 @@ instance (MonadPlus m, MarkParsing d m) => MarkParsing d (ReaderT e m) where
   release = lift . release
   {-# INLINE release #-}
 
-instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Strict.WriterT w m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w, Show w) => MarkParsing d (Strict.WriterT w m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release
   {-# INLINE release #-}
 
-instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Lazy.WriterT w m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w, Show w) => MarkParsing d (Lazy.WriterT w m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release
   {-# INLINE release #-}
 
-instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Lazy.RWST r w s m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w, Show s, Show w) => MarkParsing d (Lazy.RWST r w s m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release
   {-# INLINE release #-}
 
-instance (MonadPlus m, MarkParsing d m, Monoid w) => MarkParsing d (Strict.RWST r w s m) where
+instance (MonadPlus m, MarkParsing d m, Monoid w, Show s, Show w) => MarkParsing d (Strict.RWST r w s m) where
   mark = lift mark
   {-# INLINE mark #-}
   release = lift . release

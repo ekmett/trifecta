@@ -84,3 +84,16 @@ test-suite doctests
 
   if impl(ghc<7.6.1)
     ghc-options: -Werror
+
+test-suite quickcheck
+  type:    exitcode-stdio-1.0
+  main-is: QuickCheck.hs
+  default-language: Haskell2010
+  build-depends:
+    base == 4.*,
+    parsers,
+    QuickCheck,
+    trifecta
+  ghc-options: -Wall -threaded
+  hs-source-dirs: tests
+
