@@ -1,4 +1,4 @@
-1.5.0
+1.5
 -----
 * Properly PVP compliant point release for the `parsers` changes to properly handle `notFollowedBy`
 
