@@ -1,3 +1,11 @@
+1.5
+-----
+* Properly PVP compliant point release for the `parsers` changes to properly handle `notFollowedBy`
+
+1.4.3
+-----
+* Accidentally non-PVP compliant point release.
+
 1.4.1
 -----
 * GHC 7.8.1 compatibility
