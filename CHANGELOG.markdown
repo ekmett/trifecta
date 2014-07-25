@@ -1,6 +1,6 @@
 1.5.0
 -----
-* Added dependencies 
+* Properly PVP compliant point release for the `parsers` changes to properly handle `notFollowedBy`
 
 1.4.3
 -----
