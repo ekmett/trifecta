@@ -38,9 +38,14 @@ import Control.Comonad
 import Control.Monad
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
+import Data.Semigroup
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
+
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding (mempty)
+#endif
 
 data It r a
   = Pure a
