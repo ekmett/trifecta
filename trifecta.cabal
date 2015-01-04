@@ -52,7 +52,7 @@ library
     charset              >= 0.3.5.1 && < 1,
     comonad              >= 4       && < 5,
     containers           >= 0.3     && < 0.6,
-    deepseq              >= 1.2.0.1 && < 1.4,
+    deepseq              >= 1.2.0.1 && < 1.5,
     fingertree           >= 0.1     && < 0.2,
     ghc-prim,
     hashable             >= 1.2.1   && < 1.3,

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Delta
@@ -26,7 +26,9 @@ import Data.Hashable
 import Data.Int
 import Data.Data
 import Data.Word
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Foldable
+#endif
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)

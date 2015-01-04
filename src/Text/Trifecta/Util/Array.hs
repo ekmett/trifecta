@@ -1,4 +1,8 @@
 {-# LANGUAGE BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
+
+#ifndef MIN_VERSION_base
+#define MIN_VERSION_base(x,y,z) 1
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.Array
@@ -53,7 +57,9 @@ module Text.Trifecta.Util.Array
   ) where
 
 import qualified Data.Traversable as Traversable
+#if !(MIN_VERSION_base(4,8,0))
 import Control.Applicative (Applicative)
+#endif
 import Control.DeepSeq
 import Control.Monad.ST
 import GHC.Exts (
@@ -71,7 +77,12 @@ import GHC.Exts (
       unsafeFreezeArray#,
       writeArray#)
 import GHC.ST (ST(..))
-import Prelude hiding (filter, foldr, length, map, read)
+import Prelude hiding
+  ( filter, foldr, length, map, read
+#if MIN_VERSION_base(4,8,0)
+  , traverse
+#endif
+  )
 
 ------------------------------------------------------------------------
 
