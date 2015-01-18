@@ -32,7 +32,7 @@ import Text.Blaze
 import Text.Blaze.Html5 hiding (a,b,i)
 import qualified Text.Blaze.Html5 as Html5
 import Text.Blaze.Html5.Attributes hiding (title,id)
-import Text.Blaze.Internal
+import Text.Blaze.Internal (MarkupM(Empty, Leaf))
 import Text.Parser.Token.Highlight
 import Text.PrettyPrint.ANSI.Leijen hiding ((<>))
 import Text.Trifecta.Util.IntervalMap as IM
