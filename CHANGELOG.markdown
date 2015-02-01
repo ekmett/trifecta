@@ -1,3 +1,7 @@
+1.5.1.1
+-------
+* Work around new exports in `blaze`.
+
 1.5.1
 -----
 * Parsers 0.12.1 support. This removes many `Show` constraints introduced after 1.4
