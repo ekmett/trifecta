@@ -1,8 +1,13 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE TypeFamilies #-}
+
+#ifndef MIN_VERSION_base
+#define MIN_VERSION_base(x,y,z) 1
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.It
@@ -26,15 +31,21 @@ module Text.Trifecta.Util.It
   , sliceIt
   ) where
 
+#if !(MIN_VERSION_base(4,8,0))
 import Control.Applicative
+#endif
 import Control.Comonad
 import Control.Monad
-import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
+import Data.Semigroup
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
+
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding (mempty)
+#endif
 
 data It r a
   = Pure a

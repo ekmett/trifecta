@@ -1,6 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+
+#ifndef MIN_VERSION_base
+#define MIN_VERSION_base(x,y,z) 1
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.IntervalMap
@@ -51,7 +56,9 @@ import Control.Applicative hiding (empty)
 import Control.Lens hiding ((<|),(|>))
 import qualified Data.FingerTree as FT
 import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Foldable (Foldable(foldMap))
+#endif
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Semigroup.Union
