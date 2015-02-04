@@ -1,3 +1,7 @@
+1.5.1.2
+-------
+* Work around lack of the old `preEscapedString` export in near-current `blaze-markup`.
+
 1.5.1.1
 -------
 * Work around new exports in `blaze`.
