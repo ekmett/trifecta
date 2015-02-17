@@ -71,7 +71,12 @@ import GHC.Exts (
       unsafeFreezeArray#,
       writeArray#)
 import GHC.ST (ST(..))
-import Prelude hiding (filter, foldr, length, map, read, traverse)
+
+import Prelude hiding (filter, foldr, length, map, read
+#if __GLASGOW_HASKELL__ >= 710
+  , traverse
+#endif
+  )
 
 ------------------------------------------------------------------------
 
