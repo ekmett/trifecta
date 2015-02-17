@@ -71,7 +71,7 @@ import GHC.Exts (
       unsafeFreezeArray#,
       writeArray#)
 import GHC.ST (ST(..))
-import Prelude hiding (filter, foldr, length, map, read)
+import Prelude hiding (filter, foldr, length, map, read, traverse)
 
 ------------------------------------------------------------------------
 
