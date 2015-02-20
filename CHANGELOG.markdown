@@ -1,3 +1,7 @@
+1.5.1.3
+-------
+* Support newer `utf8-string` versions and GHC 7.10
+
 1.5.1.2
 -------
 * Work around lack of the old `preEscapedString` export in near-current `blaze-markup`.
