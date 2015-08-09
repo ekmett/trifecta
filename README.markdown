@@ -1,7 +1,7 @@
 trifecta
 ========
 
-[![Hackage](https://img.shields.io/hackage/v/trifecta.svg)](https://hackage.haskell.org/package/trifecta) [![Build Status](https://secure.travis-ci.org/ekmett/trifecta.png?branch=master)](http://travis-ci.org/ekmett/trifecta
+[![Hackage](https://img.shields.io/hackage/v/trifecta.svg)](https://hackage.haskell.org/package/trifecta) [![Build Status](https://secure.travis-ci.org/ekmett/trifecta.png?branch=master)](http://travis-ci.org/ekmett/trifecta)
 
 This package provides a parser that focuses on nice diagnostics.
 
