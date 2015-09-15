@@ -15,6 +15,7 @@ main = getSources >>= \sources -> doctest $
   : "-optP-include"
   : "-optPdist/build/autogen/cabal_macros.h"
   : "-hide-all-packages"
+  : "-fobject-code"
   : map ("-package="++) deps ++ sources
 
 getSources :: IO [FilePath]
