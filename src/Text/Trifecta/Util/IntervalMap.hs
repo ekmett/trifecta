@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -47,11 +48,13 @@ module Text.Trifecta.Util.IntervalMap
   , fromList
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (empty)
-import Control.Lens hiding ((<|),(|>))
+import Data.Foldable (Foldable(foldMap))
+#endif
+import Control.Lens hiding ((<|),(|>),(:<))
 import qualified Data.FingerTree as FT
 import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
-import Data.Foldable (Foldable(foldMap))
 import Data.Semigroup
 import Data.Semigroup.Reducer
 import Data.Semigroup.Union
