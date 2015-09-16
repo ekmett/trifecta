@@ -2,6 +2,7 @@
 -----
 * `lens` 4.13 support
 * `It` is a `Profunctor`
+* Builds clean on GHC 7.10.
 
 1.5.1.3
 -------
