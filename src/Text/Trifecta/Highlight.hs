@@ -21,7 +21,7 @@ module Text.Trifecta.Highlight
   , doc
   ) where
 
-import Control.Lens
+import Control.Lens hiding (Empty)
 import Data.Foldable as F
 import Data.Int (Int64)
 import Data.List (sort)

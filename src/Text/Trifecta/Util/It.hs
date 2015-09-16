@@ -32,6 +32,7 @@ import Control.Monad
 import Data.Semigroup
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
+import Data.Profunctor
 import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
@@ -47,6 +48,11 @@ instance Show a => Show (It r a) where
 instance Functor (It r) where
   fmap f (Pure a) = Pure $ f a
   fmap f (It a k) = It (f a) $ fmap f . k
+  
+instance Profunctor It where
+  rmap = fmap
+  lmap f (Pure a) = Pure a
+  lmap f (It a g) = It a (lmap f . g . f)
 
 instance Applicative (It r) where
   pure = Pure
