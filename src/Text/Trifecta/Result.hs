@@ -80,7 +80,7 @@ explain r (Err mm as es)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
   | otherwise   = report expecting
   where
-    now = spaceHack $ List.nub $ toList es
+    now = spaceHack $ toList es
     spaceHack [""] = ["space"]
     spaceHack xs = List.filter (/= "") xs
     withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
