@@ -1,8 +1,9 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.It
@@ -26,10 +27,16 @@ module Text.Trifecta.Util.It
   , sliceIt
   ) where
 
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
+#endif
 import Control.Comonad
 import Control.Monad
-import Data.Semigroup
+
+#if __GLASGOW_HASKELL__ < 710
+import Data.Monoid
+#endif
+
 import Data.ByteString as Strict
 import Data.ByteString.Lazy as Lazy
 import Data.Profunctor

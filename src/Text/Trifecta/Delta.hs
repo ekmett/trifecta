@@ -1,8 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Delta
--- Copyright   :  (C) 2011-2014 Edward Kmett
+-- Copyright   :  (C) 2011-2015 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --
 -- Maintainer  :  Edward Kmett <ekmett@gmail.com>
@@ -26,7 +28,9 @@ import Data.Hashable
 import Data.Int
 import Data.Data
 import Data.Word
+#if __GLASGOW_HASKELL__ < 710
 import Data.Foldable
+#endif
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
