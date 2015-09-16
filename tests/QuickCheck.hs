@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main
 ( main
@@ -10,7 +10,10 @@ import Control.Applicative
 #if MIN_VERSION_base(4,7,0)
 import Data.Either
 #endif
+
+#if __GLASGOW_HASKELL__ < 710
 import Data.Monoid
+#endif
 
 import qualified Test.QuickCheck as Q
 
