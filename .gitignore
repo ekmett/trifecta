@@ -1,4 +1,5 @@
-dist
+dist/
+.hsenv/
 docs
 wiki
 TAGS
@@ -11,3 +12,6 @@ wip
 *.hi
 *~
 *#
+.cabal-sandbox/
+cabal.sandbox.config
+codex.tags
