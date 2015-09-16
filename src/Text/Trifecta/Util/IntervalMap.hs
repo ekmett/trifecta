@@ -58,7 +58,7 @@ import Data.Foldable (Foldable(foldMap))
 #endif
 import Control.Lens
   hiding ((<|),(|>)
-#if MIN_VERSION_lens(4,13,0)
+#if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
   ,(:<)
 #endif
   )

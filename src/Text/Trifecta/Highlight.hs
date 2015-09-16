@@ -27,7 +27,7 @@ module Text.Trifecta.Highlight
   ) where
 
 import Control.Lens
-#if MIN_VERSION_lens(4,13,0)
+#if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
   hiding (Empty)
 #endif
 import Data.Foldable as F
