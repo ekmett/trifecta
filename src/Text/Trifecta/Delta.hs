@@ -3,7 +3,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Delta
 -- Copyright   :  (C) 2011-2015 Edward Kmett
 -- License     :  BSD-style (see the file LICENSE)
 --

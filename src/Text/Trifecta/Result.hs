@@ -11,8 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Result
--- Copyright   :  (c) Edward Kmett 2011-2014
+-- Copyright   :  (c) Edward Kmett 2011-2015
 -- License     :  BSD3
 --
 -- Maintainer  :  ekmett@gmail.com

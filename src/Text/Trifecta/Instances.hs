@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Text.Trifecta.Instances
--- Copyright   :  (c) Edward Kmett 2013-2014
+-- Copyright   :  (c) Edward Kmett 2013-2015
 -- License     :  BSD3
 --
 -- Maintainer  :  ekmett@gmail.com
