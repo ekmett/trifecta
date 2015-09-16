@@ -1,5 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+
+#ifndef MIN_VERSION_lens
+#define MIN_VERSION_lens(x,y,z) 1
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Highlight
@@ -21,7 +26,10 @@ module Text.Trifecta.Highlight
   , doc
   ) where
 
-import Control.Lens hiding (Empty)
+import Control.Lens
+#if MIN_VERSION_lens(4,13,0)
+  hiding (Empty)
+#endif
 import Data.Foldable as F
 import Data.Int (Int64)
 import Data.List (sort)

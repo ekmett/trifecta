@@ -2,6 +2,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+
+#ifndef MIN_VERSION_lens
+#define MIN_VERSION_lens(x,y,z) 1
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.IntervalMap
@@ -52,7 +56,12 @@ module Text.Trifecta.Util.IntervalMap
 import Control.Applicative hiding (empty)
 import Data.Foldable (Foldable(foldMap))
 #endif
-import Control.Lens hiding ((<|),(|>),(:<))
+import Control.Lens
+  hiding ((<|),(|>)
+#if MIN_VERSION_lens(4,13,0)
+  ,(:<)
+#endif
+  )
 import qualified Data.FingerTree as FT
 import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
 import Data.Semigroup

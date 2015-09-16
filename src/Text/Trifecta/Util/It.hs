@@ -51,7 +51,7 @@ instance Functor (It r) where
   
 instance Profunctor It where
   rmap = fmap
-  lmap f (Pure a) = Pure a
+  lmap _ (Pure a) = Pure a
   lmap f (It a g) = It a (lmap f . g . f)
 
 instance Applicative (It r) where
