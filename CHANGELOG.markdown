@@ -1,3 +1,8 @@
+1.5.2
+-----
+* `lens` 4.13 support
+* `It` is a `Profunctor`
+
 1.5.1.3
 -------
 * Support newer `utf8-string` versions and GHC 7.10
