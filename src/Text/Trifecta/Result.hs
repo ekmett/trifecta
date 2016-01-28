@@ -65,7 +65,7 @@ makeClassy ''Err
 
 instance Semigroup Err where
   Err md mds mes delta1 <> Err nd nds nes delta2
-    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2) -- PTODO: max right?
+    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2)
   {-# INLINE (<>) #-}
 
 instance Monoid Err where
@@ -76,7 +76,7 @@ instance Monoid Err where
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
 failed :: String -> Err
-failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty -- PTODO?
+failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
 {-# INLINE failed #-}
 
 -- | Convert a location and an 'Err' into a 'Doc'
@@ -124,7 +124,7 @@ _Success = _Result . dimap seta (either id id) . right' . rmap (fmap Success) wh
 {-# INLINE _Success #-}
 
 -- | The 'Prism' for the 'Failure' constructor of 'Result'
-_Failure :: AsResult s s a a => Prism' s ErrInfo -- PTODO: this is now misleading because it only reads the "Doc", not the Delta.
+_Failure :: AsResult s s a a => Prism' s ErrInfo
 _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) where
   seta (Failure e) = Right e
   seta (Success a) = Left (pure (Success a))
