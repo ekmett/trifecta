@@ -65,7 +65,7 @@ newtype Parser a = Parser
     (a -> Err -> It Rope r) ->
     (Err -> It Rope r) ->
     (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
-    (Doc -> It Rope r) ->                                -- committed err
+    (ErrInfo -> It Rope r) ->                                -- committed err
     Delta -> ByteString -> It Rope r
   }
 
@@ -108,7 +108,11 @@ instance Monad Parser where
     m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce d bs) ee
       (\a es d' bs' -> unparser (k a)
          (\b e' -> co b (es <> _expected e') d' bs')
-         (\e -> ce (explain (renderingCaret d' bs') e { _expected = _expected e <> es }))
+         (\e ->
+           let errDoc = explain (renderingCaret d' bs') e { _expected = _expected e <> es }
+               errDelta = _finalDeltas e
+           in  ce $ ErrInfo errDoc (d' : errDelta)
+         )
          co ce d' bs') ce d bs
   {-# INLINE (>>=) #-}
   (>>) = (*>)
@@ -125,7 +129,8 @@ instance MonadPlus Parser where
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
   let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (_expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
-      manyErr d' bs' _ e  = ce $ explain (renderingCaret d' bs') (e <> failed "'many' applied to a parser that accepted an empty string")
+      manyErr d' bs' _ e  = ce (ErrInfo errDoc [d'])
+        where errDoc = explain (renderingCaret d' bs') (e <> failed "'many' applied to a parser that accepted an empty string")
   in p (manyErr d bs) (eo []) (walk []) ce d bs
 
 liftIt :: It Rope a -> Parser a
@@ -202,7 +207,7 @@ instance MarkParsing Delta Parser where
 
 data Step a
   = StepDone !Rope a
-  | StepFail !Rope Doc
+  | StepFail !Rope ErrInfo
   | StepCont !Rope (Result a) (Rope -> Step a)
 
 instance Show a => Show (Step a) where
@@ -245,21 +250,24 @@ data Stepping a
   = EO a Err
   | EE Err
   | CO a (Set String) Delta ByteString
-  | CE Doc
+  | CE ErrInfo
 
 stepParser :: Parser a -> Delta -> ByteString -> Step a
 stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   eo a e       = Pure (EO a e)
   ee e         = Pure (EE e)
   co a es d bs = Pure (CO a es d bs)
-  ce doc       = Pure (CE doc)
+  ce errInf    = Pure (CE errInf)
   go r (Pure (EO a _))     = StepDone r a
-  go r (Pure (EE e))       = StepFail r $ explain (renderingCaret d0 bs0) e
+  go r (Pure (EE e))       = StepFail r $
+                              let errDoc = explain (renderingCaret d0 bs0) e
+                              in  ErrInfo errDoc (_finalDeltas e)
   go r (Pure (CO a _ _ _)) = StepDone r a
   go r (Pure (CE d))       = StepFail r d
   go r (It ma k)           = StepCont r (case ma of
                                 EO a _     -> Success a
-                                EE e       -> Failure $ explain (renderingCaret d0 bs0) e
+                                EE e       -> Failure $
+                                  ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
                               ) (go <*> k)
@@ -280,7 +288,7 @@ parseFromFile p fn = do
   case result of
    Success a  -> return (Just a)
    Failure xs -> do
-     liftIO $ displayIO stdout $ renderPretty 0.8 80 $ xs <> linebreak
+     liftIO $ displayIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> linebreak
      return Nothing
 
 -- | @parseFromFileEx p filePath@ runs a parser @p@ on the
@@ -309,5 +317,5 @@ parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mem
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
-  Failure xs -> liftIO $ displayIO stdout $ renderPretty 0.8 80 $ xs <> linebreak -- TODO: retrieve columns
+  Failure xs -> liftIO $ displayIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> linebreak -- TODO: retrieve columns
   Success a  -> liftIO (print a)
