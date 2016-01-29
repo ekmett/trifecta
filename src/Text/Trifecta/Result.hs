@@ -29,6 +29,7 @@ module Text.Trifecta.Result
   , _Failure
   -- * Parsing Errors
   , Err(..), HasErr(..), Errable(..)
+  , ErrInfo(..)
   , explain
   , failed
   ) where
@@ -46,35 +47,41 @@ import Text.Trifecta.Instances ()
 import Text.Trifecta.Rendering
 import Text.Trifecta.Delta as Delta
 
+data ErrInfo = ErrInfo
+  { _errDoc    :: Doc
+  , _errDeltas :: [Delta]
+  } deriving(Show)
+
 -- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
 -- at the current location. This does not, however, include the actual location.
 data Err = Err
-  { _reason    :: Maybe Doc
-  , _footnotes :: [Doc]
-  , _expected  :: Set String
+  { _reason     :: Maybe Doc
+  , _footnotes  :: [Doc]
+  , _expected   :: Set String
+  , _finalDeltas :: [Delta]
   }
 
 makeClassy ''Err
 
 instance Semigroup Err where
-  Err md mds mes <> Err nd nds nes
-    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes)
+  Err md mds mes delta1 <> Err nd nds nes delta2
+    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2)
   {-# INLINE (<>) #-}
 
 instance Monoid Err where
-  mempty = Err Nothing [] mempty
+  mempty = Err Nothing [] mempty mempty
   {-# INLINE mempty #-}
   mappend = (<>)
   {-# INLINE mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
 failed :: String -> Err
-failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty
+failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
 {-# INLINE failed #-}
 
 -- | Convert a location and an 'Err' into a 'Doc'
 explain :: Rendering -> Err -> Doc
-explain r (Err mm as es)
+explain r (Err mm as es _)
   | Set.null es = report (withEx mempty)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
   | otherwise   = report expecting
@@ -91,10 +98,14 @@ explain r (Err mm as es)
 class Errable m where
   raiseErr :: Err -> m a
 
+instance Monoid ErrInfo where
+  mempty = ErrInfo mempty mempty
+  mappend (ErrInfo xs d1) (ErrInfo ys d2) = ErrInfo (vsep [xs, ys]) (max d1 d2)
+
 -- | The result of parsing. Either we succeeded or something went wrong.
 data Result a
   = Success a
-  | Failure Doc
+  | Failure ErrInfo
   deriving (Show,Functor,Foldable,Traversable)
 
 -- | A 'Prism' that lets you embed or retrieve a 'Result' in a potentially larger type.
@@ -109,34 +120,36 @@ instance AsResult (Result a) (Result b) a b where
 _Success :: AsResult s t a b => Prism s t a b
 _Success = _Result . dimap seta (either id id) . right' . rmap (fmap Success) where
   seta (Success a) = Right a
-  seta (Failure d) = Left (pure (Failure d))
+  seta (Failure e) = Left (pure (Failure e))
 {-# INLINE _Success #-}
 
 -- | The 'Prism' for the 'Failure' constructor of 'Result'
-_Failure :: AsResult s s a a => Prism' s Doc
+_Failure :: AsResult s s a a => Prism' s ErrInfo
 _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) where
-  seta (Failure d) = Right d
+  seta (Failure e) = Right e
   seta (Success a) = Left (pure (Success a))
 {-# INLINE _Failure #-}
 
 instance Show a => Pretty (Result a) where
-  pretty (Success a)  = pretty (show a)
-  pretty (Failure xs) = pretty xs
+  pretty (Success a)    = pretty (show a)
+  pretty (Failure xs) = pretty . _errDoc $ xs
 
 instance Applicative Result where
   pure = Success
   {-# INLINE pure #-}
-  Success f  <*> Success a  = Success (f a)
-  Success _  <*> Failure ys = Failure ys
-  Failure xs <*> Success _  = Failure xs
-  Failure xs <*> Failure ys = Failure $ vsep [xs, ys]
+  Success f <*> Success a = Success (f a)
+  Success _ <*> Failure y = Failure y
+  Failure x <*> Success _ = Failure x
+  Failure x <*> Failure y =
+    Failure $ ErrInfo (vsep [_errDoc x, _errDoc y]) (_errDeltas x <> _errDeltas y)
   {-# INLINE (<*>) #-}
 
 instance Alternative Result where
-  Failure xs <|> Failure ys = Failure $ vsep [xs, ys]
-  Success a  <|> Success _  = Success a
-  Success a  <|> Failure _  = Success a
-  Failure _  <|> Success a  = Success a
+  Failure x <|> Failure y =
+    Failure $ ErrInfo (vsep [_errDoc x, _errDoc y]) (_errDeltas x <> _errDeltas y)
+  Success a <|> Success _ = Success a
+  Success a <|> Failure _ = Success a
+  Failure _ <|> Success a = Success a
   {-# INLINE (<|>) #-}
   empty = Failure mempty
   {-# INLINE empty #-}
