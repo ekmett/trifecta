@@ -21,6 +21,7 @@
 module Text.Trifecta.Parser
   ( Parser(..)
   , manyAccum
+  , race
   -- * Feeding a parser more more input
   , Step(..)
   , feed
@@ -154,6 +155,10 @@ instance Parsing Parser where
   {-# INLINE eof #-}
   notFollowedBy p = try (optional p >>= maybe (pure ()) (unexpected . show))
   {-# INLINE notFollowedBy #-}
+
+race :: Parser a -> Parser a
+race (Parser m) =
+  Parser $ \eo ee co _ -> m eo ee co $ \errI -> ee mempty{_ignoredErrs = [errI]}
 
 instance Errable Parser where
   raiseErr e = Parser $ \ _ ee _ _ _ _ -> ee e

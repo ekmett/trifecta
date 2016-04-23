@@ -55,33 +55,42 @@ data ErrInfo = ErrInfo
 -- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
 -- at the current location. This does not, however, include the actual location.
 data Err = Err
-  { _reason     :: Maybe Doc
-  , _footnotes  :: [Doc]
-  , _expected   :: Set String
+  { _reason      :: Maybe Doc
+  , _footnotes   :: [Doc]
+  , _expected    :: Set String
   , _finalDeltas :: [Delta]
+  , _ignoredErrs :: [ErrInfo]
   }
 
 makeClassy ''Err
 
 instance Semigroup Err where
-  Err md mds mes delta1 <> Err nd nds nes delta2
-    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2)
+  Err md mds mes delta1 ignerrs1 <> Err nd nds nes delta2 ignerrs2 =
+    Err { _reason      = nd <|> md
+        , _footnotes   = if isJust nd then nds else if isJust md then mds else nds ++ mds
+        , _expected    = mes <> nes
+        , _finalDeltas = delta1 <> delta2
+        , _ignoredErrs = ignerrs1 ++ ignerrs2
+        }
   {-# INLINE (<>) #-}
 
 instance Monoid Err where
-  mempty = Err Nothing [] mempty mempty
+  mempty = Err Nothing [] mempty mempty mempty
   {-# INLINE mempty #-}
   mappend = (<>)
   {-# INLINE mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
 failed :: String -> Err
-failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
+failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty mempty
 {-# INLINE failed #-}
 
 -- | Convert a location and an 'Err' into a 'Doc'
 explain :: Rendering -> Err -> Doc
-explain r (Err mm as es _)
+explain r e = explain1 r e <> vsep (List.map _errDoc (_ignoredErrs e))
+
+explain1 :: Rendering -> Err -> Doc
+explain1 r (Err mm as es _ _)
   | Set.null es = report (withEx mempty)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
   | otherwise   = report expecting
