@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards, ViewPatterns, FlexibleInstances, MultiParamTypeClasses #-}
 
 import Text.Parsec

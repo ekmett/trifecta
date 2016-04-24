@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards, ViewPatterns, DeriveFunctor, FlexibleInstances #-}
 import Control.Applicative
 import Control.Monad (MonadPlus(..), guard)

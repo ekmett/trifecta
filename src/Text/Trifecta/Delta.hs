@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -81,6 +82,7 @@ instance Pretty Delta where
     Directed fn l c _ _ -> k (UTF8.toString fn) l c
     where
       k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
+      f :: String
       f = "(interactive)"
 
 int64 :: Int64 -> Doc

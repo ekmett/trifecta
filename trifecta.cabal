@@ -70,7 +70,6 @@ library
   hs-source-dirs:   src
   ghc-options:      -O2 -Wall -fobject-code
 
-
 test-suite doctests
   type:             exitcode-stdio-1.0
   main-is:          doctests.hs
