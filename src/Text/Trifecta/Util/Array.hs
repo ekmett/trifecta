@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables, BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
 -----------------------------------------------------------------------------
 -- |

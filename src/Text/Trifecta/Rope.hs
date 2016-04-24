@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, DeriveDataTypeable, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |

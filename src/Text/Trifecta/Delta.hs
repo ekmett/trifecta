@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}

@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitPrelude #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE BangPatterns #-}
