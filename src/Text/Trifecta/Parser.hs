@@ -21,6 +21,7 @@
 module Text.Trifecta.Parser
   ( Parser(..)
   , manyAccum
+  , race
   -- * Feeding a parser more more input
   , Step(..)
   , feed
@@ -37,6 +38,7 @@ module Text.Trifecta.Parser
   ) where
 
 import Control.Applicative as Alternative
+import Control.Lens ((%~), (&))
 import Control.Monad (MonadPlus(..), ap, join)
 import Control.Monad.IO.Class
 import Data.ByteString as Strict hiding (empty, snoc)
@@ -65,7 +67,7 @@ newtype Parser a = Parser
     (a -> Err -> It Rope r) ->
     (Err -> It Rope r) ->
     (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
-    (ErrInfo -> It Rope r) ->                                -- committed err
+    (Delta -> ErrInfo -> Err -> It Rope r) ->                -- committed err
     Delta -> ByteString -> It Rope r
   }
 
@@ -111,7 +113,7 @@ instance Monad Parser where
          (\e ->
            let errDoc = explain (renderingCaret d' bs') e { _expected = _expected e <> es }
                errDelta = _finalDeltas e
-           in  ce $ ErrInfo errDoc (d' : errDelta)
+           in  ce d' (ErrInfo errDoc (d' : errDelta)) e
          )
          co ce d' bs') ce d bs
   {-# INLINE (>>=) #-}
@@ -129,7 +131,7 @@ instance MonadPlus Parser where
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
   let walk xs x es d' bs' = p (manyErr d' bs') (\e -> co (f x xs) (_expected e <> es) d' bs') (walk (f x xs)) ce d' bs'
-      manyErr d' bs' _ e  = ce (ErrInfo errDoc [d'])
+      manyErr d' bs' _ e  = ce d' (ErrInfo errDoc [d']) e
         where errDoc = explain (renderingCaret d' bs') (e <> failed "'many' applied to a parser that accepted an empty string")
   in p (manyErr d bs) (eo []) (walk []) ce d bs
 
@@ -140,7 +142,7 @@ liftIt m = Parser $ \ eo _ _ _ _ _ -> do
 {-# INLINE liftIt #-}
 
 instance Parsing Parser where
-  try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ -> ee mempty)
+  try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ _ _ -> ee mempty)
   {-# INLINE try #-}
   Parser m <?> nm = Parser $ \ eo ee -> m
      (\a e -> eo a (if isJust (_reason e) then e { _expected = Set.singleton nm } else e))
@@ -154,6 +156,13 @@ instance Parsing Parser where
   {-# INLINE eof #-}
   notFollowedBy p = try (optional p >>= maybe (pure ()) (unexpected . show))
   {-# INLINE notFollowedBy #-}
+
+race :: Parser a -> Parser a
+race (Parser m) = Parser $ \eo ee co ce -> m eo ee co $ \d ei err ->
+  ee $ mempty
+     & expected    %~ Set.union (_expected err)
+     & finalDeltas %~ (++) (_errDeltas ei)
+{-# INLINE race #-}
 
 instance Errable Parser where
   raiseErr e = Parser $ \ _ ee _ _ _ _ -> ee e
@@ -250,26 +259,26 @@ data Stepping a
   = EO a Err
   | EE Err
   | CO a (Set String) Delta ByteString
-  | CE ErrInfo
+  | CE Delta ErrInfo Err
 
 stepParser :: Parser a -> Delta -> ByteString -> Step a
 stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   eo a e       = Pure (EO a e)
   ee e         = Pure (EE e)
   co a es d bs = Pure (CO a es d bs)
-  ce errInf    = Pure (CE errInf)
+  ce d errInf e = Pure (CE d errInf e)
   go r (Pure (EO a _))     = StepDone r a
   go r (Pure (EE e))       = StepFail r $
                               let errDoc = explain (renderingCaret d0 bs0) e
                               in  ErrInfo errDoc (_finalDeltas e)
   go r (Pure (CO a _ _ _)) = StepDone r a
-  go r (Pure (CE d))       = StepFail r d
+  go r (Pure (CE _ ei _))  = StepFail r ei
   go r (It ma k)           = StepCont r (case ma of
                                 EO a _     -> Success a
                                 EE e       -> Failure $
                                   ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
                                 CO a _ _ _ -> Success a
-                                CE d       -> Failure d
+                                CE _ ei _  -> Failure ei
                               ) (go <*> k)
 {-# INLINE stepParser #-}
 

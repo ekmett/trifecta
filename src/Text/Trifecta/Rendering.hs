@@ -203,8 +203,11 @@ class Source t where
 instance Source String where
   source s
     | P.elem '\n' s = ( ls, bs, draw [] 0 0 s')
-    | otherwise           = ( ls + fromIntegral (P.length end), bs, draw [SetColor Foreground Vivid Blue, SetConsoleIntensity BoldIntensity] 0 ls end . draw [] 0 0 s')
+    | otherwise     = ( ls + fromIntegral (P.length end), bs,
+                        draw [SetColor Foreground Vivid Blue
+                             ,SetConsoleIntensity BoldIntensity] 0 ls end . draw [] 0 0 s')
     where
+      end :: String
       end = "<EOF>"
       s' = go 0 s
       bs = fromIntegral $ B.length $ UTF8.fromString $ P.takeWhile (/='\n') s

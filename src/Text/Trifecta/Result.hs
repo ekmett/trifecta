@@ -50,38 +50,39 @@ import Text.Trifecta.Delta as Delta
 data ErrInfo = ErrInfo
   { _errDoc    :: Doc
   , _errDeltas :: [Delta]
-  } deriving(Show)
+  } deriving (Show)
 
 -- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
 -- at the current location. This does not, however, include the actual location.
 data Err = Err
-  { _reason     :: Maybe Doc
-  , _footnotes  :: [Doc]
-  , _expected   :: Set String
+  { _reason      :: Maybe Doc
+  , _footnotes   :: [Doc]
+  , _expected    :: Set String
   , _finalDeltas :: [Delta]
+  , _ignoredErr  :: Maybe Err
   }
 
 makeClassy ''Err
 
 instance Semigroup Err where
-  Err md mds mes delta1 <> Err nd nds nes delta2
-    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2)
+  Err md mds mes delta1 ig1 <> Err nd nds nes delta2 ig2
+    = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2) (ig1 <> ig2)
   {-# INLINE (<>) #-}
 
 instance Monoid Err where
-  mempty = Err Nothing [] mempty mempty
+  mempty = Err Nothing [] mempty mempty Nothing
   {-# INLINE mempty #-}
   mappend = (<>)
   {-# INLINE mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
 failed :: String -> Err
-failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
+failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty Nothing
 {-# INLINE failed #-}
 
 -- | Convert a location and an 'Err' into a 'Doc'
 explain :: Rendering -> Err -> Doc
-explain r (Err mm as es _)
+explain r (Err mm as es _ _)
   | Set.null es = report (withEx mempty)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
   | otherwise   = report expecting
@@ -131,7 +132,7 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
 {-# INLINE _Failure #-}
 
 instance Show a => Pretty (Result a) where
-  pretty (Success a)    = pretty (show a)
+  pretty (Success a)  = pretty (show a)
   pretty (Failure xs) = pretty . _errDoc $ xs
 
 instance Applicative Result where
@@ -140,8 +141,7 @@ instance Applicative Result where
   Success f <*> Success a = Success (f a)
   Success _ <*> Failure y = Failure y
   Failure x <*> Success _ = Failure x
-  Failure x <*> Failure y =
-    Failure $ ErrInfo (vsep [_errDoc x, _errDoc y]) (_errDeltas x <> _errDeltas y)
+  Failure x <*> Failure y = Failure $ ErrInfo (vsep [_errDoc x, _errDoc y]) (_errDeltas x <> _errDeltas y)
   {-# INLINE (<*>) #-}
 
 instance Alternative Result where

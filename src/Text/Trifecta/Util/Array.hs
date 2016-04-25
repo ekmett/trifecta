@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
+{-# LANGUAGE ScopedTypeVariables, BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  Edward Kmett 2011-2015
@@ -331,28 +331,30 @@ delete ary idx = run $ do
   where !count = length ary
 {-# INLINE delete #-}
 
-map :: (a -> b) -> Array a -> Array b
+map :: forall a b. (a -> b) -> Array a -> Array b
 map f = \ ary ->
   let !n = length ary
   in run $ do
     mary <- new_ n
     go ary mary 0 n
   where
+    go :: Array a -> MArray s b -> Int -> Int -> ST s (MArray s b)
     go ary mary i n
         | i >= n    = return mary
         | otherwise = do
-             write mary i $ f (index ary i)
-             go ary mary (i+1) n
+            write mary i $ f (index ary i)
+            go ary mary (i+1) n
 {-# INLINE map #-}
 
 -- | Strict version of 'map'.
-map' :: (a -> b) -> Array a -> Array b
+map' :: forall a b. (a -> b) -> Array a -> Array b
 map' f = \ ary ->
   let !n = length ary
   in run $ do
     mary <- new_ n
     go ary mary 0 n
   where
+    go :: Array a -> MArray s b -> Int -> Int -> ST s (MArray s b)
     go ary mary i n
       | i >= n    = return mary
       | otherwise = do
@@ -378,13 +380,14 @@ traverse f = \ ary ->
   Traversable.traverse f (toList ary)
 {-# INLINE traverse #-}
 
-filter :: (a -> Bool) -> Array a -> Array a
+filter :: forall a. (a -> Bool) -> Array a -> Array a
 filter p = \ ary ->
   let !n = length ary
   in run $ do
     mary <- new_ n
     go ary mary 0 0 n
   where
+    go :: Array a -> MArray s a -> Int -> Int -> Int -> ST s (MArray s a)
     go ary mary i j n
       | i >= n    = if i == j
                     then return mary
