@@ -1,3 +1,8 @@
+1.6
+-----
+* Version bumps to support GHC 8
+* Add line/col numbers to parse results by giving a list of all deltas when errors happen.
+
 1.5.2
 -----
 * `lens` 4.13 support
