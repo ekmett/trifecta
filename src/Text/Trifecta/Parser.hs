@@ -60,6 +60,40 @@ import Text.Trifecta.Rope
 import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
+-- | The type of a trifecta parser
+--
+-- The first four arguments are behavior continuations:
+--
+--   * epsilon success: the parser has consumed no input and has a result
+--     as well as a possible Err; the position and chunk are unchanged
+--     (see `pure`)
+--
+--   * epsilon failure: the parser has consumed no input and is failing
+--     with the given Err; the position and chunk are unchanged (see
+--     `empty`)
+--
+--   * committed success: the parser has consumed input and is yielding
+--     the result, set of expected strings that would have permitted this
+--     parse to continue, new position, and residual chunk to the
+--     continuation.
+--
+--   * committed failure: the parser has consumed input and is failing with
+--     a given ErrInfo (user-facing error message)
+--
+-- The remaining two arguments are
+--
+--   * the current position
+--
+--   * the chunk of input currently under analysis
+--
+-- `Parser` is an `Alternative`; trifecta's backtracking behavior encoded as
+-- `<|>` is to behave as the leftmost parser which yields a value
+-- (regardless of any input being consumed) or which consumes input and
+-- fails.  That is, a choice of parsers will only yield an epsilon failure
+-- if *all* parsers in the choice do.  If that is not the desired behavior,
+-- see `try`, which turns a committed parser failure into an epsilon failure
+-- (at the cost of error information).
+--
 newtype Parser a = Parser
   { unparser :: forall r.
     (a -> Err -> It Rope r) ->
@@ -105,15 +139,34 @@ instance Monad Parser where
   return a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
   {-# INLINE return #-}
   Parser m >>= k = Parser $ \ eo ee co ce d bs ->
-    m (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce d bs) ee
+    m -- epsilon result: feed result to monadic continutaion; committed
+      -- continuations as they were given to us; epsilon callbacks merge
+      -- error information with `<>`
+      (\a e -> unparser (k a) (\b e' -> eo b (e <> e')) (\e' -> ee (e <> e')) co ce d bs)
+      -- epsilon error: as given
+      ee
+      -- committed result: feed result to monadic continuation and...
       (\a es d' bs' -> unparser (k a)
+         -- epsilon results are now committed results due to m consuming.
+         --
+         -- epsilon success is now committed success at the new position
+         -- (after m), yielding the result from (k a) and merging the
+         -- expected sets (i.e. things that could have resulted in a longer
+         -- parse)
          (\b e' -> co b (es <> _expected e') d' bs')
+         -- epsilon failure is now a committed failure at the new position
+         -- (after m); compute the error to display to the user
          (\e ->
            let errDoc = explain (renderingCaret d' bs') e { _expected = _expected e <> es }
                errDelta = _finalDeltas e
            in  ce $ ErrInfo errDoc (d' : errDelta)
          )
-         co ce d' bs') ce d bs
+         -- committed behaviors as given; nothing exciting here
+         co ce
+         -- new position and remaining chunk after m
+         d' bs')
+      -- committed error, delta, and bytestring: as given
+      ce d bs
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
