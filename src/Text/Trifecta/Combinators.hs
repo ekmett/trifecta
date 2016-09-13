@@ -56,7 +56,7 @@ class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   -- | Run a parser, grabbing all of the text between its start and end points
   slicedWith :: (a -> Strict.ByteString -> r) -> m a -> m r
 
-  -- | Retrieve a 'Rendering' of the current linem noting this position, but not
+  -- | Retrieve a 'Rendering' of the current line noting this position, but not
   -- placing a 'Caret' there.
   rend :: DeltaParsing m => m Rendering
   rend = rendered <$> position <*> line
