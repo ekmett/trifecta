@@ -58,12 +58,12 @@ class (MonadPlus m, TokenParsing m) => DeltaParsing m where
 
   -- | Retrieve a 'Rendering' of the current line noting this position, but not
   -- placing a 'Caret' there.
-  rend :: DeltaParsing m => m Rendering
+  rend :: m Rendering
   rend = rendered <$> position <*> line
   {-# INLINE rend #-}
 
   -- | Grab the remainder of the current line
-  restOfLine :: DeltaParsing m => m ByteString
+  restOfLine :: m ByteString
   restOfLine = Strict.drop . fromIntegral . columnByte <$> position <*> line
   {-# INLINE restOfLine #-}
 
