@@ -1,3 +1,8 @@
+1.6.1
+-----
+* Remove redundant constraints from `DeltaParsing`'s class methods. This is
+  required for `trifecta` to build on GHC 8.0.2.
+
 1.6
 -----
 * Version bumps to support GHC 8
