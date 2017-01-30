@@ -1,3 +1,8 @@
+1.6.2.1
+-------
+* Add this changelog to the `extra-souce-files` in `trifecta.cabal` so that the
+  changelog will appear on Hackage
+
 1.6.2
 -----
 * Enable support for `blaze-html-0.9` and `blaze-markup-0.8`

@@ -1,6 +1,6 @@
 name:          trifecta
 category:      Text, Parsing, Diagnostics, Pretty Printer, Logging
-version:       1.6.2
+version:       1.6.2.1
 license:       BSD3
 cabal-version: >= 1.10
 license-file:  LICENSE
@@ -16,7 +16,12 @@ description:
 
 build-type:    Custom
 
-extra-source-files: examples/RFC2616.hs examples/RFC2616.txt .travis.yml README.markdown
+extra-source-files:
+  examples/RFC2616.hs
+  examples/RFC2616.txt
+  .travis.yml
+  CHANGELOG.markdown
+  README.markdown
 
 source-repository head
   type: git
