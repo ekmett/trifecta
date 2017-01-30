@@ -94,9 +94,9 @@ instance Ord (Located a) where
 instance ToMarkup HighlightedRope where
   toMarkup (HighlightedRope intervals r) = Html5.pre $ go 0 lbs effects where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
-    ln no = Html5.a ! name (toValue $ "line-" ++ show no) $ Empty
+    ln no = Html5.a ! name (toValue $ "line-" ++ show no) $ emptyMarkup
     effects = sort $ [ i | (Interval lo hi, tok) <- intersections mempty (delta r) intervals
-                     , i <- [ (Leaf "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
+                     , i <- [ (leafMarkup "span" "<span" ">" ! class_ (toValue $ show tok)) :@ bytes lo
                             , preEscapedToHtml ("</span>" :: String) :@ bytes hi
                             ]
                      ] ++ imap (\k i -> ln k :@ i) (L.elemIndices '\n' lbs)
@@ -105,6 +105,14 @@ instance ToMarkup HighlightedRope where
       | eb <= b = eff >> go b cs es
       | otherwise = unsafeLazyByteString om >> go eb nom es
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
+
+#if MIN_VERSION_blaze_markup(0,8,0)
+    emptyMarkup = Empty ()
+    leafMarkup a b c = Leaf a b c ()
+#else
+    emptyMarkup = Empty
+    leafMarkup a b c = Leaf a b c
+#endif
 
 instance Pretty HighlightedRope where
   pretty (HighlightedRope intervals r) = go mempty lbs boundaries where
