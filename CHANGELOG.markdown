@@ -1,3 +1,7 @@
+1.6.2
+-----
+* Enable support for `blaze-html-0.9` and `blaze-markup-0.8`
+
 1.6.1
 -----
 * Remove redundant constraints from `DeltaParsing`'s class methods. This is
