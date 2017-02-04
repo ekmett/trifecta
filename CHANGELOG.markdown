@@ -1,3 +1,9 @@
+next
+----
+* Revamp `Setup.hs` to use `cabal-doctest`. This makes `distributive` build
+  with `Cabal-1.25`, and makes the `doctest`s work with `cabal new-build` and
+  sandboxes.
+
 1.6.2.1
 -------
 * Add this changelog to the `extra-souce-files` in `trifecta.cabal` so that the
