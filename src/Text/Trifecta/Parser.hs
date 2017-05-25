@@ -39,6 +39,7 @@ module Text.Trifecta.Parser
 import Control.Applicative as Alternative
 import Control.Monad (MonadPlus(..), ap, join)
 import Control.Monad.IO.Class
+import qualified Control.Monad.Fail as Fail
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8
 import Data.Maybe (isJust)
@@ -129,14 +130,23 @@ instance Semigroup a => Semigroup (Parser a) where
   (<>) = liftA2 (<>)
   {-# INLINE (<>) #-}
 
+{- In order to silence '-Wnoncanonical-monoid-instances' we'd need to
+   change the type-signature to emulate the not-yet existing superclass
+   relationship:
+
+instance (Semigroup a, Monoid a) => Monoid (Parser a) where
+  mappend = (<>)
+  mempty = pure mempty
+-}
 instance Monoid a => Monoid (Parser a) where
   mappend = liftA2 mappend
   {-# INLINE mappend #-}
+
   mempty = pure mempty
   {-# INLINE mempty #-}
 
 instance Monad Parser where
-  return a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
+  return = pure
   {-# INLINE return #-}
   Parser m >>= k = Parser $ \ eo ee co ce d bs ->
     m -- epsilon result: feed result to monadic continutaion; committed
@@ -170,6 +180,10 @@ instance Monad Parser where
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
+  fail = Fail.fail
+  {-# INLINE fail #-}
+
+instance Fail.MonadFail Parser where
   fail s = Parser $ \ _ ee _ _ _ _ -> ee (failed s)
   {-# INLINE fail #-}
 
