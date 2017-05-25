@@ -129,9 +129,12 @@ data IntInterval v = NoInterval | IntInterval (Interval v) v
 
 instance Ord v => Monoid (IntInterval v) where
   mempty = NoInterval
-  NoInterval `mappend` i  = i
-  i `mappend` NoInterval  = i
-  IntInterval _ hi1 `mappend` IntInterval int2 hi2 =
+  mappend = (<>)
+
+instance Ord v => Semigroup (IntInterval v) where
+  NoInterval <> i  = i
+  i <> NoInterval  = i
+  IntInterval _ hi1 <> IntInterval int2 hi2 =
     IntInterval int2 (max hi1 hi2)
 
 instance Ord v => Measured (IntInterval v) (Node v a) where
@@ -194,7 +197,10 @@ instance Ord v => HasUnion0 (IntervalMap v a) where
 
 instance Ord v => Monoid (IntervalMap v a) where
   mempty = empty
-  mappend = union
+  mappend = (<>)
+
+instance Ord v => Semigroup (IntervalMap v a) where
+  (<>) = union
 
 -- | /O(n)/. Add a delta to each interval in the map
 offset :: (Ord v, Monoid v) => v -> IntervalMap v a -> IntervalMap v a

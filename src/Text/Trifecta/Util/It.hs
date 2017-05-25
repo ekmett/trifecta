@@ -77,7 +77,7 @@ simplifyIt (It _ k) r = k r
 simplifyIt pa _       = pa
 
 instance Monad (It r) where
-  return = Pure
+  return = pure
   Pure a >>= f = f a
   It a k >>= f = It (extract (f a)) $ \r -> case k r of
     It a' k' -> It (indexIt (f a') r) $ k' >=> f

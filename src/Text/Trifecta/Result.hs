@@ -100,7 +100,10 @@ class Errable m where
 
 instance Monoid ErrInfo where
   mempty = ErrInfo mempty mempty
-  mappend (ErrInfo xs d1) (ErrInfo ys d2) = ErrInfo (vsep [xs, ys]) (max d1 d2)
+  mappend = (<>)
+
+instance Semigroup ErrInfo where
+  ErrInfo xs d1 <> ErrInfo ys d2 = ErrInfo (vsep [xs, ys]) (max d1 d2)
 
 -- | The result of parsing. Either we succeeded or something went wrong.
 data Result a
