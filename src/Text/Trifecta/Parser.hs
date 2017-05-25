@@ -130,16 +130,8 @@ instance Semigroup a => Semigroup (Parser a) where
   (<>) = liftA2 (<>)
   {-# INLINE (<>) #-}
 
-{- In order to silence '-Wnoncanonical-monoid-instances' we'd need to
-   change the type-signature to emulate the not-yet existing superclass
-   relationship:
-
 instance (Semigroup a, Monoid a) => Monoid (Parser a) where
   mappend = (<>)
-  mempty = pure mempty
--}
-instance Monoid a => Monoid (Parser a) where
-  mappend = liftA2 mappend
   {-# INLINE mappend #-}
 
   mempty = pure mempty
