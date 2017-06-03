@@ -1,5 +1,5 @@
-next
-----
+1.7
+---
 * Make `trifecta` forward `-Wcompat`ible:
   * Adding `Semigroup` instances to correspond to every existing `Monoid`
     instance. This requires adding a `Semigroup` constraint to the `Monoid`
