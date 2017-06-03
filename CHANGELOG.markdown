@@ -1,7 +1,13 @@
 next
 ----
+* Make `trifecta` forward `-Wcompat`ible:
+  * Adding `Semigroup` instances to correspond to every existing `Monoid`
+    instance. This requires adding a `Semigroup` constraint to the `Monoid`
+    instance for `Parser` to emulate the `Semigroup`-`Monoid` superclass
+    relation that will be present in future versions of GHC.
+  * Adding a `MonadFail` instance for `Parser`
 * Revamp `Setup.hs` to use `cabal-doctest`. This makes it build
-  with `Cabal-1.25`, and makes the `doctest`s work with `cabal new-build` and
+  with `Cabal-2.0`, and makes the `doctest`s work with `cabal new-build` and
   sandboxes.
 
 1.6.2.1
