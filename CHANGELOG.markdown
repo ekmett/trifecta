@@ -1,3 +1,7 @@
+next
+----
+* Support `doctest-0.12`
+
 1.7
 ---
 * Make `trifecta` forward `-Wcompat`ible:
