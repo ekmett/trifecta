@@ -1,3 +1,8 @@
+1.7.1.1
+-------
+
+* Support `ansi-wl-pprint-0.6.8`
+
 1.7.1
 -----
 * Support `doctest-0.12`

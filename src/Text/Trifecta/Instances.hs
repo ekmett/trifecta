@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
@@ -12,8 +13,10 @@
 -----------------------------------------------------------------------------
 module Text.Trifecta.Instances () where
 
+#if !MIN_VERSION_ansi_wl_pprint(0,6,8)
 import Text.PrettyPrint.ANSI.Leijen
 import qualified Data.Semigroup as Data
 
 instance Data.Semigroup Doc where
   (<>) = (<>)
+#endif
