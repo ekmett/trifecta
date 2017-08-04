@@ -7,6 +7,8 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
+-- >>> putStrLn "Hello World!"
+-- Put doctest here
 ----------------------------------------------------------------------------
 module Text.Trifecta
   ( module Text.Trifecta.Rendering
