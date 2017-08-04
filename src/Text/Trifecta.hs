@@ -7,8 +7,20 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- >>> putStrLn "Hello World!"
--- Put doctest here
+-- >>> import Text.Parser.Char
+-- >>> import Text.Parser.Combinators
+-- >>> import Text.Parser.Token
+-- >>> import Control.Applicative
+-- >>> data Expr = Add Expr Expr | Mul Expr Expr | Lit Integer deriving (Show)
+-- >>> :{
+-- >>> let parens = between (symbolic '(') (symbolic ')')
+-- >>>     parseAdd = parens (do { x <- parseExpr; symbolic '+'; y <- parseExpr; pure (Add x y) })
+-- >>>     parseMul = parens (do { x <- parseExpr; symbolic '*'; y <- parseExpr; pure (Mul x y) })
+-- >>>     parseLit = Lit <$> integer
+-- >>>     parseExpr = parseAdd <|> parseMul <|> parseLit
+-- >>> in parseString parseExpr mempty "(1 + 2)"
+-- >>> :}
+-- Put expected result here
 ----------------------------------------------------------------------------
 module Text.Trifecta
   ( module Text.Trifecta.Rendering
