@@ -18,3 +18,5 @@ wip
 cabal.sandbox.config
 codex.tags
 old
+.stack-work
+stack.yaml
