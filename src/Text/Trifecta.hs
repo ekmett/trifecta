@@ -21,12 +21,12 @@ module Text.Trifecta
   , module Text.Parser.Token
   ) where
 
-import Text.Trifecta.Rendering
+import Text.Parser.Char
+import Text.Parser.Combinators
+import Text.Parser.Token
+import Text.Trifecta.Combinators
 import Text.Trifecta.Highlight
 import Text.Trifecta.Parser
-import Text.Trifecta.Combinators
+import Text.Trifecta.Rendering
 import Text.Trifecta.Result
 import Text.Trifecta.Rope
-import Text.Parser.Combinators
-import Text.Parser.Char
-import Text.Parser.Token

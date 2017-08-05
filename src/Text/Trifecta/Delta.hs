@@ -37,8 +37,9 @@ import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
 import GHC.Generics
-import Text.Trifecta.Instances ()
 import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>))
+
+import Text.Trifecta.Instances ()
 
 class HasBytes t where
   bytes :: t -> Int64

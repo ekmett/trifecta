@@ -1,13 +1,13 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE DeriveTraversable      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE TemplateHaskell        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (c) Edward Kmett 2011-2015
@@ -36,29 +36,30 @@ module Text.Trifecta.Parser
   , parseTest
   ) where
 
-import Control.Applicative as Alternative
-import Control.Monad (MonadPlus(..), ap, join)
-import Control.Monad.IO.Class
-import qualified Control.Monad.Fail as Fail
-import Data.ByteString as Strict hiding (empty, snoc)
-import Data.ByteString.UTF8 as UTF8
-import Data.Maybe (isJust)
-import Data.Semigroup
-import Data.Semigroup.Reducer
--- import Data.Sequence as Seq hiding (empty)
-import Data.Set as Set hiding (empty, toList)
-import System.IO
-import Text.Parser.Combinators
-import Text.Parser.Char
-import Text.Parser.LookAhead
-import Text.Parser.Token
-import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
+import           Control.Applicative          as Alternative
+import           Control.Monad                (MonadPlus (..), ap, join)
+import qualified Control.Monad.Fail           as Fail
+import           Control.Monad.IO.Class
+import           Data.ByteString              as Strict hiding (empty, snoc)
+import           Data.ByteString.UTF8         as UTF8
+import           Data.Maybe                   (isJust)
+import           Data.Semigroup
+import           Data.Semigroup.Reducer
+import           Data.Set                     as Set hiding (empty, toList)
+import           System.IO
+import           Text.Parser.Char
+import           Text.Parser.Combinators
+import           Text.Parser.LookAhead
+import           Text.Parser.Token
+import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
+    (empty, line, (<$>), (<>))
+
 import Text.Trifecta.Combinators
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Delta       as Delta
+import Text.Trifecta.Instances   ()
 import Text.Trifecta.Rendering
 import Text.Trifecta.Result
 import Text.Trifecta.Rope
-import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
 -- | The type of a trifecta parser

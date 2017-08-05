@@ -1,8 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Combinators
@@ -24,22 +24,23 @@ module Text.Trifecta.Combinators
   ) where
 
 import Control.Applicative
-import Control.Monad (MonadPlus)
+import Control.Monad                     (MonadPlus)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.RWS.Lazy as Lazy
-import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Lazy as Lazy
-import Control.Monad.Trans.State.Strict as Strict
-import Control.Monad.Trans.Writer.Lazy as Lazy
+import Control.Monad.Trans.RWS.Lazy      as Lazy
+import Control.Monad.Trans.RWS.Strict    as Strict
+import Control.Monad.Trans.State.Lazy    as Lazy
+import Control.Monad.Trans.State.Strict  as Strict
+import Control.Monad.Trans.Writer.Lazy   as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
-import Data.ByteString as Strict hiding (span)
+import Data.ByteString                   as Strict hiding (span)
 import Data.Semigroup
+import Prelude                           hiding (span)
+
 import Text.Parser.Token
 import Text.Trifecta.Delta
 import Text.Trifecta.Rendering
-import Prelude hiding (span)
 
 -- | This class provides parsers with easy access to:
 --

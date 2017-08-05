@@ -55,27 +55,28 @@ module Text.Trifecta.Rendering
   , (.#)
   ) where
 
-import Control.Applicative
-import Control.Comonad
-import Control.Lens
-import Data.Array
-import Data.ByteString as B hiding (groupBy, empty, any)
-import qualified Data.ByteString.UTF8 as UTF8
-import Data.Data
-import Data.Foldable
-import Data.Function (on)
-import Data.Hashable
-import Data.Int (Int64)
-import Data.Maybe
-import Data.List (groupBy)
-import Data.Semigroup
-import Data.Semigroup.Reducer
-import GHC.Generics
-import Prelude as P hiding (span)
-import System.Console.ANSI
-import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>), (<$>))
+import           Control.Applicative
+import           Control.Comonad
+import           Control.Lens
+import           Data.Array
+import           Data.ByteString              as B hiding (any, empty, groupBy)
+import qualified Data.ByteString.UTF8         as UTF8
+import           Data.Data
+import           Data.Foldable
+import           Data.Function                (on)
+import           Data.Hashable
+import           Data.Int                     (Int64)
+import           Data.List                    (groupBy)
+import           Data.Maybe
+import           Data.Semigroup
+import           Data.Semigroup.Reducer
+import           GHC.Generics
+import           Prelude                      as P hiding (span)
+import           System.Console.ANSI
+import           Text.PrettyPrint.ANSI.Leijen hiding (column, (<$>), (<>))
+
 import Text.Trifecta.Delta
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Instances        ()
 import Text.Trifecta.Util.Combinators
 
 -- $setup

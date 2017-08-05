@@ -7,10 +7,8 @@
 -- top-to-bottom.
 module Text.Trifecta.Tutorial where
 
-
-
-import Text.Trifecta
 import Control.Applicative
+import Text.Trifecta
 
 -- | First, we import Trifecta itself. It only the core parser definitions and
 -- instances. Since Trifecta on its own is just the parser and a handful of

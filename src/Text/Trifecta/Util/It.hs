@@ -37,11 +37,11 @@ import Control.Monad
 import Data.Monoid
 #endif
 
-import Data.ByteString as Strict
-import Data.ByteString.Lazy as Lazy
+import Data.ByteString                as Strict
+import Data.ByteString.Lazy           as Lazy
 import Data.Profunctor
-import Text.Trifecta.Rope
 import Text.Trifecta.Delta
+import Text.Trifecta.Rope
 import Text.Trifecta.Util.Combinators as Util
 
 -- | An 'It' describes how to incrementally create values of type @a@ from a

@@ -14,8 +14,8 @@
 module Text.Trifecta.Instances () where
 
 #if !MIN_VERSION_ansi_wl_pprint(0,6,8)
-import Text.PrettyPrint.ANSI.Leijen
-import qualified Data.Semigroup as Data
+import qualified Data.Semigroup               as Data
+import           Text.PrettyPrint.ANSI.Leijen
 
 instance Data.Semigroup Doc where
   (<>) = (<>)

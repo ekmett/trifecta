@@ -28,19 +28,20 @@ module Text.Trifecta.Rope
   , grabLine
   ) where
 
-import Data.Semigroup
-import Data.Semigroup.Reducer
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as Strict
-import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.ByteString.UTF8 as UTF8
-import Data.FingerTree as FingerTree
-import GHC.Generics
-import Data.Foldable (toList)
-import Data.Hashable
-import Text.Trifecta.Util.Combinators as Util
+import           Data.ByteString        (ByteString)
+import qualified Data.ByteString        as Strict
+import qualified Data.ByteString.Lazy   as Lazy
+import qualified Data.ByteString.UTF8   as UTF8
+import           Data.Data
+import           Data.FingerTree        as FingerTree
+import           Data.Foldable          (toList)
+import           Data.Hashable
+import           Data.Semigroup
+import           Data.Semigroup.Reducer
+import           GHC.Generics
+
 import Text.Trifecta.Delta
-import Data.Data
+import Text.Trifecta.Util.Combinators as Util
 
 -- $setup
 --

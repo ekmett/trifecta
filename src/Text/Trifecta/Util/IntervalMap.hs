@@ -1,7 +1,7 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 #ifndef MIN_VERSION_lens
 #define MIN_VERSION_lens(x,y,z) 1
@@ -54,19 +54,15 @@ module Text.Trifecta.Util.IntervalMap
 
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (empty)
-import Data.Foldable (Foldable(foldMap))
+import Data.Foldable       (Foldable (foldMap))
 #endif
-import Control.Lens
-  hiding ((<|),(|>)
-#if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
-  ,(:<)
-#endif
-  )
-import qualified Data.FingerTree as FT
-import Data.FingerTree (FingerTree, Measured(..), ViewL(..), (<|), (><))
-import Data.Semigroup
-import Data.Semigroup.Reducer
-import Data.Semigroup.Union
+import           Control.Lens           hiding ((:<), (<|), (|>))
+import           Data.FingerTree
+    (FingerTree, Measured (..), ViewL (..), (<|), (><))
+import qualified Data.FingerTree        as FT
+import           Data.Semigroup
+import           Data.Semigroup.Reducer
+import           Data.Semigroup.Union
 
 ----------------------------------
 -- 4.8 Application: interval trees
@@ -250,4 +246,3 @@ greater _ _ = False
 fromList :: Ord v => [(v, v, a)] -> IntervalMap v a
 fromList = foldr ins empty where
   ins (lo, hi, n) = insert lo hi n
-

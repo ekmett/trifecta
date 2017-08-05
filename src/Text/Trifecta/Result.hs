@@ -1,14 +1,13 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE DeriveTraversable      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (c) Edward Kmett 2011-2015
@@ -34,18 +33,20 @@ module Text.Trifecta.Result
   , failed
   ) where
 
-import Control.Applicative as Alternative
-import Control.Lens hiding (snoc, cons)
-import Control.Monad (guard)
-import Data.Foldable
-import Data.Maybe (fromMaybe, isJust)
-import qualified Data.List as List
-import Data.Semigroup
-import Data.Set as Set hiding (empty, toList)
-import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
+import           Control.Applicative          as Alternative
+import           Control.Lens                 hiding (cons, snoc)
+import           Control.Monad                (guard)
+import           Data.Foldable
+import qualified Data.List                    as List
+import           Data.Maybe                   (fromMaybe, isJust)
+import           Data.Semigroup
+import           Data.Set                     as Set hiding (empty, toList)
+import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
+    (empty, line, (<$>), (<>))
+
+import Text.Trifecta.Delta     as Delta
 import Text.Trifecta.Instances ()
 import Text.Trifecta.Rendering
-import Text.Trifecta.Delta as Delta
 
 data ErrInfo = ErrInfo
   { _errDoc    :: Doc

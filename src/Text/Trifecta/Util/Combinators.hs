@@ -18,8 +18,8 @@ module Text.Trifecta.Util.Combinators
   , (<$!>)
   ) where
 
+import Data.ByteString      as Strict
 import Data.ByteString.Lazy as Lazy
-import Data.ByteString as Strict
 
 argmin :: Ord b => (a -> b) -> a -> a -> a
 argmin f a b
