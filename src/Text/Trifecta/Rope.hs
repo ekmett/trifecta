@@ -47,9 +47,10 @@ import Text.Trifecta.Util.Combinators as Util
 --
 -- >>> :set -XOverloadedStrings
 
+-- A 'Strand' is a chunk of data; many 'Strand's together make a 'Rope'.
 data Strand
-  = Strand {-# UNPACK #-} !ByteString !Delta
-  | Skipping !Delta
+  = Strand {-# UNPACK #-} !ByteString !Delta -- ^ Data of a certain length
+  | Skipping !Delta                          -- ^ Absence of data of a certain length
   deriving (Show, Data, Typeable, Generic)
 
 -- | Construct a single 'Strand' out of a 'ByteString'.

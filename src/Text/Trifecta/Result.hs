@@ -57,9 +57,9 @@ data ErrInfo = ErrInfo
 -- and a set of things expected at the current location. This does not, however,
 -- include the actual location.
 data Err = Err
-  { _reason     :: Maybe Doc
-  , _footnotes  :: [Doc]
-  , _expected   :: Set String
+  { _reason      :: Maybe Doc
+  , _footnotes   :: [Doc]
+  , _expected    :: Set String
   , _finalDeltas :: [Delta]
   }
 
@@ -81,7 +81,8 @@ failed :: String -> Err
 failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
 {-# INLINE failed #-}
 
--- | Convert a location and an 'Err' into a 'Doc'
+-- | Convert a 'Rendering' of auxiliary information and an 'Err' into a 'Doc',
+-- ready to be prettyprinted to the user.
 explain :: Rendering -> Err -> Doc
 explain r (Err mm as es _)
   | Set.null es = report (withEx mempty)
@@ -137,7 +138,7 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
 
 instance Show a => Pretty (Result a) where
   pretty (Success a)    = pretty (show a)
-  pretty (Failure xs) = pretty . _errDoc $ xs
+  pretty (Failure xs) = pretty (_errDoc xs)
 
 instance Applicative Result where
   pure = Success

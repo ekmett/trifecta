@@ -137,6 +137,7 @@ sgr xs0 = go (P.reverse xs0) where
 
 type Lines = Array (Int,Int64) ([SGR], Char)
 
+-- | Remove a number of @(index, element)@ values from an @'Array'@.
 (///) :: Ix i => Array i e -> [(i, e)] -> Array i e
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
 
@@ -147,10 +148,15 @@ grow y a
   where old@((t,lo),(b,hi)) = bounds a
         new = ((min t y,lo),(max b y,hi))
 
-draw :: [SGR] -> Int -> Int64 -> String -> Lines -> Lines
-draw e y n xs a0
-  | P.null xs = a0
-  | otherwise = gt $ lt (a /// out)
+draw
+    :: [SGR]  -- ^ ANSI style to use
+    -> Int    -- ^ Line; 0 is at the top
+    -> Int64  -- ^ Column; 0 is on the left
+    -> String -- ^ Data to be written
+    -> Lines  -- ^ Canvas to draw on
+    -> Lines
+draw _ _ _ "" a0 = a0
+draw e y n xs a0 = gt $ lt (a /// out)
   where
     a = grow y a0
     ((_,lo),(_,hi)) = bounds a
@@ -186,11 +192,14 @@ instance Show Rendering where
 --
 -- >>> nullRendering emptyRendering
 -- True
+--
+-- >>> nullRendering exampleRendering
+-- False
 nullRendering :: Rendering -> Bool
 nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
--- | The empty 'Rendering'.
+-- | The empty 'Rendering', which contains nothing at all.
 --
 -- >>> show (pretty emptyRendering)
 -- ""
@@ -226,7 +235,12 @@ instance Renderable Rendering where
   render = id
 
 class Source t where
-  source :: t -> (Int64, Int64, Lines -> Lines) {- the number of (padded) columns, number of bytes, and the the line -}
+  source :: t -> (Int64, Int64, Lines -> Lines)
+  -- ^ @
+  -- ( Number of (padded) columns
+  -- , number of bytes
+  -- , line )
+  -- @
 
 instance Source String where
   source s
@@ -267,8 +281,9 @@ instance Pretty Rendering where
 window :: Int64 -> Int64 -> Int64 -> (Int64, Int64)
 window c l w
   | c <= w2     = (0, min w l)
-  | c + w2 >= l = if l > w then (l-w, l) else (0, w)
-  | otherwise   = (c-w2,c + w2)
+  | c + w2 >= l = if l > w then (l-w, l)
+                           else (0  , w)
+  | otherwise   = (c-w2, c+w2)
   where w2 = div w 2
 
 data Rendered a = a :@ Rendering
@@ -401,7 +416,6 @@ drawSpan start end d a
     nearHi = near hi d
     rep = P.replicate . fromIntegral
 
--- | Draw a 'Span' on a 'Rendering'.
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
