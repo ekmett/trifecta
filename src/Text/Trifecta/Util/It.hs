@@ -21,6 +21,7 @@ module Text.Trifecta.Util.It
   , needIt
   , wantIt
   , simplifyIt
+  , foldIt
   , runIt
   , fillIt
   , rewindIt
@@ -111,7 +112,31 @@ wantIt z f = It z k where
     (# False, a #) -> It a k
     (# True,  a #) -> Pure a
 
--- scott decoding
+-- | The generalized fold (Böhm-Berarducci decoding) over 'It r a'.
+--
+-- 'foldIt' satisfies the property:
+--
+-- @foldIt Pure It = id@
+foldIt :: (a -> o) -> (a -> (r -> o) -> o) -> It r a -> o
+foldIt p _ (Pure a) = p a
+foldIt p i (It a k) = i a (\r -> foldIt p i (k r))
+
+-- | Scott decoding of 'It r a'.
+--
+-- The scott decoding is similar to the generalized fold over a data type, but
+-- leaves the recursion step to the calling function.
+--
+-- 'runIt' satiesfies the property:
+--
+-- @runIt Pure It = id@
+--
+-- See also the Scott decoding of lists:
+--
+-- @runList :: (a -> [a] -> b) -> b -> [a] -> b@
+--
+-- and compare it with 'foldr' (the Böhm-Berarducci decoding for lists):
+--
+-- @foldr :: (a -> b -> b) -> b -> [a] -> b@
 runIt :: (a -> o) -> (a -> (r -> It r a) -> o) -> It r a -> o
 runIt p _ (Pure a) = p a
 runIt _ i (It a k) = i a k
