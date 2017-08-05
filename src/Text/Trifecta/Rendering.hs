@@ -135,6 +135,7 @@ sgr xs0 = go (P.reverse xs0) where
         White   -> onwhite . go xs
   go (_                                   : xs) = go xs
 
+-- | A raw canvas to paint ANSI-styled characters on.
 type Lines = Array (Int,Int64) ([SGR], Char)
 
 -- | Remove a number of @(index, element)@ values from an @'Array'@.
@@ -215,12 +216,11 @@ instance Monoid Rendering where
   mappend = (<>)
   mempty = emptyRendering
 
--- |
 ifNear
-    :: Delta -- ^ Position 1
+    :: Delta            -- ^ Position 1
     -> (Lines -> Lines) -- ^ Modify the fallback result if the positions are 'near' each other
-    -> Delta -- ^ Position 2
-    -> Lines -- ^ Fallback result if the positions are not 'near' each other
+    -> Delta            -- ^ Position 2
+    -> Lines            -- ^ Fallback result if the positions are not 'near' each other
     -> Lines
 ifNear d f d' l | near d d' = f l
                 | otherwise = l
