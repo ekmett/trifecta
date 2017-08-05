@@ -1,9 +1,9 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE MagicHash             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UnboxedTuples         #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Util.It
@@ -44,9 +44,11 @@ import Text.Trifecta.Rope
 import Text.Trifecta.Delta
 import Text.Trifecta.Util.Combinators as Util
 
+-- | An 'It' describes how to incrementally create values of type @a@ from a
+-- source of type @r@.
 data It r a
-  = Pure a
-  | It a (r -> It r a)
+  = Pure a             -- ^ A single value
+  | It a (r -> It r a) -- ^ A single value, plus a way to construct moure of 'It'.
 
 instance Show a => Show (It r a) where
   showsPrec d (Pure a) = showParen (d > 10) $ showString "Pure " . showsPrec 11 a
@@ -55,7 +57,7 @@ instance Show a => Show (It r a) where
 instance Functor (It r) where
   fmap f (Pure a) = Pure $ f a
   fmap f (It a k) = It (f a) $ fmap f . k
-  
+
 instance Profunctor It where
   rmap = fmap
   lmap _ (Pure a) = Pure a
@@ -72,6 +74,7 @@ indexIt :: It r a -> r -> a
 indexIt (Pure a) _ = a
 indexIt (It _ k) r = extract (k r)
 
+-- | Given additional input, compute the next element drawable from 'It'.
 simplifyIt :: It r a -> r -> It r a
 simplifyIt (It _ k) r = k r
 simplifyIt pa _       = pa
@@ -87,10 +90,12 @@ instance ComonadApply (It r) where (<@>) = (<*>)
 
 -- | It is a cofree comonad
 instance Comonad (It r) where
-  duplicate p@Pure{} = Pure p
+  duplicate p@Pure{}   = Pure p
   duplicate p@(It _ k) = It p (duplicate . k)
-  extend f p@Pure{} = Pure (f p)
+
+  extend f p@Pure{}   = Pure (f p)
   extend f p@(It _ k) = It (f p) (extend f . k)
+
   extract (Pure a) = a
   extract (It a _) = a
 
@@ -118,7 +123,6 @@ fillIt :: r -> (Delta -> Strict.ByteString -> r) -> Delta -> It Rope r
 fillIt kf ks n = wantIt kf $ \r ->
   (# bytes n < bytes (rewind (delta r))
   ,  grabLine n r kf ks #)
-
 
 -- | Return the text of the line that contains a given position
 rewindIt :: Delta -> It Rope (Maybe Strict.ByteString)

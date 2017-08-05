@@ -176,10 +176,15 @@ instance Show Rendering where
   showsPrec d (Rendering p ll lb _ _) = showParen (d > 10) $
     showString "Rendering " . showsPrec 11 p . showChar ' ' . showsPrec 11 ll . showChar ' ' . showsPrec 11 lb . showString " ... ..."
 
+-- | Is the 'Rendering' empty?
+--
+-- >>> nullRendering emptyRendering
+-- True
 nullRendering :: Rendering -> Bool
 nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
+-- | The empty 'Rendering'.
 emptyRendering :: Rendering
 emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
 
@@ -221,7 +226,6 @@ instance Source String where
       go _ ('\n':_)  = []
       go n (x:xs)    = x : go (n + 1) xs
       go _ []        = []
-
 
 instance Source ByteString where
   source = source . UTF8.toString
@@ -295,6 +299,7 @@ instance HasCaret Caret where
 
 instance Hashable Caret
 
+-- | ANSI terminal style for rendering the caret.
 caretEffects :: [SGR]
 caretEffects = [SetColor Foreground Vivid Green]
 

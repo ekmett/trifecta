@@ -52,8 +52,9 @@ data ErrInfo = ErrInfo
   , _errDeltas :: [Delta]
   } deriving(Show)
 
--- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
--- at the current location. This does not, however, include the actual location.
+-- | This is used to report an error. What went wrong, some supplemental docs
+-- and a set of things expected at the current location. This does not, however,
+-- include the actual location.
 data Err = Err
   { _reason     :: Maybe Doc
   , _footnotes  :: [Doc]
