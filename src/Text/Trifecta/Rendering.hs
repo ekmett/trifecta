@@ -1,9 +1,9 @@
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2015 Edward Kmett
@@ -77,6 +77,11 @@ import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>), (<$>))
 import Text.Trifecta.Delta
 import Text.Trifecta.Instances ()
 import Text.Trifecta.Util.Combinators
+
+-- $setup
+--
+-- >>> :set -XOverloadedStrings
+-- >>> let exampleRendering = rendered mempty ("int main(int argc, char ** argv) { int; }" :: ByteString)
 
 outOfRangeEffects :: [SGR] -> [SGR]
 outOfRangeEffects xs = SetConsoleIntensity BoldIntensity : xs
@@ -185,6 +190,9 @@ nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
 -- | The empty 'Rendering'.
+--
+-- >>> show (pretty emptyRendering)
+-- ""
 emptyRendering :: Rendering
 emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
 
@@ -197,7 +205,13 @@ instance Monoid Rendering where
   mappend = (<>)
   mempty = emptyRendering
 
-ifNear :: Delta -> (Lines -> Lines) -> Delta -> Lines -> Lines
+-- |
+ifNear
+    :: Delta -- ^ Position 1
+    -> (Lines -> Lines) -- ^ Modify the fallback result if the positions are 'near' each other
+    -> Delta -- ^ Position 2
+    -> Lines -- ^ Fallback result if the positions are not 'near' each other
+    -> Lines
 ifNear d f d' l | near d d' = f l
                 | otherwise = l
 
@@ -215,7 +229,7 @@ class Source t where
 
 instance Source String where
   source s
-    | P.elem '\n' s = ( ls, bs, draw [] 0 0 s')
+    | P.elem '\n' s = (ls, bs, draw [] 0 0 s')
     | otherwise           = ( ls + fromIntegral (P.length end), bs, draw [SetColor Foreground Vivid Blue, SetConsoleIntensity BoldIntensity] 0 ls end . draw [] 0 0 s')
     where
       end = "<EOF>"
@@ -286,9 +300,9 @@ instance Renderable (Rendered a) where
 
 -- | A 'Caret' marks a point in the input with a simple @^@ character.
 --
--- > foo.c:8:36: note
--- > int main(int argc, char ** argv) { int; }
--- >                                    ^
+-- >>> plain (pretty (addCaret (Columns 35 35) exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasCaret t where
@@ -306,6 +320,7 @@ caretEffects = [SetColor Foreground Vivid Green]
 drawCaret :: Delta -> Delta -> Lines -> Lines
 drawCaret p = ifNear p $ draw caretEffects 1 (fromIntegral (column p)) "^"
 
+-- | Render a caret at a certain position in a 'Rendering'.
 addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
 
@@ -385,14 +400,16 @@ drawSpan start end d a
     nearHi = near hi d
     rep = P.replicate . fromIntegral
 
+-- | Draw a 'Span' on a 'Rendering'.
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
 -- | A 'Span' marks a range of input characters. If 'Caret' is a point, then
 -- 'Span' is a line.
 --
--- > int main(int argc, char ** argv) { int; }
--- >                                    ^~~
+-- >>> plain (pretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
@@ -443,9 +460,6 @@ instance Renderable (Spanned a) where
 
 instance Hashable a => Hashable (Spanned a)
 
--- > int main(int argc char ** argv) { int; }
--- >                  ^
--- >                  ,
 drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
 drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIntegral (column l)) rpl) d
                       $ drawSpan s e d a
@@ -454,7 +468,12 @@ drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIn
 addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
 addFixit s e rpl r = drawFixit s e rpl .# r
 
--- | A 'Fixit' is able to suggest input to the user to »fix it«.
+-- | A 'Fixit' is a 'Span' with a suggestion.
+--
+-- >>> plain (pretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ~~~
+--                                    Fix this!
 data Fixit = Fixit
   { _fixitSpan :: {-# UNPACK #-} !Span
     -- ^ 'Span' where the error occurred

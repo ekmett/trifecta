@@ -184,6 +184,12 @@ rewind _                    = Columns 0 0
 {-# INLINE rewind #-}
 
 -- | Should we show two things with a 'Delta' on the same line?
+--
+-- >>> near (Columns 0 0) (Columns 5 5)
+-- True
+--
+-- >>> near (Lines 1 0 1 0) (Lines 2 4 4 2)
+-- False
 near :: (HasDelta s, HasDelta t) => s -> t -> Bool
 near s t = rewind (delta s) == rewind (delta t)
 {-# INLINE near #-}

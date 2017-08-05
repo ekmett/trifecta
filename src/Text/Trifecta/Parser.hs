@@ -94,7 +94,6 @@ import Text.Trifecta.Util.It
 -- if *all* parsers in the choice do.  If that is not the desired behavior,
 -- see `try`, which turns a committed parser failure into an epsilon failure
 -- (at the cost of error information).
---
 newtype Parser a = Parser
   { unparser :: forall r.
     (a -> Err -> It Rope r) ->
