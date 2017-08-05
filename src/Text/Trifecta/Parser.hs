@@ -97,11 +97,13 @@ import Text.Trifecta.Util.It
 -- (at the cost of error information).
 newtype Parser a = Parser
   { unparser :: forall r.
-    (a -> Err -> It Rope r) ->
-    (Err -> It Rope r) ->
-    (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
-    (ErrInfo -> It Rope r) ->                                -- committed err
-    Delta -> ByteString -> It Rope r
+       (a -> Err -> It Rope r)
+    -> (Err -> It Rope r)
+    -> (a -> Set String -> Delta -> ByteString -> It Rope r)  -- committed success
+    -> (ErrInfo -> It Rope r)                                 -- committed err
+    -> Delta
+    -> ByteString
+    -> It Rope r
   }
 
 instance Functor Parser where
@@ -335,6 +337,8 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   ee e         = Pure (EE e)
   co a es d bs = Pure (CO a es d bs)
   ce errInf    = Pure (CE errInf)
+
+  go :: Rope -> It Rope (Stepping a) -> Step a
   go r (Pure (EO a _))     = StepDone r a
   go r (Pure (EE e))       = StepFail r $
                               let errDoc = explain (renderingCaret d0 bs0) e
@@ -347,7 +351,7 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
                                   ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
-                              ) (go <*> k)
+                              ) (\r -> go r (k r))
 {-# INLINE stepParser #-}
 
 -- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from
