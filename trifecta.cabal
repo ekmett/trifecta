@@ -44,6 +44,7 @@ library
     Text.Trifecta.Rendering
     Text.Trifecta.Result
     Text.Trifecta.Rope
+    Text.Trifecta.Tutorial
     Text.Trifecta.Util.Array
     Text.Trifecta.Util.IntervalMap
     Text.Trifecta.Util.It
@@ -110,4 +111,3 @@ test-suite quickcheck
     trifecta
   ghc-options: -Wall -threaded
   hs-source-dirs: tests
-
