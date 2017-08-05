@@ -154,11 +154,19 @@ draw e y n xs a0
     gt | P.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
        | otherwise = id
 
+-- | A 'Rendering' is a canvas of text that output can be written to.
 data Rendering = Rendering
-  { _renderingDelta    :: !Delta                 -- focus, the render will keep this visible
-  , _renderingLineLen   :: {-# UNPACK #-} !Int64 -- actual line length
-  , _renderingLineBytes :: {-# UNPACK #-} !Int64 -- line length in bytes
-  , _renderingLine     :: Lines -> Lines
+  { _renderingDelta :: !Delta
+    -- ^ focus, the render will keep this visible
+
+  , _renderingLineLen :: {-# UNPACK #-} !Int64
+    -- ^ actual line length
+
+  , _renderingLineBytes :: {-# UNPACK #-} !Int64
+    -- ^ line length in bytes
+
+  , _renderingLine :: Lines -> Lines
+
   , _renderingOverlays :: Delta -> Lines -> Lines
   }
 
@@ -272,9 +280,8 @@ instance Traversable Rendered where
 instance Renderable (Rendered a) where
   render (_ :@ s) = s
 
--- |
--- > In file included from baz.c:9
--- > In file included from bar.c:4
+-- | A 'Caret' marks a point in the input with a simple @^@ character.
+--
 -- > foo.c:8:36: note
 -- > int main(int argc, char ** argv) { int; }
 -- >                                    ^
@@ -350,29 +357,37 @@ instance Reducer (Careted a) Rendering where
 
 instance Hashable a => Hashable (Careted a)
 
+-- | ANSI terminal style to render spans with.
 spanEffects :: [SGR]
 spanEffects  = [SetColor Foreground Dull Green]
 
-drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
-drawSpan s e d a
-  | nl && nh  = go (column l) (rep (max (column h - column l) 0) '~') a
-  | nl        = go (column l) (rep (max (snd (snd (bounds a)) - column l + 1) 0) '~') a
-  |       nh  = go (-1)       (rep (max (column h + 1) 0) '~') a
-  | otherwise = a
+drawSpan
+    :: Delta -- ^ Start of the region of interest
+    -> Delta -- ^ End of the region of interest
+    -> Delta -- ^ Currrent location
+    -> Lines -- ^ 'Lines' to add the rendering to
+    -> Lines
+drawSpan start end d a
+  | nearLo && nearHi = go (column lo) (rep (max (column hi - column lo) 0) '~') a
+  | nearLo           = go (column lo) (rep (max (snd (snd (bounds a)) - column lo + 1) 0) '~') a
+  |           nearHi = go (-1)        (rep (max (column hi + 1) 0) '~') a
+  | otherwise        = a
   where
     go = draw spanEffects 1 . fromIntegral
-    l = argmin bytes s e
-    h = argmax bytes s e
-    nl = near l d
-    nh = near h d
+    lo = argmin bytes start end
+    hi = argmax bytes start end
+    nearLo = near lo d
+    nearHi = near hi d
     rep = P.replicate . fromIntegral
 
--- |
--- > int main(int argc, char ** argv) { int; }
--- >                                    ^~~
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
+-- | A 'Span' marks a range of input characters. If 'Caret' is a point, then
+-- 'Span' is a line.
+--
+-- > int main(int argc, char ** argv) { int; }
+-- >                                    ^~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
@@ -392,6 +407,8 @@ instance Reducer Span Rendering where
 
 instance Hashable Span
 
+-- | Annotate an arbitrary piece of data with a 'Span', typically its
+-- corresponding input location.
 data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance HasSpan (Spanned a) where
@@ -432,9 +449,12 @@ drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIn
 addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
 addFixit s e rpl r = drawFixit s e rpl .# r
 
+-- | A 'Fixit' is able to suggest input to the user to »fix it«.
 data Fixit = Fixit
-  { _fixitSpan        :: {-# UNPACK #-} !Span
+  { _fixitSpan :: {-# UNPACK #-} !Span
+    -- ^ 'Span' where the error occurred
   , _fixitReplacement :: !ByteString
+    -- ^ Replacement suggestion
   } deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 makeClassy ''Fixit

@@ -1,4 +1,9 @@
-{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances, BangPatterns, DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2015 Edward Kmett
@@ -8,6 +13,9 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
+-- A rope is a data strucure to efficiently store and manipulate long strings.
+-- Wikipedia provides a nice overview:
+-- <https://en.wikipedia.org/wiki/Rope_(data_structure)>
 ----------------------------------------------------------------------------
 module Text.Trifecta.Rope
   ( Rope(..)

@@ -264,10 +264,25 @@ instance MarkParsing Delta Parser where
             else co () mempty d' mempty
         | otherwise -> ee mempty
 
+-- | A 'Step' allows for incremental parsing, since the parser
+--
+--   - can be done with a final result
+--   - have errored
+--   - can have yielded a partial result with possibly more to come
 data Step a
   = StepDone !Rope a
+    -- ^ Parsing is done and has converted the 'Rope' to a final result
+
   | StepFail !Rope ErrInfo
+    -- ^ Parsing the 'Rope' has failed with an error
+
   | StepCont !Rope (Result a) (Rope -> Step a)
+    -- ^ The 'Rope' has been partially consumed and already yielded a 'Result',
+    -- and if more input is provided, more results can be produced.
+    --
+    -- One common scenario for this is to parse log files: after parsing a
+    -- single line, that data can already be worked with, but there may be more
+    -- lines to come.
 
 instance Show a => Show (Step a) where
   showsPrec d (StepDone r a) = showParen (d > 10) $
@@ -282,12 +297,15 @@ instance Functor Step where
   fmap _ (StepFail r xs)   = StepFail r xs
   fmap f (StepCont r z k)  = StepCont r (fmap f z) (fmap f . k)
 
+-- | Feed some additional input to a 'Step' to continue parsing a bit further.
 feed :: Reducer t Rope => t -> Step r -> Step r
 feed t (StepDone r a)    = StepDone (snoc r t) a
 feed t (StepFail r xs)   = StepFail (snoc r t) xs
 feed t (StepCont r _ k)  = k (snoc r t)
 {-# INLINE feed #-}
 
+-- | Assume all possible input has been given to the parser, execute it to yield
+-- a final result.
 starve :: Step a -> Result a
 starve (StepDone _ a)    = Success a
 starve (StepFail _ xs)   = Failure xs
@@ -332,9 +350,9 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
                               ) (go <*> k)
 {-# INLINE stepParser #-}
 
--- | @parseFromFile p filePath@ runs a parser @p@ on the
--- input read from @filePath@ using 'ByteString.readFile'. All diagnostic messages
--- emitted over the course of the parse attempt are shown to the user on the console.
+-- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from
+-- @filePath@ using 'ByteString.readFile'. All diagnostic messages emitted over
+-- the course of the parse attempt are shown to the user on the console.
 --
 -- > main = do
 -- >   result <- parseFromFile numbers "digits.txt"
@@ -350,28 +368,35 @@ parseFromFile p fn = do
      liftIO $ displayIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> linebreak
      return Nothing
 
--- | @parseFromFileEx p filePath@ runs a parser @p@ on the
--- input read from @filePath@ using 'ByteString.readFile'. Returns all diagnostic messages
--- emitted over the course of the parse and the answer if the parse was successful.
+-- | @('parseFromFileEx' p filePath)@ runs a parser @p@ on the input read from
+-- @filePath@ using 'ByteString.readFile'. Returns all diagnostic messages
+-- emitted over the course of the parse and the answer if the parse was
+-- successful.
 --
 -- > main = do
 -- >   result <- parseFromFileEx (many number) "digits.txt"
 -- >   case result of
 -- >     Failure xs -> displayLn xs
 -- >     Success a  -> print (sum a)
--- >
-
 parseFromFileEx :: MonadIO m => Parser a -> String -> m (Result a)
 parseFromFileEx p fn = do
   s <- liftIO $ Strict.readFile fn
   return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
 
--- | @parseByteString p delta i@ runs a parser @p@ on @i@.
-
-parseByteString :: Parser a -> Delta -> UTF8.ByteString -> Result a
+-- | Fully parse a 'UTF8.ByteString' to a 'Result'.
+parseByteString
+    :: Parser a
+    -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
+    -> UTF8.ByteString
+    -> Result a
 parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
-parseString :: Parser a -> Delta -> String -> Result a
+-- | Fully parse a 'String' to a 'Result'.
+parseString
+    :: Parser a
+    -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
+    -> String
+    -> Result a
 parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()

@@ -9,9 +9,7 @@ module Text.Trifecta.Tutorial where
 
 
 
-import Text.Trifecta.Parser
-import Text.Trifecta.Result
-import Text.Parser.Token
+import Text.Trifecta
 import Control.Applicative
 
 -- | First, we import Trifecta itself. It only the core parser definitions and
@@ -23,6 +21,7 @@ import Control.Applicative
 -- put into their own package to be shared. Trifecta reexports these
 -- definitions, but it’s useful to keep in mind that the documentation of
 -- certain functions might not be directly in the /trifecta/ package.
+importDocumentation :: docDummy
 importDocumentation = error "Auxiliary definition to write Haddock documetation for :-)"
 
 -- | In order to keep things minimal, we define a very simple language for
@@ -54,11 +53,21 @@ parseExpr = parseAdd <|> parseLit
 
 -- | We can now use our parser to convert a 'String' to an 'Expr',
 --
--- >>> parseString parseExpr mempty "(1 + (2 + 3))"
--- ldjlfj
+-- @
+-- parseString parseExpr mempty "(1 + (2 + 3))"
+-- @
 --
--- When we provide ill-formed input, we get a nice error message:
--- >>> parseString parseExpr mempty "(1 + 2 + 3))"
--- ldjlfj
-examples :: Result Expr
+-- > Success (Add (Lit 1) (Add (Lit 2) (Lit 3)))
+--
+-- When we provide ill-formed input, we get a nice error message with an arrow
+-- to the location where the error occurred:
+--
+-- @
+-- parseString parseExpr mempty "(1 + 2 + 3))"
+-- @
+--
+-- > (interactive):1:8: error: expected: ")"
+-- > (1 + 2 + 3))<EOF>
+-- >        ^
+examples :: docDummy
 examples = error "Haddock dummy for documentation"
