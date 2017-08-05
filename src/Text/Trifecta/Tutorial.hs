@@ -3,8 +3,8 @@
 -- different, from using other parser libraries, so for users familiar with one
 -- of the many Parsecs should feel right at home.
 --
--- The source code can be read top-to-bottom.
-
+-- __The source of this file is written in a literate style__, and can be read
+-- top-to-bottom.
 module Text.Trifecta.Tutorial where
 
 
