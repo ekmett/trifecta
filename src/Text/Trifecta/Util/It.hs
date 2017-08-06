@@ -100,12 +100,48 @@ instance Comonad (It r) where
   extract (Pure a) = a
   extract (It a _) = a
 
+-- | Consumes input until a value can be produced.
+--
+-- >>> :{
+-- needTen :: It Int Int
+-- needTen = needIt 0 (\n -> if n < 10 then Nothing else Just n)
+-- :}
+--
+-- >>> extract needTen
+-- 0
+--
+-- >>> extract (simplifyIt needTen 5)
+-- 0
+--
+-- >>> extract (simplifyIt needTen 11)
+-- 11
+--
+-- >>> extract (simplifyIt (simplifyIt (simplifyIt needTen 5) 11) 15)
+-- 11
 needIt :: a -> (r -> Maybe a) -> It r a
 needIt z f = k where
   k = It z $ \r -> case f r of
     Just a -> Pure a
     Nothing -> k
 
+-- | Consumes input and produces partial results until a condition is met.
+--
+-- >>> :{
+-- wantTen :: It Int Int
+-- wantTen = wantIt 0 (\n -> (n >= 10, n))
+-- :}
+--
+-- >>> extract wantTen
+-- 0
+--
+-- >>> extract (simplifyIt wantTen 5)
+-- 5
+--
+-- >>> extract (simplifyIt wantTen 11)
+-- 11
+--
+-- >>> extract (simplifyIt (simplifyIt (simplifyIt wantTen 5) 11) 15)
+-- 11
 wantIt :: a -> (r -> (# Bool, a #)) -> It r a
 wantIt z f = It z k where
   k r = case f r of
