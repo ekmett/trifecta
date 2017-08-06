@@ -45,11 +45,32 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Rope
 import Text.Trifecta.Util.Combinators as Util
 
--- | An 'It' describes how to incrementally create values of type @a@ from a
--- source of type @r@.
+-- | @'It' r a@ consumes a feed of @r@s and produces @a@s on the way. New values
+-- can be fed using @'simplifyIt'@, the current (partial or final) result is
+-- extracted using @'extract'@.
+--
+-- >>> :{
+-- keepIt, replaceIt :: a -> It a a
+-- keepIt    a = Pure a
+-- replaceIt a = It a replaceIt
+-- :}
+--
+-- >>> extract (keepIt 0)
+-- 0
+--
+-- >>> extract (replaceIt 0)
+-- 0
+--
+-- >>> extract (simplifyIt (keepIt 0) 5)
+-- 0
+--
+-- >>> extract (simplifyIt (replaceIt 0) 5)
+-- 5
 data It r a
-  = Pure a             -- ^ A single value
-  | It a (r -> It r a) -- ^ A single value, plus a way to construct moure of 'It'.
+  = Pure a
+  -- ^ Final result, rest of the feed is discarded
+  | It a (r -> It r a)
+  -- ^ Intermediate result, consumed values produce new results
 
 instance Show a => Show (It r a) where
   showsPrec d (Pure a) = showParen (d > 10) $ showString "Pure " . showsPrec 11 a
@@ -75,7 +96,7 @@ indexIt :: It r a -> r -> a
 indexIt (Pure a) _ = a
 indexIt (It _ k) r = extract (k r)
 
--- | Given additional input, compute the next element drawable from 'It'.
+-- | Feed a value to 'It', obtaining a new (partial or final) result.
 simplifyIt :: It r a -> r -> It r a
 simplifyIt (It _ k) r = k r
 simplifyIt pa _       = pa
@@ -89,7 +110,7 @@ instance Monad (It r) where
 
 instance ComonadApply (It r) where (<@>) = (<*>)
 
--- | It is a cofree comonad
+-- | 'It' is a cofree comonad
 instance Comonad (It r) where
   duplicate p@Pure{}   = Pure p
   duplicate p@(It _ k) = It p (duplicate . k)
@@ -118,13 +139,18 @@ instance Comonad (It r) where
 --
 -- >>> extract (simplifyIt (simplifyIt (simplifyIt needTen 5) 11) 15)
 -- 11
-needIt :: a -> (r -> Maybe a) -> It r a
+needIt
+    :: a               -- ^ Initial result
+    -> (r -> Maybe a)  -- ^ Produce a result if possible
+    -> It r a
 needIt z f = k where
   k = It z $ \r -> case f r of
     Just a -> Pure a
     Nothing -> k
 
 -- | Consumes input and produces partial results until a condition is met.
+-- Unlike 'needIt', partial results are already returned when the condition is
+-- not fulfilled yet.
 --
 -- >>> :{
 -- wantTen :: It Int Int
@@ -142,7 +168,10 @@ needIt z f = k where
 --
 -- >>> extract (simplifyIt (simplifyIt (simplifyIt wantTen 5) 11) 15)
 -- 11
-wantIt :: a -> (r -> (# Bool, a #)) -> It r a
+wantIt
+    :: a                 -- ^ Initial result
+    -> (r -> (# Bool, a #))  -- ^ Produce a partial or final result
+    -> It r a
 wantIt z f = It z k where
   k r = case f r of
     (# False, a #) -> It a k
