@@ -45,7 +45,10 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Rope
 import Text.Trifecta.Util.Combinators as Util
 
--- | @'It' r a@ consumes a feed of @r@s and produces @a@s on the way. New values
+-- | @'It'@ is an <https://wiki.haskell.org/Enumerator_and_iteratee Iteratee>
+-- that can produce partial results.
+--
+-- @'It' r a@ consumes a feed of @r@s and produces @a@s on the way. New values
 -- can be fed using @'simplifyIt'@, the current (partial or final) result is
 -- extracted using @'extract'@.
 --
