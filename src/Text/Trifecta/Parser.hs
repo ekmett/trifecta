@@ -351,7 +351,7 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
                                   ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
                                 CO a _ _ _ -> Success a
                                 CE d       -> Failure d
-                              ) (\r -> go r (k r))
+                              ) (\s -> go s (k s))
 {-# INLINE stepParser #-}
 
 -- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from
