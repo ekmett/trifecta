@@ -208,18 +208,65 @@ runIt _ i (It a k) = i a k
 
 -- * Rope specifics
 
--- | Given a position, go there, and grab the text forward from that point
+-- | Given a position, go there, and grab the rest of the line forward from that
+-- point.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> secondLine = fillIt Nothing (const Just) (delta ("foo\nb" :: Strict.ByteString))
+--
+-- >>> extract secondLine
+-- Nothing
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo"))
+-- Nothing
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar"))
+-- Just "ar"
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar\nbaz"))
+-- Just "ar\n"
 fillIt :: r -> (Delta -> Strict.ByteString -> r) -> Delta -> It Rope r
 fillIt kf ks n = wantIt kf $ \r ->
   (# bytes n < bytes (rewind (delta r))
   ,  grabLine n r kf ks #)
 
 -- | Return the text of the line that contains a given position
+--
+-- >>> :set -XOverloadedStrings
+-- >>> secondLine = rewindIt (delta ("foo\nb" :: Strict.ByteString))
+--
+-- >>> extract secondLine
+-- Nothing
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo"))
+-- Nothing
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar"))
+-- Just "bar"
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar\nbaz"))
+-- Just "bar\n"
 rewindIt :: Delta -> It Rope (Maybe Strict.ByteString)
 rewindIt n = wantIt Nothing $ \r ->
   (# bytes n < bytes (rewind (delta r))
   ,  grabLine (rewind n) r Nothing $ const Just #)
 
+-- | Return the text between two offsets.
+--
+-- >>> :set -XOverloadedStrings
+-- >>> secondLine = sliceIt (delta ("foo\n" :: Strict.ByteString)) (delta ("foo\nbar\n" :: Strict.ByteString))
+--
+-- >>> extract secondLine
+-- ""
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo"))
+-- ""
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar"))
+-- "bar"
+--
+-- >>> extract (simplifyIt secondLine (ropeBS "foo\nbar\nbaz"))
+-- "bar\n"
 sliceIt :: Delta -> Delta -> It Rope Strict.ByteString
 sliceIt !i !j = wantIt mempty $ \r ->
   (# bj < bytes (rewind (delta r))
