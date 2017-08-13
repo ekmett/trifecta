@@ -47,6 +47,8 @@ import Text.Trifecta.Util.Combinators as Util
 --
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.Monoid ((<>))
+-- >>> import qualified Data.ByteString.UTF8 as Strict
+-- >>> import qualified Data.ByteString.Lazy.UTF8 as Lazy
 
 -- A 'Strand' is a chunk of data; many 'Strand's together make a 'Rope'.
 data Strand
@@ -88,17 +90,17 @@ strands (Rope _ r) = r
 --
 -- Extract a suffix of a certain length from the input:
 --
--- >>> grabRest (delta ("Hello " :: ByteString)) (ropeBS "Hello World\nLorem") Nothing (\x y -> Just (x,y))
+-- >>> grabRest (delta ("Hello " :: ByteString)) (ropeBS "Hello World\nLorem") Nothing (\x y -> Just (x, Lazy.toString y))
 -- Just (Columns 6 6,"World\nLorem")
 --
 -- Same deal, but over multiple strands:
 --
--- >>> grabRest (delta ("Hel" :: ByteString)) (ropeBS "Hello" <> ropeBS "World") Nothing (\x y -> Just (x,y))
+-- >>> grabRest (delta ("Hel" :: ByteString)) (ropeBS "Hello" <> ropeBS "World") Nothing (\x y -> Just (x, Lazy.toString y))
 -- Just (Columns 3 3,"loWorld")
 --
 -- When the offset is too long, fall back to a default:
 --
--- >>> grabRest (delta ("OffetTooLong" :: ByteString)) (ropeBS "Hello") Nothing (\x y -> Just (x,y))
+-- >>> grabRest (delta ("OffetTooLong" :: ByteString)) (ropeBS "Hello") Nothing (\x y -> Just (x, Lazy.toString y))
 -- Nothing
 grabRest
     :: Delta -- ^ Initial offset
@@ -127,7 +129,7 @@ splitRopeAt splitPos = FingerTree.split (\pos -> bytes pos > bytes splitPos) . s
 -- return a default if there is no newline left in the input. Also see
 -- 'grabRest'.
 --
--- >>> grabLine (delta ("Hello " :: ByteString)) (ropeBS "Hello" <> ropeBS " World\nLorem") Nothing (\x y -> Just (x,y))
+-- >>> grabLine (delta ("Hello " :: ByteString)) (ropeBS "Hello" <> ropeBS " World\nLorem") Nothing (\x y -> Just (x, Strict.toString y))
 -- Just (Columns 6 6,"World\n")
 grabLine
     :: Delta -- ^ Initial offset
