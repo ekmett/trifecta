@@ -58,11 +58,8 @@ import Text.Trifecta.Util.Combinators as Util
 -- can be fed using @'simplifyIt'@, the current (partial or final) result is
 -- extracted using @'extract'@.
 --
--- >>> :{
--- let keepIt, replaceIt :: a -> It a a
---     keepIt    a = Pure a
---     replaceIt a = It a replaceIt
--- :}
+-- >>> let keepIt    a = Pure a
+-- >>> let replaceIt a = It a replaceIt
 --
 -- >>> extract (keepIt 0)
 -- 0
@@ -133,8 +130,7 @@ instance Comonad (It r) where
 -- | Consumes input until a value can be produced.
 --
 -- >>> :{
--- let needTen :: It Int Int
---     needTen = needIt 0 (\n -> if n < 10 then Nothing else Just n)
+-- let needTen = needIt 0 (\n -> if n < 10 then Nothing else Just n) :: It Int Int
 -- :}
 --
 -- >>> extract needTen
