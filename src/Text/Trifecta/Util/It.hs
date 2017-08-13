@@ -45,6 +45,12 @@ import Text.Trifecta.Delta
 import Text.Trifecta.Rope
 import Text.Trifecta.Util.Combinators as Util
 
+-- $setup
+-- >>> import Control.Comonad (extract)
+-- >>> import Data.ByteString as Strict
+-- >>> import Text.Trifecta.Delta
+-- >>> import Text.Trifecta.Util.It
+
 -- | @'It'@ is an <https://wiki.haskell.org/Enumerator_and_iteratee Iteratee>
 -- that can produce partial results.
 --
@@ -53,9 +59,9 @@ import Text.Trifecta.Util.Combinators as Util
 -- extracted using @'extract'@.
 --
 -- >>> :{
--- keepIt, replaceIt :: a -> It a a
--- keepIt    a = Pure a
--- replaceIt a = It a replaceIt
+-- let keepIt, replaceIt :: a -> It a a
+--     keepIt    a = Pure a
+--     replaceIt a = It a replaceIt
 -- :}
 --
 -- >>> extract (keepIt 0)
@@ -127,8 +133,8 @@ instance Comonad (It r) where
 -- | Consumes input until a value can be produced.
 --
 -- >>> :{
--- needTen :: It Int Int
--- needTen = needIt 0 (\n -> if n < 10 then Nothing else Just n)
+-- let needTen :: It Int Int
+--     needTen = needIt 0 (\n -> if n < 10 then Nothing else Just n)
 -- :}
 --
 -- >>> extract needTen
@@ -155,22 +161,22 @@ needIt z f = k where
 -- Unlike 'needIt', partial results are already returned when the condition is
 -- not fulfilled yet.
 --
--- >>> :{
--- wantTen :: It Int Int
--- wantTen = wantIt 0 (\n -> (n >= 10, n))
--- :}
+-- > >>> :{
+-- > let wantTen :: It Int Int
+-- >     wantTen = wantIt 0 (\n -> (# n >= 10, n #))
+-- > :}
 --
--- >>> extract wantTen
--- 0
+-- > >>> extract wantTen
+-- > 0
 --
--- >>> extract (simplifyIt wantTen 5)
--- 5
+-- > >>> extract (simplifyIt wantTen 5)
+-- > 5
 --
--- >>> extract (simplifyIt wantTen 11)
--- 11
+-- > >>> extract (simplifyIt wantTen 11)
+-- > 11
 --
--- >>> extract (simplifyIt (simplifyIt (simplifyIt wantTen 5) 11) 15)
--- 11
+-- > >>> extract (simplifyIt (simplifyIt (simplifyIt wantTen 5) 11) 15)
+-- > 11
 wantIt
     :: a                 -- ^ Initial result
     -> (r -> (# Bool, a #))  -- ^ Produce a partial or final result
@@ -215,7 +221,7 @@ runIt _ i (It a k) = i a k
 -- point.
 --
 -- >>> :set -XOverloadedStrings
--- >>> secondLine = fillIt Nothing (const Just) (delta ("foo\nb" :: Strict.ByteString))
+-- >>> let secondLine = fillIt Nothing (const Just) (delta ("foo\nb" :: Strict.ByteString))
 --
 -- >>> extract secondLine
 -- Nothing
@@ -236,7 +242,7 @@ fillIt kf ks n = wantIt kf $ \r ->
 -- | Return the text of the line that contains a given position
 --
 -- >>> :set -XOverloadedStrings
--- >>> secondLine = rewindIt (delta ("foo\nb" :: Strict.ByteString))
+-- >>> let secondLine = rewindIt (delta ("foo\nb" :: Strict.ByteString))
 --
 -- >>> extract secondLine
 -- Nothing
@@ -257,7 +263,7 @@ rewindIt n = wantIt Nothing $ \r ->
 -- | Return the text between two offsets.
 --
 -- >>> :set -XOverloadedStrings
--- >>> secondLine = sliceIt (delta ("foo\n" :: Strict.ByteString)) (delta ("foo\nbar\n" :: Strict.ByteString))
+-- >>> let secondLine = sliceIt (delta ("foo\n" :: Strict.ByteString)) (delta ("foo\nbar\n" :: Strict.ByteString))
 --
 -- >>> extract secondLine
 -- ""

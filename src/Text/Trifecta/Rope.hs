@@ -46,6 +46,7 @@ import Text.Trifecta.Util.Combinators as Util
 -- $setup
 --
 -- >>> :set -XOverloadedStrings
+-- >>> import Data.Monoid ((<>))
 
 -- A 'Strand' is a chunk of data; many 'Strand's together make a 'Rope'.
 data Strand
