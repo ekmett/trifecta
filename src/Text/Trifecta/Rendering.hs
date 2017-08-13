@@ -84,6 +84,8 @@ import Text.Trifecta.Util.Combinators
 -- >>> :set -XOverloadedStrings
 -- >>> import Text.PrettyPrint.ANSI.Leijen (pretty, plain)
 -- >>> import Data.ByteString (ByteString)
+-- >>> import Data.Monoid (mempty)
+-- >>> import Text.Trifecta.Delta
 -- >>> let exampleRendering = rendered mempty ("int main(int argc, char ** argv) { int; }" :: ByteString)
 
 outOfRangeEffects :: [SGR] -> [SGR]
