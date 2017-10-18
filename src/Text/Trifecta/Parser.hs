@@ -29,6 +29,7 @@ module Text.Trifecta.Parser
   , stepResult
   , stepIt
   -- * Parsing
+  , runParser
   , parseFromFile
   , parseFromFileEx
   , parseString
@@ -36,24 +37,23 @@ module Text.Trifecta.Parser
   , parseTest
   ) where
 
-import           Control.Applicative          as Alternative
-import           Control.Monad                (MonadPlus (..), ap, join)
-import qualified Control.Monad.Fail           as Fail
-import           Control.Monad.IO.Class
-import           Data.ByteString              as Strict hiding (empty, snoc)
-import           Data.ByteString.UTF8         as UTF8
-import           Data.Maybe                   (isJust)
-import           Data.Semigroup
-import           Data.Semigroup.Reducer
-import           Data.Set                     as Set hiding (empty, toList)
-import           System.IO
-import           Text.Parser.Char
-import           Text.Parser.Combinators
-import           Text.Parser.LookAhead
-import           Text.Parser.Token
-import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
-    (empty, line, (<$>), (<>))
-
+import Control.Applicative as Alternative
+import Control.Monad (MonadPlus(..), ap, join)
+import Control.Monad.IO.Class
+import qualified Control.Monad.Fail as Fail
+import Data.ByteString as Strict hiding (empty, snoc)
+import Data.ByteString.UTF8 as UTF8
+import Data.Maybe (fromMaybe, isJust)
+import Data.Semigroup
+import Data.Semigroup.Reducer
+-- import Data.Sequence as Seq hiding (empty)
+import Data.Set as Set hiding (empty, toList)
+import System.IO
+import Text.Parser.Combinators
+import Text.Parser.Char
+import Text.Parser.LookAhead
+import Text.Parser.Token
+import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
 import Text.Trifecta.Combinators
 import Text.Trifecta.Delta       as Delta
 import Text.Trifecta.Instances   ()
@@ -332,27 +332,47 @@ data Stepping a
   | CO a (Set String) Delta ByteString
   | CE ErrInfo
 
-stepParser :: Parser a -> Delta -> ByteString -> Step a
-stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
-  eo a e       = Pure (EO a e)
-  ee e         = Pure (EE e)
-  co a es d bs = Pure (CO a es d bs)
-  ce errInf    = Pure (CE errInf)
-  go r m = case simplifyIt m r of
-    Pure (EO a _)     -> StepDone r a
-    Pure (EE e)       -> StepFail r $
+-- | Incremental parsing. A 'Step' can be supplied with new input using 'feed',
+-- the final 'Result' is obtained using 'starve'.
+stepParser
+    :: Parser a
+    -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
+    -> Step a
+stepParser (Parser p) d0 = joinStep $ stepIt $ do
+  bs0 <- fromMaybe mempty <$> rewindIt d0
+  go bs0 <$> p eo ee co ce d0 bs0
+ where
+  eo a e        = Pure (EO a e)
+  ee e          = Pure (EE e)
+  co a es d' bs = Pure (CO a es d' bs)
+  ce errInf     = Pure (CE errInf)
+
+  go :: ByteString -> Stepping a -> Result a
+  go _   (EO a _)     = Success a
+  go bs0 (EE e)       = Failure $
                           let errDoc = explain (renderingCaret d0 bs0) e
-                          in  ErrInfo errDoc (_finalDeltas e)
-    Pure (CO a _ _ _) -> StepDone r a
-    Pure (CE d)       -> StepFail r d
-    It ma k           -> StepCont r (case ma of
-                           EO a _     -> Success a
-                           EE e       -> Failure $
-                             ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
-                           CO a _ _ _ -> Success a
-                           CE d       -> Failure d
-                         ) (\r' -> go r' (k r'))
-{-# INLINE stepParser #-}
+                          in  ErrInfo errDoc (d0 : _finalDeltas e)
+  go _   (CO a _ _ _) = Success a
+  go _   (CE e)       = Failure e
+
+  joinStep :: Step (Result a) -> Step a
+  joinStep (StepDone r (Success a)) = StepDone r a
+  joinStep (StepDone r (Failure e)) = StepFail r e
+  joinStep (StepFail r e)           = StepFail r e
+  joinStep (StepCont r a k)         = StepCont r (join a) (joinStep <$> k)
+  {-# INLINE joinStep #-}
+
+-- | Run a 'Parser' on input that can be reduced to a 'Rope', e.g. 'String', or
+-- 'ByteString'. See also the monomorphic versions 'parseString' and
+-- 'parseByteString'.
+runParser
+    :: Reducer t Rope
+    => Parser a
+    -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
+    -> t
+    -> Result a
+runParser p d bs = starve $ feed bs $ stepParser p d
+{-# INLINE runParser #-}
 
 -- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from
 -- @filePath@ using 'ByteString.readFile'. All diagnostic messages emitted over
@@ -388,20 +408,22 @@ parseFromFileEx p fn = do
   return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
 
 -- | Fully parse a 'UTF8.ByteString' to a 'Result'.
+--
+-- @parseByteString p delta i@ runs a parser @p@ on @i@.
+
 parseByteString
     :: Parser a
     -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
     -> UTF8.ByteString
     -> Result a
-parseByteString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
+parseByteString = runParser
 
--- | Fully parse a 'String' to a 'Result'.
 parseString
     :: Parser a
     -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
     -> String
     -> Result a
-parseString p d inp = starve $ feed inp $ stepParser (release d *> p) mempty mempty
+parseString = runParser
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of

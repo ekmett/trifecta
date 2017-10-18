@@ -159,3 +159,8 @@ instance Alternative Result where
   {-# INLINE (<|>) #-}
   empty = Failure mempty
   {-# INLINE empty #-}
+
+instance Monad Result where
+  return = pure
+  Success a >>= m = m a
+  Failure e >>= _ = Failure e
