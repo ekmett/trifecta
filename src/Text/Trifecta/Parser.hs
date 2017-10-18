@@ -410,7 +410,6 @@ parseFromFileEx p fn = do
 -- | Fully parse a 'UTF8.ByteString' to a 'Result'.
 --
 -- @parseByteString p delta i@ runs a parser @p@ on @i@.
-
 parseByteString
     :: Parser a
     -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
@@ -418,6 +417,9 @@ parseByteString
     -> Result a
 parseByteString = runParser
 
+-- | Fully parse a 'String' to a 'Result'.
+--
+-- @parseByteString p delta i@ runs a parser @p@ on @i@.
 parseString
     :: Parser a
     -> Delta -- ^ Starting cursor position. Usually 'mempty' for the beginning of the file.
