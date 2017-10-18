@@ -1,13 +1,13 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE DeriveTraversable      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE TemplateHaskell        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (c) Edward Kmett 2011-2015
@@ -55,11 +55,11 @@ import Text.Parser.LookAhead
 import Text.Parser.Token
 import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
 import Text.Trifecta.Combinators
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Delta       as Delta
+import Text.Trifecta.Instances   ()
 import Text.Trifecta.Rendering
 import Text.Trifecta.Result
 import Text.Trifecta.Rope
-import Text.Trifecta.Delta as Delta
 import Text.Trifecta.Util.It
 
 -- | The type of a trifecta parser
@@ -95,14 +95,15 @@ import Text.Trifecta.Util.It
 -- if *all* parsers in the choice do.  If that is not the desired behavior,
 -- see `try`, which turns a committed parser failure into an epsilon failure
 -- (at the cost of error information).
---
 newtype Parser a = Parser
   { unparser :: forall r.
-    (a -> Err -> It Rope r) ->
-    (Err -> It Rope r) ->
-    (a -> Set String -> Delta -> ByteString -> It Rope r) -> -- committed success
-    (ErrInfo -> It Rope r) ->                                -- committed err
-    Delta -> ByteString -> It Rope r
+       (a -> Err -> It Rope r)
+    -> (Err -> It Rope r)
+    -> (a -> Set String -> Delta -> ByteString -> It Rope r)  -- committed success
+    -> (ErrInfo -> It Rope r)                                 -- committed err
+    -> Delta
+    -> ByteString
+    -> It Rope r
   }
 
 instance Functor Parser where
@@ -265,10 +266,25 @@ instance MarkParsing Delta Parser where
             else co () mempty d' mempty
         | otherwise -> ee mempty
 
+-- | A 'Step' allows for incremental parsing, since the parser
+--
+--   - can be done with a final result
+--   - have errored
+--   - can have yielded a partial result with possibly more to come
 data Step a
   = StepDone !Rope a
+    -- ^ Parsing is done and has converted the 'Rope' to a final result
+
   | StepFail !Rope ErrInfo
+    -- ^ Parsing the 'Rope' has failed with an error
+
   | StepCont !Rope (Result a) (Rope -> Step a)
+    -- ^ The 'Rope' has been partially consumed and already yielded a 'Result',
+    -- and if more input is provided, more results can be produced.
+    --
+    -- One common scenario for this is to parse log files: after parsing a
+    -- single line, that data can already be worked with, but there may be more
+    -- lines to come.
 
 instance Show a => Show (Step a) where
   showsPrec d (StepDone r a) = showParen (d > 10) $
@@ -283,12 +299,15 @@ instance Functor Step where
   fmap _ (StepFail r xs)   = StepFail r xs
   fmap f (StepCont r z k)  = StepCont r (fmap f z) (fmap f . k)
 
+-- | Feed some additional input to a 'Step' to continue parsing a bit further.
 feed :: Reducer t Rope => t -> Step r -> Step r
 feed t (StepDone r a)    = StepDone (snoc r t) a
 feed t (StepFail r xs)   = StepFail (snoc r t) xs
 feed t (StepCont r _ k)  = k (snoc r t)
 {-# INLINE feed #-}
 
+-- | Assume all possible input has been given to the parser, execute it to yield
+-- a final result.
 starve :: Step a -> Result a
 starve (StepDone _ a)    = Success a
 starve (StepFail _ xs)   = Failure xs
@@ -383,14 +402,14 @@ parseFromFile p fn = do
 -- >   case result of
 -- >     Failure xs -> displayLn xs
 -- >     Success a  -> print (sum a)
--- >
-
 parseFromFileEx :: MonadIO m => Parser a -> String -> m (Result a)
 parseFromFileEx p fn = do
   s <- liftIO $ Strict.readFile fn
   return $ parseByteString p (Directed (UTF8.fromString fn) 0 0 0 0) s
 
--- | @parseByteString p delta i@ runs a parser @p@ on @i@.
+-- | Fully parse a 'UTF8.ByteString' to a 'Result'.
+--
+-- @parseByteString p delta i@ runs a parser @p@ on @i@.
 
 parseByteString
     :: Parser a

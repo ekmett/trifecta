@@ -10,6 +10,8 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
+-- A 'Delta' keeps track of the cursor position of the parser, so it can be
+-- referred to later, for example in error messages.
 ----------------------------------------------------------------------------
 module Text.Trifecta.Delta
   ( Delta(..)
@@ -35,8 +37,9 @@ import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
 import GHC.Generics
-import Text.Trifecta.Instances ()
 import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>))
+
+import Text.Trifecta.Instances ()
 
 class HasBytes t where
   bytes :: t -> Int64
@@ -47,21 +50,48 @@ instance HasBytes ByteString where
 instance (Measured v a, HasBytes v) => HasBytes (FingerTree v a) where
   bytes = bytes . measure
 
+-- | Since there are multiple ways to be at a certain location, 'Delta' captures
+-- all these alternatives as a single type.
 data Delta
-  = Columns   {-# UNPACK #-} !Int64 -- the number of characters
-              {-# UNPACK #-} !Int64 -- the number of bytes
-  | Tab       {-# UNPACK #-} !Int64 -- the number of characters before the tab
-              {-# UNPACK #-} !Int64 -- the number of characters after the tab
-              {-# UNPACK #-} !Int64 -- the number of bytes
-  | Lines     {-# UNPACK #-} !Int64 -- the number of newlines contained
-              {-# UNPACK #-} !Int64 -- the number of characters since the last newline
-              {-# UNPACK #-} !Int64 -- number of bytes
-              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
-  | Directed  !ByteString           -- current file name
-              {-# UNPACK #-} !Int64 -- the number of lines since the last line directive
-              {-# UNPACK #-} !Int64 -- the number of characters since the last newline
-              {-# UNPACK #-} !Int64 -- number of bytes
-              {-# UNPACK #-} !Int64 -- the number of bytes since the last newline
+  = Columns {-# UNPACK #-} !Int64
+            {-# UNPACK #-} !Int64
+    -- ^ @
+    -- ( number of characters
+    -- , number of bytes )
+    -- @
+
+  | Tab {-# UNPACK #-} !Int64
+        {-# UNPACK #-} !Int64
+        {-# UNPACK #-} !Int64
+    -- ^ @
+    -- ( number of characters before the tab
+    -- , number of characters after the tab
+    -- , number of bytes )
+    -- @
+
+  | Lines {-# UNPACK #-} !Int64
+          {-# UNPACK #-} !Int64
+          {-# UNPACK #-} !Int64
+          {-# UNPACK #-} !Int64
+    -- ^ @
+    -- ( number of newlines contained
+    -- , number of characters since the last newline
+    -- , number of bytes
+    -- , number of bytes since the last newline )
+    -- @
+
+  | Directed !ByteString
+             {-# UNPACK #-} !Int64
+             {-# UNPACK #-} !Int64
+             {-# UNPACK #-} !Int64
+             {-# UNPACK #-} !Int64
+    -- ^ @
+    -- ( current file name
+    -- , number of lines since the last line directive
+    -- , number of characters since the last newline
+    -- , number of bytes
+    -- , number of bytes since the last newline )
+    -- @
   deriving (Show, Data, Typeable, Generic)
 
 instance Eq Delta where
@@ -73,15 +103,24 @@ instance Ord Delta where
 instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
 
+-- | Example: @file.txt:12:34@
 instance Pretty Delta where
-  pretty d = case d of
-    Columns c _ -> k f 0 c
-    Tab x y _ -> k f 0 (nextTab x + y)
-    Lines l c _ _ -> k f l c
-    Directed fn l c _ _ -> k (UTF8.toString fn) l c
-    where
-      k fn ln cn = bold (pretty fn) <> char ':' <> bold (int64 (ln+1)) <> char ':' <> bold (int64 (cn+1))
-      f = "(interactive)"
+    pretty d = case d of
+        Columns c _         -> prettyDelta interactive 0 c
+        Tab x y _           -> prettyDelta interactive 0 (nextTab x + y)
+        Lines l c _ _       -> prettyDelta interactive l c
+        Directed fn l c _ _ -> prettyDelta (UTF8.toString fn) l c
+      where
+        prettyDelta
+            :: String -- Source description
+            -> Int64  -- Line
+            -> Int64  -- Column
+            -> Doc
+        prettyDelta source line' column'
+          = bold (pretty source)
+            <> char ':' <> bold (int64 (line'+1))
+            <> char ':' <> bold (int64 (column'+1))
+        interactive = "(interactive)"
 
 int64 :: Int64 -> Doc
 int64 = pretty . show
@@ -146,6 +185,12 @@ rewind _                    = Columns 0 0
 {-# INLINE rewind #-}
 
 -- | Should we show two things with a 'Delta' on the same line?
+--
+-- >>> near (Columns 0 0) (Columns 5 5)
+-- True
+--
+-- >>> near (Lines 1 0 1 0) (Lines 2 4 4 2)
+-- False
 near :: (HasDelta s, HasDelta t) => s -> t -> Bool
 near s t = rewind (delta s) == rewind (delta t)
 {-# INLINE near #-}

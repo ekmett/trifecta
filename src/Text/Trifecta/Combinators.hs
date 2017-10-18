@@ -1,8 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Combinators
@@ -24,22 +24,23 @@ module Text.Trifecta.Combinators
   ) where
 
 import Control.Applicative
-import Control.Monad (MonadPlus)
+import Control.Monad                     (MonadPlus)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.RWS.Lazy as Lazy
-import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Lazy as Lazy
-import Control.Monad.Trans.State.Strict as Strict
-import Control.Monad.Trans.Writer.Lazy as Lazy
+import Control.Monad.Trans.RWS.Lazy      as Lazy
+import Control.Monad.Trans.RWS.Strict    as Strict
+import Control.Monad.Trans.State.Lazy    as Lazy
+import Control.Monad.Trans.State.Strict  as Strict
+import Control.Monad.Trans.Writer.Lazy   as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
-import Data.ByteString as Strict hiding (span)
+import Data.ByteString                   as Strict hiding (span)
 import Data.Semigroup
+import Prelude                           hiding (span)
+
 import Text.Parser.Token
 import Text.Trifecta.Delta
 import Text.Trifecta.Rendering
-import Prelude hiding (span)
 
 -- | This class provides parsers with easy access to:
 --
@@ -48,7 +49,7 @@ import Prelude hiding (span)
 -- 3) the ability to use 'sliced' on any parser.
 class (MonadPlus m, TokenParsing m) => DeltaParsing m where
   -- | Retrieve the contents of the current line (from the beginning of the line)
-  line     :: m ByteString
+  line :: m ByteString
 
   -- | Retrieve the current position as a 'Delta'.
   position :: m Delta
@@ -163,7 +164,8 @@ instance (MonadPlus m, DeltaParsing m) => DeltaParsing (IdentityT m) where
   restOfLine = lift restOfLine
   {-# INLINE restOfLine #-}
 
--- | Run a parser, grabbing all of the text between its start and end points and discarding the original result
+-- | Run a parser, grabbing all of the text between its start and end points and
+-- discarding the original result
 sliced :: DeltaParsing m => m a -> m ByteString
 sliced = slicedWith (\_ bs -> bs)
 {-# INLINE sliced #-}
@@ -178,12 +180,14 @@ careted :: DeltaParsing m => m a -> m (Careted a)
 careted p = (\m l a -> a :^ Caret m l) <$> position <*> line <*> p
 {-# INLINE careted #-}
 
--- | Discard the result of a parse, returning a 'Span' from where we start to where it ended parsing.
+-- | Discard the result of a parse, returning a 'Span' from where we start to
+-- where it ended parsing.
 spanning :: DeltaParsing m => m a -> m Span
 spanning p = (\s l e -> Span s e l) <$> position <*> line <*> (p *> position)
 {-# INLINE spanning #-}
 
--- | Parse a 'Spanned' result. The 'Span' starts here and runs to the last position parsed.
+-- | Parse a 'Spanned' result. The 'Span' starts here and runs to the last
+-- position parsed.
 spanned :: DeltaParsing m => m a -> m (Spanned a)
 spanned p = (\s l a e -> a :~ Span s e l) <$> position <*> line <*> p <*> position
 {-# INLINE spanned #-}
@@ -193,10 +197,11 @@ fixiting :: DeltaParsing m => m Strict.ByteString -> m Fixit
 fixiting p = (\(r :~ s) -> Fixit s r) <$> spanned p
 {-# INLINE fixiting #-}
 
--- | This class is a refinement of 'DeltaParsing' that adds the ability to mark your position in the input
--- and return there for further parsing later.
+-- | This class is a refinement of 'DeltaParsing' that adds the ability to mark
+-- your position in the input and return there for further parsing later.
 class (DeltaParsing m, HasDelta d) => MarkParsing d m | m -> d where
-  -- | mark the current location so it can be used in constructing a span, or for later seeking
+  -- | mark the current location so it can be used in constructing a span, or
+  -- for later seeking
   mark :: m d
   -- | Seek a previously marked location
   release :: d -> m ()

@@ -1,14 +1,13 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE DeriveTraversable      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (c) Edward Kmett 2011-2015
@@ -34,30 +33,33 @@ module Text.Trifecta.Result
   , failed
   ) where
 
-import Control.Applicative as Alternative
-import Control.Lens hiding (snoc, cons)
-import Control.Monad (guard)
-import Data.Foldable
-import Data.Maybe (fromMaybe, isJust)
-import qualified Data.List as List
-import Data.Semigroup
-import Data.Set as Set hiding (empty, toList)
-import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
+import           Control.Applicative          as Alternative
+import           Control.Lens                 hiding (cons, snoc)
+import           Control.Monad                (guard)
+import           Data.Foldable
+import qualified Data.List                    as List
+import           Data.Maybe                   (fromMaybe, isJust)
+import           Data.Semigroup
+import           Data.Set                     as Set hiding (empty, toList)
+import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
+    (empty, line, (<$>), (<>))
+
+import Text.Trifecta.Delta     as Delta
 import Text.Trifecta.Instances ()
 import Text.Trifecta.Rendering
-import Text.Trifecta.Delta as Delta
 
 data ErrInfo = ErrInfo
   { _errDoc    :: Doc
   , _errDeltas :: [Delta]
   } deriving(Show)
 
--- | This is used to report an error. What went wrong, some supplemental docs and a set of things expected
--- at the current location. This does not, however, include the actual location.
+-- | This is used to report an error. What went wrong, some supplemental docs
+-- and a set of things expected at the current location. This does not, however,
+-- include the actual location.
 data Err = Err
-  { _reason     :: Maybe Doc
-  , _footnotes  :: [Doc]
-  , _expected   :: Set String
+  { _reason      :: Maybe Doc
+  , _footnotes   :: [Doc]
+  , _expected    :: Set String
   , _finalDeltas :: [Delta]
   }
 
@@ -79,7 +81,8 @@ failed :: String -> Err
 failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
 {-# INLINE failed #-}
 
--- | Convert a location and an 'Err' into a 'Doc'
+-- | Convert a 'Rendering' of auxiliary information and an 'Err' into a 'Doc',
+-- ready to be prettyprinted to the user.
 explain :: Rendering -> Err -> Doc
 explain r (Err mm as es _)
   | Set.null es = report (withEx mempty)
@@ -135,7 +138,7 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
 
 instance Show a => Pretty (Result a) where
   pretty (Success a)    = pretty (show a)
-  pretty (Failure xs) = pretty . _errDoc $ xs
+  pretty (Failure xs) = pretty (_errDoc xs)
 
 instance Applicative Result where
   pure = Success

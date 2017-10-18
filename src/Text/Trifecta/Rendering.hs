@@ -1,9 +1,9 @@
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2015 Edward Kmett
@@ -55,28 +55,38 @@ module Text.Trifecta.Rendering
   , (.#)
   ) where
 
-import Control.Applicative
-import Control.Comonad
-import Control.Lens
-import Data.Array
-import Data.ByteString as B hiding (groupBy, empty, any)
-import qualified Data.ByteString.UTF8 as UTF8
-import Data.Data
-import Data.Foldable
-import Data.Function (on)
-import Data.Hashable
-import Data.Int (Int64)
-import Data.Maybe
-import Data.List (groupBy)
-import Data.Semigroup
-import Data.Semigroup.Reducer
-import GHC.Generics
-import Prelude as P hiding (span)
-import System.Console.ANSI
-import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>), (<$>))
+import           Control.Applicative
+import           Control.Comonad
+import           Control.Lens
+import           Data.Array
+import           Data.ByteString              as B hiding (any, empty, groupBy)
+import qualified Data.ByteString.UTF8         as UTF8
+import           Data.Data
+import           Data.Foldable
+import           Data.Function                (on)
+import           Data.Hashable
+import           Data.Int                     (Int64)
+import           Data.List                    (groupBy)
+import           Data.Maybe
+import           Data.Semigroup
+import           Data.Semigroup.Reducer
+import           GHC.Generics
+import           Prelude                      as P hiding (span)
+import           System.Console.ANSI
+import           Text.PrettyPrint.ANSI.Leijen hiding (column, (<$>), (<>))
+
 import Text.Trifecta.Delta
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Instances        ()
 import Text.Trifecta.Util.Combinators
+
+-- $setup
+--
+-- >>> :set -XOverloadedStrings
+-- >>> import Text.PrettyPrint.ANSI.Leijen (pretty, plain)
+-- >>> import Data.ByteString (ByteString)
+-- >>> import Data.Monoid (mempty)
+-- >>> import Text.Trifecta.Delta
+-- >>> let exampleRendering = rendered mempty ("int main(int argc, char ** argv) { int; }" :: ByteString)
 
 outOfRangeEffects :: [SGR] -> [SGR]
 outOfRangeEffects xs = SetConsoleIntensity BoldIntensity : xs
@@ -129,8 +139,10 @@ sgr xs0 = go (P.reverse xs0) where
         White   -> onwhite . go xs
   go (_                                   : xs) = go xs
 
+-- | A raw canvas to paint ANSI-styled characters on.
 type Lines = Array (Int,Int64) ([SGR], Char)
 
+-- | Remove a number of @(index, element)@ values from an @'Array'@.
 (///) :: Ix i => Array i e -> [(i, e)] -> Array i e
 a /// xs = a // P.filter (inRange (bounds a) . fst) xs
 
@@ -141,10 +153,15 @@ grow y a
   where old@((t,lo),(b,hi)) = bounds a
         new = ((min t y,lo),(max b y,hi))
 
-draw :: [SGR] -> Int -> Int64 -> String -> Lines -> Lines
-draw e y n xs a0
-  | P.null xs = a0
-  | otherwise = gt $ lt (a /// out)
+draw
+    :: [SGR]  -- ^ ANSI style to use
+    -> Int    -- ^ Line; 0 is at the top
+    -> Int64  -- ^ Column; 0 is on the left
+    -> String -- ^ Data to be written
+    -> Lines  -- ^ Canvas to draw on
+    -> Lines
+draw _ _ _ "" a0 = a0
+draw e y n xs a0 = gt $ lt (a /// out)
   where
     a = grow y a0
     ((_,lo),(_,hi)) = bounds a
@@ -154,11 +171,19 @@ draw e y n xs a0
     gt | P.any (\el -> snd (fst el) > hi) out = (// [((y,hi),(outOfRangeEffects e,'>'))])
        | otherwise = id
 
+-- | A 'Rendering' is a canvas of text that output can be written to.
 data Rendering = Rendering
-  { _renderingDelta    :: !Delta                 -- focus, the render will keep this visible
-  , _renderingLineLen   :: {-# UNPACK #-} !Int64 -- actual line length
-  , _renderingLineBytes :: {-# UNPACK #-} !Int64 -- line length in bytes
-  , _renderingLine     :: Lines -> Lines
+  { _renderingDelta :: !Delta
+    -- ^ focus, the render will keep this visible
+
+  , _renderingLineLen :: {-# UNPACK #-} !Int64
+    -- ^ actual line length
+
+  , _renderingLineBytes :: {-# UNPACK #-} !Int64
+    -- ^ line length in bytes
+
+  , _renderingLine :: Lines -> Lines
+
   , _renderingOverlays :: Delta -> Lines -> Lines
   }
 
@@ -168,10 +193,21 @@ instance Show Rendering where
   showsPrec d (Rendering p ll lb _ _) = showParen (d > 10) $
     showString "Rendering " . showsPrec 11 p . showChar ' ' . showsPrec 11 ll . showChar ' ' . showsPrec 11 lb . showString " ... ..."
 
+-- | Is the 'Rendering' empty?
+--
+-- >>> nullRendering emptyRendering
+-- True
+--
+-- >>> nullRendering exampleRendering
+-- False
 nullRendering :: Rendering -> Bool
 nullRendering (Rendering (Columns 0 0) 0 0 _ _) = True
 nullRendering _ = False
 
+-- | The empty 'Rendering', which contains nothing at all.
+--
+-- >>> show (pretty emptyRendering)
+-- ""
 emptyRendering :: Rendering
 emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
 
@@ -184,7 +220,12 @@ instance Monoid Rendering where
   mappend = (<>)
   mempty = emptyRendering
 
-ifNear :: Delta -> (Lines -> Lines) -> Delta -> Lines -> Lines
+ifNear
+    :: Delta            -- ^ Position 1
+    -> (Lines -> Lines) -- ^ Modify the fallback result if the positions are 'near' each other
+    -> Delta            -- ^ Position 2
+    -> Lines            -- ^ Fallback result if the positions are not 'near' each other
+    -> Lines
 ifNear d f d' l | near d d' = f l
                 | otherwise = l
 
@@ -198,11 +239,16 @@ instance Renderable Rendering where
   render = id
 
 class Source t where
-  source :: t -> (Int64, Int64, Lines -> Lines) {- the number of (padded) columns, number of bytes, and the the line -}
+  source :: t -> (Int64, Int64, Lines -> Lines)
+  -- ^ @
+  -- ( Number of (padded) columns
+  -- , number of bytes
+  -- , line )
+  -- @
 
 instance Source String where
   source s
-    | P.elem '\n' s = ( ls, bs, draw [] 0 0 s')
+    | P.elem '\n' s = (ls, bs, draw [] 0 0 s')
     | otherwise           = ( ls + fromIntegral (P.length end), bs, draw [SetColor Foreground Vivid Blue, SetConsoleIntensity BoldIntensity] 0 ls end . draw [] 0 0 s')
     where
       end = "<EOF>"
@@ -213,7 +259,6 @@ instance Source String where
       go _ ('\n':_)  = []
       go n (x:xs)    = x : go (n + 1) xs
       go _ []        = []
-
 
 instance Source ByteString where
   source = source . UTF8.toString
@@ -240,8 +285,9 @@ instance Pretty Rendering where
 window :: Int64 -> Int64 -> Int64 -> (Int64, Int64)
 window c l w
   | c <= w2     = (0, min w l)
-  | c + w2 >= l = if l > w then (l-w, l) else (0, w)
-  | otherwise   = (c-w2,c + w2)
+  | c + w2 >= l = if l > w then (l-w, l)
+                           else (0  , w)
+  | otherwise   = (c-w2, c+w2)
   where w2 = div w 2
 
 data Rendered a = a :@ Rendering
@@ -272,12 +318,11 @@ instance Traversable Rendered where
 instance Renderable (Rendered a) where
   render (_ :@ s) = s
 
--- |
--- > In file included from baz.c:9
--- > In file included from bar.c:4
--- > foo.c:8:36: note
--- > int main(int argc, char ** argv) { int; }
--- >                                    ^
+-- | A 'Caret' marks a point in the input with a simple @^@ character.
+--
+-- >>> plain (pretty (addCaret (Columns 35 35) exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasCaret t where
@@ -288,12 +333,14 @@ instance HasCaret Caret where
 
 instance Hashable Caret
 
+-- | ANSI terminal style for rendering the caret.
 caretEffects :: [SGR]
 caretEffects = [SetColor Foreground Vivid Green]
 
 drawCaret :: Delta -> Delta -> Lines -> Lines
 drawCaret p = ifNear p $ draw caretEffects 1 (fromIntegral (column p)) "^"
 
+-- | Render a caret at a certain position in a 'Rendering'.
 addCaret :: Delta -> Rendering -> Rendering
 addCaret p r = drawCaret p .# r
 
@@ -350,29 +397,38 @@ instance Reducer (Careted a) Rendering where
 
 instance Hashable a => Hashable (Careted a)
 
+-- | ANSI terminal style to render spans with.
 spanEffects :: [SGR]
 spanEffects  = [SetColor Foreground Dull Green]
 
-drawSpan :: Delta -> Delta -> Delta -> Lines -> Lines
-drawSpan s e d a
-  | nl && nh  = go (column l) (rep (max (column h - column l) 0) '~') a
-  | nl        = go (column l) (rep (max (snd (snd (bounds a)) - column l + 1) 0) '~') a
-  |       nh  = go (-1)       (rep (max (column h + 1) 0) '~') a
-  | otherwise = a
+drawSpan
+    :: Delta -- ^ Start of the region of interest
+    -> Delta -- ^ End of the region of interest
+    -> Delta -- ^ Currrent location
+    -> Lines -- ^ 'Lines' to add the rendering to
+    -> Lines
+drawSpan start end d a
+  | nearLo && nearHi = go (column lo) (rep (max (column hi - column lo) 0) '~') a
+  | nearLo           = go (column lo) (rep (max (snd (snd (bounds a)) - column lo + 1) 0) '~') a
+  |           nearHi = go (-1)        (rep (max (column hi + 1) 0) '~') a
+  | otherwise        = a
   where
     go = draw spanEffects 1 . fromIntegral
-    l = argmin bytes s e
-    h = argmax bytes s e
-    nl = near l d
-    nh = near h d
+    lo = argmin bytes start end
+    hi = argmax bytes start end
+    nearLo = near lo d
+    nearHi = near hi d
     rep = P.replicate . fromIntegral
 
--- |
--- > int main(int argc, char ** argv) { int; }
--- >                                    ^~~
 addSpan :: Delta -> Delta -> Rendering -> Rendering
 addSpan s e r = drawSpan s e .# r
 
+-- | A 'Span' marks a range of input characters. If 'Caret' is a point, then
+-- 'Span' is a line.
+--
+-- >>> plain (pretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
@@ -392,6 +448,8 @@ instance Reducer Span Rendering where
 
 instance Hashable Span
 
+-- | Annotate an arbitrary piece of data with a 'Span', typically its
+-- corresponding input location.
 data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 instance HasSpan (Spanned a) where
@@ -421,9 +479,6 @@ instance Renderable (Spanned a) where
 
 instance Hashable a => Hashable (Spanned a)
 
--- > int main(int argc char ** argv) { int; }
--- >                  ^
--- >                  ,
 drawFixit :: Delta -> Delta -> String -> Delta -> Lines -> Lines
 drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIntegral (column l)) rpl) d
                       $ drawSpan s e d a
@@ -432,9 +487,17 @@ drawFixit s e rpl d a = ifNear l (draw [SetColor Foreground Dull Blue] 2 (fromIn
 addFixit :: Delta -> Delta -> String -> Rendering -> Rendering
 addFixit s e rpl r = drawFixit s e rpl .# r
 
+-- | A 'Fixit' is a 'Span' with a suggestion.
+--
+-- >>> plain (pretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
+-- int main(int argc, char ** argv) { int; }<EOF>
+--                                    ~~~
+--                                    Fix this!
 data Fixit = Fixit
-  { _fixitSpan        :: {-# UNPACK #-} !Span
+  { _fixitSpan :: {-# UNPACK #-} !Span
+    -- ^ 'Span' where the error occurred
   , _fixitReplacement :: !ByteString
+    -- ^ Replacement suggestion
   } deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 makeClassy ''Fixit

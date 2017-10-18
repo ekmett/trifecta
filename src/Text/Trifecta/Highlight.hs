@@ -42,11 +42,12 @@ import Text.Blaze.Html5.Attributes hiding (title,id)
 import Text.Blaze.Internal (MarkupM(Empty, Leaf))
 import Text.Parser.Token.Highlight
 import Text.PrettyPrint.ANSI.Leijen hiding ((<>))
+import qualified Data.ByteString.Lazy.Char8 as L
+import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
+
 import Text.Trifecta.Util.IntervalMap as IM
 import Text.Trifecta.Delta
 import Text.Trifecta.Rope
-import qualified Data.ByteString.Lazy.Char8 as L
-import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
 
 -- | Convert a 'Highlight' into a coloration on a 'Doc'.
 withHighlight :: Highlight -> Doc -> Doc
