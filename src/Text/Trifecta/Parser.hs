@@ -321,8 +321,9 @@ stepResult r (Failure xs) = StepFail r xs
 
 stepIt :: It Rope a -> Step a
 stepIt = go mempty where
-  go r (Pure a) = StepDone r a
-  go r (It a k) = StepCont r (pure a) $ \s -> go s (k s)
+  go r m = case simplifyIt m r of
+    Pure a -> StepDone r a
+    It a k -> StepCont r (pure a) $ \r' -> go r' (k r')
 {-# INLINE stepIt #-}
 
 data Stepping a
@@ -337,21 +338,20 @@ stepParser (Parser p) d0 bs0 = go mempty $ p eo ee co ce d0 bs0 where
   ee e         = Pure (EE e)
   co a es d bs = Pure (CO a es d bs)
   ce errInf    = Pure (CE errInf)
-
-  go :: Rope -> It Rope (Stepping a) -> Step a
-  go r (Pure (EO a _))     = StepDone r a
-  go r (Pure (EE e))       = StepFail r $
-                              let errDoc = explain (renderingCaret d0 bs0) e
-                              in  ErrInfo errDoc (_finalDeltas e)
-  go r (Pure (CO a _ _ _)) = StepDone r a
-  go r (Pure (CE d))       = StepFail r d
-  go r (It ma k)           = StepCont r (case ma of
-                                EO a _     -> Success a
-                                EE e       -> Failure $
-                                  ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
-                                CO a _ _ _ -> Success a
-                                CE d       -> Failure d
-                              ) (\s -> go s (k s))
+  go r m = case simplifyIt m r of
+    Pure (EO a _)     -> StepDone r a
+    Pure (EE e)       -> StepFail r $
+                          let errDoc = explain (renderingCaret d0 bs0) e
+                          in  ErrInfo errDoc (_finalDeltas e)
+    Pure (CO a _ _ _) -> StepDone r a
+    Pure (CE d)       -> StepFail r d
+    It ma k           -> StepCont r (case ma of
+                           EO a _     -> Success a
+                           EE e       -> Failure $
+                             ErrInfo (explain (renderingCaret d0 bs0) e) (d0 : _finalDeltas e)
+                           CO a _ _ _ -> Success a
+                           CE d       -> Failure d
+                         ) (\r' -> go r' (k r'))
 {-# INLINE stepParser #-}
 
 -- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from

@@ -55,7 +55,7 @@ library
 
   build-depends:
     ansi-wl-pprint       >= 0.6.6   && < 0.7,
-    ansi-terminal        >= 0.6     && < 0.7,
+    ansi-terminal        >= 0.6     && < 0.8,
     array                >= 0.3.0.2 && < 0.6,
     base                 >= 4.4     && < 5,
     blaze-builder        >= 0.3.0.1 && < 0.5,
