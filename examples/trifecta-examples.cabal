@@ -43,5 +43,6 @@ test-suite trifecta-examples-tests
                 base,
                 hspec,
                 parsers,
+                transformers,
                 trifecta,
                 trifecta-examples
