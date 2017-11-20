@@ -9,7 +9,7 @@ maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     experimental
 homepage:      http://github.com/ekmett/trifecta/
 bug-reports:   http://github.com/ekmett/trifecta/issues
-copyright:     Copyright (C) 2010-2015 Edward A. Kmett
+copyright:     Copyright (C) 2010-2017 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
 description:
   A modern parser combinator library with slicing and Clang-style colored diagnostics

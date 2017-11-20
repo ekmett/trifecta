@@ -1,15 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
-module Main (main) where
+
+module RFC2616 where
 
 import Control.Applicative
-import Control.Exception (bracket)
 import System.Environment (getArgs)
-import System.IO (hClose, openFile, IOMode(ReadMode))
 import Text.Trifecta hiding (token)
 import Text.Parser.Token.Highlight
-import Text.Parser.Token.Style
-import Data.CharSet.ByteSet as S
-import qualified Data.ByteString as B
 
 infixl 4 <$!>
 
@@ -61,8 +57,12 @@ messageHeader = (\h b c -> Header h (b : c))
 request :: (Monad m, TokenParsing m) => m (Request, [Header])
 request = (,) <$> requestLine <*> many messageHeader <* endOfLine
 
+requests :: (Monad m, TokenParsing m) => m [(Request, [Header])]
+requests = many request
+
+lumpy :: String -> IO ()
 lumpy arg = do
-  r <- parseFromFile (many request) arg
+  r <- parseFromFile requests arg
   case r of
     Nothing -> return ()
     Just rs -> print (length rs)
