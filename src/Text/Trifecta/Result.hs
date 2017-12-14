@@ -24,6 +24,7 @@ module Text.Trifecta.Result
   -- * Parse Results
     Result(..)
   , AsResult(..)
+  , foldResult
   , _Success
   , _Failure
   -- * Parsing Errors
@@ -113,6 +114,12 @@ data Result a
   = Success a
   | Failure ErrInfo
   deriving (Show,Functor,Foldable,Traversable)
+
+-- | Fold over a 'Result'
+foldResult :: (ErrInfo -> b) -> (a -> b) -> Result a -> b
+foldResult f g r = case r of
+  Failure e -> f e
+  Success a -> g a
 
 -- | A 'Prism' that lets you embed or retrieve a 'Result' in a potentially larger type.
 class AsResult s t a b | s -> a, t -> b, s b -> t, t a -> s where
