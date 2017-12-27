@@ -22,4 +22,4 @@ main = do
     traverse_ putStrLn args
     doctest args
   where
-    args = "-fobject-code" : flags ++ pkgs ++ module_sources
+    args = flags ++ pkgs ++ module_sources

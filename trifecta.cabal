@@ -90,11 +90,12 @@ library
     build-depends: fail == 4.9.*
 
 test-suite doctests
-  type:             exitcode-stdio-1.0
-  main-is:          doctests.hs
-  ghc-options:      -Wall -threaded
-  hs-source-dirs:   tests
-  default-language: Haskell2010
+  type:              exitcode-stdio-1.0
+  main-is:           doctests.hs
+  ghc-options:       -Wall -threaded
+  x-doctest-options: -fobject-code
+  hs-source-dirs:    tests
+  default-language:  Haskell2010
   build-depends:
     base,
     doctest >= 0.11.1 && < 0.14,
