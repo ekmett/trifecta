@@ -24,7 +24,7 @@ source-repository head
 library
   ghc-options:         -Wall
   exposed-modules:     RFC2616
-  hs-source-dirs:      .
+  hs-source-dirs:      rfc2616
   build-depends:       base             >= 4.3     && <5,
                        bytestring,
                        charset,
@@ -32,17 +32,23 @@ library
                        trifecta
   default-language:    Haskell2010
 
+executable trifecta-examples-rfc2616
+  main-is:             Main.hs
+  ghc-options:         -Wall -threaded
+  hs-source-dirs:      .
+  default-language:    Haskell2010
+  build-depends:       base,
+                       trifecta-examples
+
 test-suite trifecta-examples-tests
-  type:             exitcode-stdio-1.0
-  other-modules:    RFC2616
-  main-is:          Spec.hs
-  ghc-options:      -Wall -threaded
-  hs-source-dirs:   .
-  default-language: Haskell2010
-  build-depends:
-                base,
-                hspec,
-                parsers,
-                transformers,
-                trifecta,
-                trifecta-examples
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  ghc-options:         -Wall -threaded
+  hs-source-dirs:      .
+  default-language:    Haskell2010
+  build-depends:       base,
+                       hspec,
+                       parsers,
+                       transformers,
+                       trifecta,
+                       trifecta-examples

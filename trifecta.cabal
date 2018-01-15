@@ -17,8 +17,11 @@ description:
 build-type:    Custom
 
 extra-source-files:
-  examples/RFC2616.hs
+  examples/*.hs
+  examples/LICENSE
+  examples/rfc2616/*.hs
   examples/RFC2616.txt
+  examples/trifecta-examples.cabal
   .travis.yml
   CHANGELOG.markdown
   README.markdown
