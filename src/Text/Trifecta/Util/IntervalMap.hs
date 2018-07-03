@@ -64,7 +64,9 @@ import Control.Lens hiding ((<|), (|>))
 import           Data.FingerTree
     (FingerTree, Measured (..), ViewL (..), (<|), (><))
 import qualified Data.FingerTree        as FT
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup
+#endif
 import           Data.Semigroup.Reducer
 import           Data.Semigroup.Union
 

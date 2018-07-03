@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE DeriveFoldable         #-}
 {-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE DeriveTraversable      #-}
@@ -44,7 +45,9 @@ import qualified Control.Monad.Fail as Fail
 import Data.ByteString as Strict hiding (empty, snoc)
 import Data.ByteString.UTF8 as UTF8
 import Data.Maybe (fromMaybe, isJust)
+#if !(MIN_VERSION_base(4,11,0))
 import Data.Semigroup
+#endif
 import Data.Semigroup.Reducer
 -- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)

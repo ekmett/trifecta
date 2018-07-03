@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE DeriveFoldable         #-}
 {-# LANGUAGE DeriveFunctor          #-}
 {-# LANGUAGE DeriveTraversable      #-}
@@ -40,7 +41,9 @@ import           Control.Monad                (guard)
 import           Data.Foldable
 import qualified Data.List                    as List
 import           Data.Maybe                   (fromMaybe, isJust)
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup
+#endif
 import           Data.Set                     as Set hiding (empty, toList)
 import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
     (empty, line, (<$>), (<>))

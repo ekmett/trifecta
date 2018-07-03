@@ -24,7 +24,9 @@ module Text.Trifecta.Delta
   , columnByte
   ) where
 
+#if !(MIN_VERSION_base(4,11,0))
 import Data.Semigroup
+#endif
 import Data.Hashable
 import Data.Int
 import Data.Data

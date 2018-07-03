@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -36,7 +37,9 @@ import           Data.Data
 import           Data.FingerTree        as FingerTree
 import           Data.Foldable          (toList)
 import           Data.Hashable
+#if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup
+#endif
 import           Data.Semigroup.Reducer
 import           GHC.Generics
 

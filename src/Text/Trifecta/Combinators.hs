@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                    #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -35,7 +36,9 @@ import Control.Monad.Trans.State.Strict  as Strict
 import Control.Monad.Trans.Writer.Lazy   as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
 import Data.ByteString                   as Strict hiding (span)
+#if !(MIN_VERSION_base(4,11,0))
 import Data.Semigroup
+#endif
 import Prelude                           hiding (span)
 
 import Text.Parser.Token
