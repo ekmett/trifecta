@@ -1,7 +1,8 @@
-2
----
-* `stepResult` no longer takes a `ByteString`.
-* Documentation added.
+2 [????.??.??]
+--------------
+* `stepParser` no longer takes a `ByteString`.
+* Add a `Text.Trifecta.Tutorial` module, as well as lots of documentation.
+* Add a `foldResult` function to `Text.Trifecta.Result`.
 
 1.7.1.1
 -------
