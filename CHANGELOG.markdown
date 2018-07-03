@@ -1,4 +1,4 @@
-2 [????.??.??]
+2 [2018.07.03]
 --------------
 * `stepParser` no longer takes a `ByteString`.
 * Add a `Text.Trifecta.Tutorial` module, as well as lots of documentation.
