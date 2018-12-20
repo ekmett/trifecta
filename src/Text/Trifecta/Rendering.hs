@@ -335,8 +335,8 @@ instance Renderable (Rendered a) where
 -- | A 'Caret' marks a point in the input with a simple @^@ character.
 --
 -- >>> plain (pretty (addCaret (Columns 35 35) exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ^
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasCaret t where
@@ -441,8 +441,8 @@ addSpan s e r = drawSpan s e .# r
 -- 'Span' is a line.
 --
 -- >>> plain (pretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ~~~
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
@@ -504,9 +504,9 @@ addFixit s e rpl r = drawFixit s e rpl .# r
 -- | A 'Fixit' is a 'Span' with a suggestion.
 --
 -- >>> plain (pretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ~~~
---                                    Fix this!
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ~~~
+--   |                                    Fix this!
 data Fixit = Fixit
   { _fixitSpan :: {-# UNPACK #-} !Span
     -- ^ 'Span' where the error occurred
