@@ -285,7 +285,7 @@ instance Pretty Rendering where
       gutterWidth = floor (logBase (fromIntegral n) 10 :: Float)
       gutter = pretty (fromIntegral n :: Int) <+> separator
       margin = fill (fromIntegral gutterWidth) space <+> separator
-      ln y = (sgr [SetColor Foreground Vivid Blue] (if y == 0 then gutter else margin) <+>)
+      ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
            $ hcat
            $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
            $ groupBy ((==) `on` fst)
@@ -298,6 +298,9 @@ window c l w
                            else (0  , w)
   | otherwise   = (c-w2, c+w2)
   where w2 = div w 2
+
+gutterEffects :: [SGR]
+gutterEffects = [SetColor Foreground Vivid Blue]
 
 data Rendered a = a :@ Rendering
   deriving Show
