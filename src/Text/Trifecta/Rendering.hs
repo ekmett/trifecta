@@ -274,10 +274,19 @@ f .# Rendering d ll lb s g = Rendering d ll lb s $ \e l -> f e $ g e l
 instance Pretty Rendering where
   pretty (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
     go cols = align (vsep (P.map ln [t..b])) where
-      (lo, hi) = window (column d) ll (min (max (cols - 2) 30) 200)
+      (lo, hi) = window (column d) ll (min (max (cols - 5 - gutterWidth) 30) 200)
       a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
-      ln y = hcat
+      n = case d of
+        Lines      n' _ _ _ -> 1 + n'
+        Directed _ n' _ _ _ -> 1 + n'
+        _                   -> 1
+      separator = char '|'
+      gutterWidth = floor (logBase (fromIntegral n) 10 :: Float)
+      gutter = pretty (fromIntegral n :: Int) <+> separator
+      margin = fill (fromIntegral gutterWidth) space <+> separator
+      ln y = (sgr [SetColor Foreground Vivid Blue] (if y == 0 then gutter else margin) <+>)
+           $ hcat
            $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
            $ groupBy ((==) `on` fst)
            [ a ! (y,i) | i <- [lo..hi] ]
