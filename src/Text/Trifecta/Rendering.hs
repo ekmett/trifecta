@@ -300,6 +300,7 @@ window c l w
   | otherwise   = (c-w2, c+w2)
   where w2 = div w 2
 
+-- | ANSI terminal style for rendering the gutter.
 gutterEffects :: [SGR]
 gutterEffects = [SetColor Foreground Vivid Blue]
 
