@@ -28,6 +28,7 @@ module Text.Trifecta.Rendering
   , rendered
   , Renderable(..)
   , Rendered(..)
+  , gutterEffects
   -- * Carets
   , Caret(..)
   , HasCaret(..)
