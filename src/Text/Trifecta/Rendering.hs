@@ -28,6 +28,7 @@ module Text.Trifecta.Rendering
   , rendered
   , Renderable(..)
   , Rendered(..)
+  , gutterEffects
   -- * Carets
   , Caret(..)
   , HasCaret(..)
@@ -274,10 +275,19 @@ f .# Rendering d ll lb s g = Rendering d ll lb s $ \e l -> f e $ g e l
 instance Pretty Rendering where
   pretty (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
     go cols = align (vsep (P.map ln [t..b])) where
-      (lo, hi) = window (column d) ll (min (max (cols - 2) 30) 200)
+      (lo, hi) = window (column d) ll (min (max (cols - 5 - fromIntegral gutterWidth) 30) 200)
       a = f d $ l $ array ((0,lo),(-1,hi)) []
       ((t,_),(b,_)) = bounds a
-      ln y = hcat
+      n = show $ case d of
+        Lines      n' _ _ _ -> 1 + n'
+        Directed _ n' _ _ _ -> 1 + n'
+        _                   -> 1
+      separator = char '|'
+      gutterWidth = P.length n
+      gutter = pretty n <+> separator
+      margin = fill gutterWidth space <+> separator
+      ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
+           $ hcat
            $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
            $ groupBy ((==) `on` fst)
            [ a ! (y,i) | i <- [lo..hi] ]
@@ -289,6 +299,10 @@ window c l w
                            else (0  , w)
   | otherwise   = (c-w2, c+w2)
   where w2 = div w 2
+
+-- | ANSI terminal style for rendering the gutter.
+gutterEffects :: [SGR]
+gutterEffects = [SetColor Foreground Vivid Blue]
 
 data Rendered a = a :@ Rendering
   deriving Show
@@ -321,8 +335,8 @@ instance Renderable (Rendered a) where
 -- | A 'Caret' marks a point in the input with a simple @^@ character.
 --
 -- >>> plain (pretty (addCaret (Columns 35 35) exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ^
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasCaret t where
@@ -427,8 +441,8 @@ addSpan s e r = drawSpan s e .# r
 -- 'Span' is a line.
 --
 -- >>> plain (pretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ~~~
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
 
 class HasSpan t where
@@ -490,9 +504,9 @@ addFixit s e rpl r = drawFixit s e rpl .# r
 -- | A 'Fixit' is a 'Span' with a suggestion.
 --
 -- >>> plain (pretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
--- int main(int argc, char ** argv) { int; }<EOF>
---                                    ~~~
---                                    Fix this!
+-- 1 | int main(int argc, char ** argv) { int; }<EOF>
+--   |                                    ~~~
+--   |                                    Fix this!
 data Fixit = Fixit
   { _fixitSpan :: {-# UNPACK #-} !Span
     -- ^ 'Span' where the error occurred

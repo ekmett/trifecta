@@ -65,7 +65,7 @@ parseExpr = parseAdd <|> parseLit
 -- @
 --
 -- > (interactive):1:8: error: expected: ")"
--- > (1 + 2 + 3))<EOF>
--- >        ^
+-- > 1 | (1 + 2 + 3))<EOF>
+-- >   |        ^
 examples :: docDummy
 examples = error "Haddock dummy for documentation"
