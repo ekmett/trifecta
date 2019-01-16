@@ -1,3 +1,8 @@
+next
+----
+
+* Print line numbers in the gutter.
+
 2 [2018.07.03]
 --------------
 * `stepParser` no longer takes a `ByteString`.
