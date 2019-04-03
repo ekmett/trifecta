@@ -35,34 +35,34 @@ module Text.Trifecta.Result
   , failed
   ) where
 
-import           Control.Applicative          as Alternative
-import           Control.Lens                 hiding (cons, snoc)
-import           Control.Monad                (guard)
+import           Control.Applicative                          as Alternative
+import           Control.Lens                                 hiding (cons, snoc)
+import           Control.Monad                                (guard)
 import           Data.Foldable
-import qualified Data.List                    as List
-import           Data.Maybe                   (fromMaybe, isJust)
+import qualified Data.List                                    as List
+import           Data.Maybe                                   (fromMaybe, isJust)
 #if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup
 #endif
-import           Data.Set                     as Set hiding (empty, toList)
-import           Text.PrettyPrint.ANSI.Leijen as Pretty hiding
-    (empty, line, (<$>), (<>))
+import           Data.Set                                     as Set hiding (empty, toList)
+import           Data.Text.Prettyprint.Doc                    as Pretty
+import           Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 
 import Text.Trifecta.Delta     as Delta
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Pretty    as Pretty
 import Text.Trifecta.Rendering
 
 data ErrInfo = ErrInfo
-  { _errDoc    :: Doc
+  { _errDoc    :: Doc AnsiStyle
   , _errDeltas :: [Delta]
-  } deriving(Show)
+  } deriving (Show)
 
 -- | This is used to report an error. What went wrong, some supplemental docs
 -- and a set of things expected at the current location. This does not, however,
 -- include the actual location.
 data Err = Err
-  { _reason      :: Maybe Doc
-  , _footnotes   :: [Doc]
+  { _reason      :: Maybe (Doc AnsiStyle)
+  , _footnotes   :: [Doc AnsiStyle]
   , _expected    :: Set String
   , _finalDeltas :: [Delta]
   }
@@ -85,9 +85,9 @@ failed :: String -> Err
 failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
 {-# INLINE failed #-}
 
--- | Convert a 'Rendering' of auxiliary information and an 'Err' into a 'Doc',
+-- | Convert a 'Rendering' of auxiliary information and an 'Err' into a 'Doc AnsiStyle',
 -- ready to be prettyprinted to the user.
-explain :: Rendering -> Err -> Doc
+explain :: Rendering -> Err -> Doc AnsiStyle
 explain r (Err mm as es _)
   | Set.null es = report (withEx mempty)
   | isJust mm   = report $ withEx $ Pretty.char ',' <+> expecting
@@ -96,10 +96,10 @@ explain r (Err mm as es _)
     now = spaceHack $ toList es
     spaceHack [""] = ["space"]
     spaceHack xs = List.filter (/= "") xs
-    withEx x = fromMaybe (fillSep $ text <$> words "unspecified error") mm <> x
-    expecting = text "expected:" <+> fillSep (punctuate (Pretty.char ',') (text <$> now))
-    report txt = vsep $ [pretty (delta r) <> Pretty.char ':' <+> red (text "error") <> Pretty.char ':' <+> nest 4 txt]
-             <|> pretty r <$ guard (not (nullRendering r))
+    withEx x = fromMaybe (fillSep $ pretty <$> words "unspecified error") mm <> x
+    expecting = pretty "expected:" <+> fillSep (punctuate (Pretty.char ',') (pretty <$> now))
+    report txt = vsep $ [apretty (delta r) <> Pretty.char ':' <+> annotate (Pretty.color Pretty.Red) (pretty "error") <> Pretty.char ':' <+> nest 4 txt]
+             <|> apretty r <$ guard (not (nullRendering r))
              <|> as
 
 class Errable m where
@@ -146,9 +146,9 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
   seta (Success a) = Left (pure (Success a))
 {-# INLINE _Failure #-}
 
-instance Show a => Pretty (Result a) where
-  pretty (Success a)    = pretty (show a)
-  pretty (Failure xs) = pretty (_errDoc xs)
+instance Show a => ANSIPretty (Result a) where
+  apretty (Success a)  = pretty (show a)
+  apretty (Failure xs) = _errDoc xs
 
 instance Applicative Result where
   pure = Success

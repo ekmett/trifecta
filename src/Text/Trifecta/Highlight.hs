@@ -34,6 +34,9 @@ import Data.Int (Int64)
 import Data.List (sort)
 import Data.Semigroup
 import Data.Semigroup.Union
+import Data.Text.Prettyprint.Doc
+import Data.Text.Prettyprint.Doc.Render.Terminal (color)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import Prelude hiding (head)
 import Text.Blaze
 import Text.Blaze.Html5 hiding (a,b,i)
@@ -41,27 +44,27 @@ import qualified Text.Blaze.Html5 as Html5
 import Text.Blaze.Html5.Attributes hiding (title,id)
 import Text.Blaze.Internal (MarkupM(Empty, Leaf))
 import Text.Parser.Token.Highlight
-import Text.PrettyPrint.ANSI.Leijen hiding ((<>))
 import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.ByteString.Lazy.UTF8 as LazyUTF8
 
 import Text.Trifecta.Util.IntervalMap as IM
 import Text.Trifecta.Delta
+import Text.Trifecta.Pretty
 import Text.Trifecta.Rope
 
 -- | Convert a 'Highlight' into a coloration on a 'Doc'.
-withHighlight :: Highlight -> Doc -> Doc
-withHighlight Comment                     = blue
-withHighlight ReservedIdentifier          = magenta
-withHighlight ReservedConstructor         = magenta
-withHighlight EscapeCode                  = magenta
-withHighlight Operator                    = yellow
-withHighlight CharLiteral                 = cyan
-withHighlight StringLiteral               = cyan
-withHighlight Constructor                 = bold
-withHighlight ReservedOperator            = yellow
-withHighlight ConstructorOperator         = yellow
-withHighlight ReservedConstructorOperator = yellow
+withHighlight :: Highlight -> Doc AnsiStyle -> Doc AnsiStyle
+withHighlight Comment                     = annotate (color Pretty.Blue)
+withHighlight ReservedIdentifier          = annotate (color Pretty.Magenta)
+withHighlight ReservedConstructor         = annotate (color Pretty.Magenta)
+withHighlight EscapeCode                  = annotate (color Pretty.Magenta)
+withHighlight Operator                    = annotate (color Pretty.Yellow)
+withHighlight CharLiteral                 = annotate (color Pretty.Cyan)
+withHighlight StringLiteral               = annotate (color Pretty.Cyan)
+withHighlight Constructor                 = annotate Pretty.bold
+withHighlight ReservedOperator            = annotate (color Pretty.Yellow)
+withHighlight ConstructorOperator         = annotate (color Pretty.Yellow)
+withHighlight ReservedConstructorOperator = annotate (color Pretty.Yellow)
 withHighlight _                           = id
 
 -- | A 'HighlightedRope' is a 'Rope' with an associated 'IntervalMap' full of highlighted regions.
@@ -115,8 +118,8 @@ instance ToMarkup HighlightedRope where
     leafMarkup a b c = Leaf a b c
 #endif
 
-instance Pretty HighlightedRope where
-  pretty (HighlightedRope intervals r) = go mempty lbs boundaries where
+instance ANSIPretty HighlightedRope where
+  apretty (HighlightedRope intervals r) = go mempty lbs boundaries where
     lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
     ints = intersections mempty (delta r) intervals
     boundaries = sort [ i | (Interval lo hi, _) <- ints, i <- [ lo, hi ] ]

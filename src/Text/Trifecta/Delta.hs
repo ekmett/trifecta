@@ -38,10 +38,11 @@ import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
+import Data.Text.Prettyprint.Doc hiding (column, line')
+import Data.Text.Prettyprint.Doc.Render.Terminal (bold)
 import GHC.Generics
-import Text.PrettyPrint.ANSI.Leijen hiding (column, (<>))
 
-import Text.Trifecta.Instances ()
+import Text.Trifecta.Pretty
 
 class HasBytes t where
   bytes :: t -> Int64
@@ -106,8 +107,8 @@ instance (HasDelta l, HasDelta r) => HasDelta (Either l r) where
   delta = either delta delta
 
 -- | Example: @file.txt:12:34@
-instance Pretty Delta where
-    pretty d = case d of
+instance ANSIPretty Delta where
+    apretty d = case d of
         Columns c _         -> prettyDelta interactive 0 c
         Tab x y _           -> prettyDelta interactive 0 (nextTab x + y)
         Lines l c _ _       -> prettyDelta interactive l c
@@ -117,15 +118,12 @@ instance Pretty Delta where
             :: String -- Source description
             -> Int64  -- Line
             -> Int64  -- Column
-            -> Doc
+            -> Doc AnsiStyle
         prettyDelta source line' column'
-          = bold (pretty source)
-            <> char ':' <> bold (int64 (line'+1))
-            <> char ':' <> bold (int64 (column'+1))
+          = annotate bold (pretty source)
+            <> char ':' <> annotate bold (pretty (line'+1))
+            <> char ':' <> annotate bold (pretty (column'+1))
         interactive = "(interactive)"
-
-int64 :: Int64 -> Doc
-int64 = pretty . show
 
 -- | Retrieve the character offset within the current line from this 'Delta'.
 column :: HasDelta t => t -> Int64

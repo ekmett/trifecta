@@ -51,15 +51,16 @@ import Data.Semigroup
 import Data.Semigroup.Reducer
 -- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)
+import Data.Text.Prettyprint.Doc as Pretty hiding (line)
+import Data.Text.Prettyprint.Doc.Render.Terminal (renderIO)
 import System.IO
 import Text.Parser.Combinators
 import Text.Parser.Char
 import Text.Parser.LookAhead
 import Text.Parser.Token
-import Text.PrettyPrint.ANSI.Leijen as Pretty hiding (line, (<>), (<$>), empty)
 import Text.Trifecta.Combinators
 import Text.Trifecta.Delta       as Delta
-import Text.Trifecta.Instances   ()
+import Text.Trifecta.Pretty
 import Text.Trifecta.Rendering
 import Text.Trifecta.Result
 import Text.Trifecta.Rope
@@ -392,7 +393,7 @@ parseFromFile p fn = do
   case result of
    Success a  -> return (Just a)
    Failure xs -> do
-     liftIO $ displayIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> linebreak
+     liftIO $ renderIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> line'
      return Nothing
 
 -- | @('parseFromFileEx' p filePath)@ runs a parser @p@ on the input read from
@@ -432,5 +433,5 @@ parseString = runParser
 
 parseTest :: (MonadIO m, Show a) => Parser a -> String -> m ()
 parseTest p s = case parseByteString p mempty (UTF8.fromString s) of
-  Failure xs -> liftIO $ displayIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> linebreak -- TODO: retrieve columns
+  Failure xs -> liftIO $ renderIO stdout $ renderPretty 0.8 80 $ (_errDoc xs) <> line' -- TODO: retrieve columns
   Success a  -> liftIO (print a)

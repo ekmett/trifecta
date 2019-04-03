@@ -52,6 +52,7 @@ library
     Text.Trifecta.Delta
     Text.Trifecta.Highlight
     Text.Trifecta.Parser
+    Text.Trifecta.Pretty
     Text.Trifecta.Rendering
     Text.Trifecta.Result
     Text.Trifecta.Rope
@@ -61,34 +62,34 @@ library
     Text.Trifecta.Util.It
 
   other-modules:
-    Text.Trifecta.Instances
     Text.Trifecta.Util.Combinators
 
   build-depends:
-    ansi-wl-pprint       >= 0.6.6   && < 0.7,
-    ansi-terminal        >= 0.6     && < 0.10,
-    array                >= 0.3.0.2 && < 0.6,
-    base                 >= 4.4     && < 5,
-    blaze-builder        >= 0.3.0.1 && < 0.5,
-    blaze-html           >= 0.5     && < 0.10,
-    blaze-markup         >= 0.5     && < 0.9,
-    bytestring           >= 0.9.1   && < 0.11,
-    charset              >= 0.3.5.1 && < 1,
-    comonad              >= 4       && < 6,
-    containers           >= 0.3     && < 0.7,
-    deepseq              >= 1.2.0.1 && < 1.5,
-    fingertree           >= 0.1     && < 0.2,
+    ansi-terminal               >= 0.6     && < 0.10,
+    array                       >= 0.3.0.2 && < 0.6,
+    base                        >= 4.4     && < 5,
+    blaze-builder               >= 0.3.0.1 && < 0.5,
+    blaze-html                  >= 0.5     && < 0.10,
+    blaze-markup                >= 0.5     && < 0.9,
+    bytestring                  >= 0.9.1   && < 0.11,
+    charset                     >= 0.3.5.1 && < 1,
+    comonad                     >= 4       && < 6,
+    containers                  >= 0.3     && < 0.7,
+    deepseq                     >= 1.2.0.1 && < 1.5,
+    fingertree                  >= 0.1     && < 0.2,
     ghc-prim,
-    hashable             >= 1.2.1   && < 1.3,
-    lens                 >= 4.0     && < 5,
-    mtl                  >= 2.0.1   && < 2.3,
-    parsers              >= 0.12.1  && < 1,
-    profunctors          >= 4.0     && < 6,
-    reducers             >= 3.10    && < 4,
-    semigroups           >= 0.8.3.1 && < 1,
-    transformers         >= 0.2     && < 0.6,
-    unordered-containers >= 0.2.1   && < 0.3,
-    utf8-string          >= 0.3.6   && < 1.1
+    hashable                    >= 1.2.1   && < 1.3,
+    lens                        >= 4.0     && < 5,
+    mtl                         >= 2.0.1   && < 2.3,
+    parsers                     >= 0.12.1  && < 1,
+    prettyprinter               >= 1.2     && < 2,
+    prettyprinter-ansi-terminal >= 1.1     && < 2,
+    profunctors                 >= 4.0     && < 6,
+    reducers                    >= 3.10    && < 4,
+    semigroups                  >= 0.8.3.1 && < 1,
+    transformers                >= 0.2     && < 0.6,
+    unordered-containers        >= 0.2.1   && < 0.3,
+    utf8-string                 >= 0.3.6   && < 1.1
 
   default-language: Haskell2010
   hs-source-dirs:   src
