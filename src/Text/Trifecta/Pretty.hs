@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2015 Edward Kmett
@@ -26,6 +27,11 @@ module Text.Trifecta.Pretty
   , renderPretty
   , columns
   ) where
+
+
+#if __GLASGOW_HASKELL__ < 710
+import Data.Monoid
+#endif
 
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Terminal
