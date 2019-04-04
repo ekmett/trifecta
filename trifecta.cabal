@@ -15,9 +15,7 @@ description:
   A modern parser combinator library with slicing and Clang-style colored diagnostics
 
 build-type:    Custom
-tested-with:   GHC == 7.4.2
-             , GHC == 7.6.3
-             , GHC == 7.8.4
+tested-with:   GHC == 7.8.4
              , GHC == 7.10.3
              , GHC == 8.0.2
              , GHC == 8.2.2
