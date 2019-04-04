@@ -52,7 +52,6 @@ library
     Text.Trifecta.Delta
     Text.Trifecta.Highlight
     Text.Trifecta.Parser
-    Text.Trifecta.Pretty
     Text.Trifecta.Rendering
     Text.Trifecta.Result
     Text.Trifecta.Rope
@@ -63,6 +62,7 @@ library
 
   other-modules:
     Text.Trifecta.Util.Combinators
+    Text.Trifecta.Util.Pretty
 
   build-depends:
     ansi-terminal               >= 0.6     && < 0.10,

@@ -46,10 +46,10 @@ import Text.Blaze.Internal (MarkupM(Empty, Leaf))
 import Text.Parser.Token.Highlight
 import qualified Data.ByteString.Lazy.Char8 as L
 
-import Text.Trifecta.Util.IntervalMap as IM
 import Text.Trifecta.Delta
-import Text.Trifecta.Pretty
 import Text.Trifecta.Rope
+import Text.Trifecta.Util.IntervalMap as IM
+import Text.Trifecta.Util.Pretty
 
 -- | Convert a 'Highlight' into a coloration on a 'Doc'.
 withHighlight :: Highlight -> Doc AnsiStyle -> Doc AnsiStyle

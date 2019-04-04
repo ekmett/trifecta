@@ -60,11 +60,11 @@ import Text.Parser.LookAhead
 import Text.Parser.Token
 import Text.Trifecta.Combinators
 import Text.Trifecta.Delta       as Delta
-import Text.Trifecta.Pretty
 import Text.Trifecta.Rendering
 import Text.Trifecta.Result
 import Text.Trifecta.Rope
 import Text.Trifecta.Util.It
+import Text.Trifecta.Util.Pretty
 
 -- | The type of a trifecta parser
 --

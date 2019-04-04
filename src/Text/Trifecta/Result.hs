@@ -48,9 +48,9 @@ import           Data.Set                                     as Set hiding (emp
 import           Data.Text.Prettyprint.Doc                    as Pretty
 import           Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 
-import Text.Trifecta.Delta     as Delta
-import Text.Trifecta.Pretty    as Pretty
+import Text.Trifecta.Delta       as Delta
 import Text.Trifecta.Rendering
+import Text.Trifecta.Util.Pretty as Pretty
 
 data ErrInfo = ErrInfo
   { _errDoc    :: Doc AnsiStyle

@@ -11,7 +11,7 @@
 -- Utility functions to augment the prettyprinter library's interface.
 ----------------------------------------------------------------------------
 
-module Text.Trifecta.Pretty
+module Text.Trifecta.Util.Pretty
   ( AnsiStyle
   , renderIO
   -- * Rendering

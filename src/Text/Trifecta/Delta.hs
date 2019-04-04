@@ -43,7 +43,7 @@ import Data.Text.Prettyprint.Doc hiding (column, line')
 import Data.Text.Prettyprint.Doc.Render.Terminal (bold)
 import GHC.Generics
 
-import Text.Trifecta.Pretty
+import Text.Trifecta.Util.Pretty
 
 class HasBytes t where
   bytes :: t -> Int64

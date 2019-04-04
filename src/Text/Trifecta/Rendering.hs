@@ -81,8 +81,8 @@ import           Prelude                                      as P hiding (span)
 import           System.Console.ANSI
 
 import Text.Trifecta.Delta
-import Text.Trifecta.Pretty
 import Text.Trifecta.Util.Combinators
+import Text.Trifecta.Util.Pretty
 
 -- $setup
 --
