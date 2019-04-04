@@ -13,8 +13,7 @@
 ----------------------------------------------------------------------------
 
 module Text.Trifecta.Pretty
-  ( ANSIPretty (..)
-  , AnsiStyle
+  ( AnsiStyle
   , renderIO
   -- * Rendering
   , char
@@ -36,9 +35,6 @@ import Data.Monoid
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.Terminal
 import Data.Text.Prettyprint.Doc.Render.Terminal.Internal (ansiBold, ansiUnderlining)
-
-class ANSIPretty a where
-  apretty :: a -> Doc AnsiStyle
 
 char :: Char -> Doc a
 char = pretty

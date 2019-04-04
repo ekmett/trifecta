@@ -118,15 +118,15 @@ instance ToMarkup HighlightedRope where
     leafMarkup a b c = Leaf a b c
 #endif
 
-instance ANSIPretty HighlightedRope where
-  apretty (HighlightedRope intervals r) = go mempty lbs boundaries where
-    lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
-    ints = intersections mempty (delta r) intervals
-    boundaries = sort [ i | (Interval lo hi, _) <- ints, i <- [ lo, hi ] ]
-    dominated l h = Prelude.foldr (fmap . withHighlight . snd) id (dominators l h intervals)
-    go l cs [] = dominated l (delta r) $ pretty (LazyUTF8.toString cs)
-    go l cs (h:es) = dominated l h (pretty (LazyUTF8.toString om)) <> go h nom es
-      where (om,nom) = L.splitAt (fromIntegral (bytes h - bytes l)) cs
+prettyRope :: HighlightedRope -> Doc AnsiStyle
+prettyRope (HighlightedRope intervals r) = go mempty lbs boundaries where
+  lbs = L.fromChunks [bs | Strand bs _ <- F.toList (strands r)]
+  ints = intersections mempty (delta r) intervals
+  boundaries = sort [ i | (Interval lo hi, _) <- ints, i <- [ lo, hi ] ]
+  dominated l h = Prelude.foldr (fmap . withHighlight . snd) id (dominators l h intervals)
+  go l cs [] = dominated l (delta r) $ pretty (LazyUTF8.toString cs)
+  go l cs (h:es) = dominated l h (pretty (LazyUTF8.toString om)) <> go h nom es
+    where (om,nom) = L.splitAt (fromIntegral (bytes h - bytes l)) cs
 
 -- | Represents a source file like an HsColour rendered document
 data HighlightDoc = HighlightDoc

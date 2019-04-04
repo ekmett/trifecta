@@ -24,6 +24,7 @@ module Text.Trifecta.Rendering
   , HasRendering(..)
   , nullRendering
   , emptyRendering
+  , prettyRendering
   , Source(..)
   , rendered
   , Renderable(..)
@@ -72,7 +73,6 @@ import           Data.Maybe
 import           Data.Text.Prettyprint.Doc                    hiding (column, line')
 import           Data.Text.Prettyprint.Doc                    (annotate)
 import           Data.Text.Prettyprint.Doc.Render.Terminal    (color, bgColor, colorDull, bgColorDull)
-import qualified Data.Text.Prettyprint.Doc                    as Pretty
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 import           Data.Semigroup
 import           Data.Semigroup.Reducer
@@ -91,7 +91,6 @@ import Text.Trifecta.Util.Combinators
 -- >>> import Data.ByteString (ByteString)
 -- >>> import Data.Monoid (mempty)
 -- >>> import Text.Trifecta.Delta
--- >>> import Text.Trifecta.Pretty (apretty)
 -- >>> let exampleRendering = rendered mempty ("int main(int argc, char ** argv) { int; }" :: ByteString)
 
 outOfRangeEffects :: [SGR] -> [SGR]
@@ -212,7 +211,7 @@ nullRendering _ = False
 
 -- | The empty 'Rendering', which contains nothing at all.
 --
--- >>> show (apretty emptyRendering)
+-- >>> show (prettyRendering emptyRendering)
 -- ""
 emptyRendering :: Rendering
 emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
@@ -277,25 +276,25 @@ rendered del s = case source s of
 (.#) :: (Delta -> Lines -> Lines) -> Rendering -> Rendering
 f .# Rendering d ll lb s g = Rendering d ll lb s $ \e l -> f e $ g e l
 
-instance ANSIPretty Rendering where
-  apretty (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
-    go cols = align (vsep (P.map ln [t..b])) where
-      (lo, hi) = window (column d) ll (min (max (cols - 5 - fromIntegral gutterWidth) 30) 200)
-      a = f d $ l $ array ((0,lo),(-1,hi)) []
-      ((t,_),(b,_)) = bounds a
-      n = show $ case d of
-        Lines      n' _ _ _ -> 1 + n'
-        Directed _ n' _ _ _ -> 1 + n'
-        _                   -> 1
-      separator = char '|'
-      gutterWidth = P.length n
-      gutter = pretty n <+> separator
-      margin = fill gutterWidth space <+> separator
-      ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
-           $ hcat
-           $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
-           $ groupBy ((==) `on` fst)
-           [ a ! (y,i) | i <- [lo..hi] ]
+prettyRendering :: Rendering -> Doc AnsiStyle
+prettyRendering (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
+  go cols = align (vsep (P.map ln [t..b])) where
+    (lo, hi) = window (column d) ll (min (max (cols - 5 - fromIntegral gutterWidth) 30) 200)
+    a = f d $ l $ array ((0,lo),(-1,hi)) []
+    ((t,_),(b,_)) = bounds a
+    n = show $ case d of
+      Lines      n' _ _ _ -> 1 + n'
+      Directed _ n' _ _ _ -> 1 + n'
+      _                   -> 1
+    separator = char '|'
+    gutterWidth = P.length n
+    gutter = pretty n <+> separator
+    margin = fill gutterWidth space <+> separator
+    ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
+         $ hcat
+         $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
+         $ groupBy ((==) `on` fst)
+         [ a ! (y,i) | i <- [lo..hi] ]
 
 window :: Int64 -> Int64 -> Int64 -> (Int64, Int64)
 window c l w
@@ -339,7 +338,7 @@ instance Renderable (Rendered a) where
 
 -- | A 'Caret' marks a point in the input with a simple @^@ character.
 --
--- >>> unAnnotate (apretty (addCaret (Columns 35 35) exampleRendering))
+-- >>> unAnnotate (prettyRendering (addCaret (Columns 35 35) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
@@ -445,7 +444,7 @@ addSpan s e r = drawSpan s e .# r
 -- | A 'Span' marks a range of input characters. If 'Caret' is a point, then
 -- 'Span' is a line.
 --
--- >>> unAnnotate (apretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
+-- >>> unAnnotate (prettyRendering (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
@@ -508,7 +507,7 @@ addFixit s e rpl r = drawFixit s e rpl .# r
 
 -- | A 'Fixit' is a 'Span' with a suggestion.
 --
--- >>> unAnnotate (apretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
+-- >>> unAnnotate (prettyRendering (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ~~~
 --   |                                    Fix this!

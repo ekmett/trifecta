@@ -98,8 +98,8 @@ explain r (Err mm as es _)
     spaceHack xs = List.filter (/= "") xs
     withEx x = fromMaybe (fillSep $ pretty <$> words "unspecified error") mm <> x
     expecting = pretty "expected:" <+> fillSep (punctuate (Pretty.char ',') (pretty <$> now))
-    report txt = vsep $ [apretty (delta r) <> Pretty.char ':' <+> annotate (Pretty.color Pretty.Red) (pretty "error") <> Pretty.char ':' <+> nest 4 txt]
-             <|> apretty r <$ guard (not (nullRendering r))
+    report txt = vsep $ [prettyDelta (delta r) <> Pretty.char ':' <+> annotate (Pretty.color Pretty.Red) (pretty "error") <> Pretty.char ':' <+> nest 4 txt]
+             <|> prettyRendering r <$ guard (not (nullRendering r))
              <|> as
 
 class Errable m where
@@ -146,9 +146,9 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
   seta (Success a) = Left (pure (Success a))
 {-# INLINE _Failure #-}
 
-instance Show a => ANSIPretty (Result a) where
-  apretty (Success a)  = pretty (show a)
-  apretty (Failure xs) = _errDoc xs
+prettyResult :: Show a => Result a -> Doc AnsiStyle
+prettyResult (Success a)  = pretty (show a)
+prettyResult (Failure xs) = _errDoc xs
 
 instance Applicative Result where
   pure = Success
