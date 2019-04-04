@@ -8,8 +8,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- An interface between the prettyprinter and the ANSI SGR primitives
--- provided by the ansi-terminal package.
+-- Utility functions to augment the prettyprinter library's interface.
 ----------------------------------------------------------------------------
 
 module Text.Trifecta.Pretty
