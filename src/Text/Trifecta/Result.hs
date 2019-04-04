@@ -146,10 +146,6 @@ _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) wh
   seta (Success a) = Left (pure (Success a))
 {-# INLINE _Failure #-}
 
-prettyResult :: Show a => Result a -> Doc AnsiStyle
-prettyResult (Success a)  = pretty (show a)
-prettyResult (Failure xs) = _errDoc xs
-
 instance Applicative Result where
   pure = Success
   {-# INLINE pure #-}
