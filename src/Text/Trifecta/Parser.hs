@@ -178,8 +178,10 @@ instance Monad Parser where
   {-# INLINE (>>=) #-}
   (>>) = (*>)
   {-# INLINE (>>) #-}
+#if !(MIN_VERSION_base(4,13,0))
   fail = Fail.fail
   {-# INLINE fail #-}
+#endif
 
 instance Fail.MonadFail Parser where
   fail s = Parser $ \ _ ee _ _ _ _ -> ee (failed s)

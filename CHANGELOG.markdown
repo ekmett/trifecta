@@ -1,6 +1,6 @@
-next
-----
-
+next [????.??.??]
+-----------------
+* Support building with `base-4.13` (GHC 8.8).
 * Print line numbers in the gutter.
 
 2 [2018.07.03]
