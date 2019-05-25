@@ -13,6 +13,12 @@ copyright:     Copyright (C) 2010-2017 Edward A. Kmett
 synopsis:      A modern parser combinator library with convenient diagnostics
 description:
   A modern parser combinator library with slicing and Clang-style colored diagnostics
+  .
+  For example:
+  .
+  <<https://i.imgur.com/ZyzUSSn.png>>
+  .
+  <images/example.png (Local Copy)>
 
 build-type:    Custom
 tested-with:   GHC == 7.8.4
@@ -22,6 +28,9 @@ tested-with:   GHC == 7.8.4
              , GHC == 8.4.4
              , GHC == 8.6.5
              , GHC == 8.8.1
+
+extra-doc-files:
+  images/*.png
 
 extra-source-files:
   examples/*.hs
