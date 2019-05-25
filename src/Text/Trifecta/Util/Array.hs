@@ -1,7 +1,7 @@
-{-# LANGUAGE BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
+{-# language BangPatterns, CPP, MagicHash, Rank2Types, UnboxedTuples #-}
 -----------------------------------------------------------------------------
 -- |
--- Copyright   :  Edward Kmett 2011-2015
+-- Copyright   :  Edward Kmett 2011-2019
 --                Johan Tibell 2011
 -- License     :  BSD3
 --
@@ -107,7 +107,7 @@ data Array a = Array {
 #if __GLASGOW_HASKELL__ >= 702
 length :: Array a -> Int
 length ary = I# (sizeofArray# (unArray ary))
-{-# INLINE length #-}
+{-# inlinable length #-}
 #endif
 
 -- | Smart constructor
@@ -117,7 +117,7 @@ array ary _n = Array ary
 #else
 array = Array
 #endif
-{-# INLINE array #-}
+{-# inlinable array #-}
 
 data MArray s a = MArray {
   unMArray :: !(MutableArray# s a)
@@ -129,7 +129,7 @@ data MArray s a = MArray {
 #if __GLASGOW_HASKELL__ >= 702
 lengthM :: MArray s a -> Int
 lengthM mary = I# (sizeofMutableArray# (unMArray mary))
-{-# INLINE lengthM #-}
+{-# inlinable lengthM #-}
 #endif
 
 -- | Smart constructor
@@ -139,7 +139,7 @@ marray mary _n = MArray mary
 #else
 marray = MArray
 #endif
-{-# INLINE marray #-}
+{-# inlinable marray #-}
 
 ------------------------------------------------------------------------
 
@@ -152,7 +152,7 @@ rnfArray ary0 = go ary0 n0 0 where
   go !ary !n !i
     | i >= n = ()
     | otherwise = rnf (index ary i) `seq` go ary n (i+1)
-{-# INLINE rnfArray #-}
+{-# inlinable rnfArray #-}
 
 -- | Create a new mutable array of specified size, in the specified
 -- state thread, with each element containing the specified initial
@@ -162,7 +162,7 @@ new n@(I# n#) b =
   CHECK_GT("new",n,(0 :: Int))
   ST $ \s -> case newArray# n# b s of
     (# s', ary #) -> (# s', marray ary n #)
-{-# INLINE new #-}
+{-# inlinable new #-}
 
 new_ :: Int -> ST s (MArray s a)
 new_ n = new n undefinedElem
@@ -172,48 +172,48 @@ empty = run (new_ 0)
 
 singleton :: a -> Array a
 singleton x = run (new 1 x)
-{-# INLINE singleton #-}
+{-# inlinable singleton #-}
 
 read :: MArray s a -> Int -> ST s a
 read ary _i@(I# i#) = ST $ \ s ->
   CHECK_BOUNDS("read", lengthM ary, _i)
   readArray# (unMArray ary) i# s
-{-# INLINE read #-}
+{-# inlinable read #-}
 
 write :: MArray s a -> Int -> a -> ST s ()
 write ary _i@(I# i#) b = ST $ \ s ->
   CHECK_BOUNDS("write", lengthM ary, _i)
   case writeArray# (unMArray ary) i# b s of
     s' -> (# s' , () #)
-{-# INLINE write #-}
+{-# inlinable write #-}
 
 index :: Array a -> Int -> a
 index ary _i@(I# i#) =
   CHECK_BOUNDS("index", length ary, _i)
   case indexArray# (unArray ary) i# of (# b #) -> b
-{-# INLINE index #-}
+{-# inlinable index #-}
 
 index_ :: Array a -> Int -> ST s a
 index_ ary _i@(I# i#) =
   CHECK_BOUNDS("index_", length ary, _i)
   case indexArray# (unArray ary) i# of (# b #) -> return b
-{-# INLINE index_ #-}
+{-# inlinable index_ #-}
 
 indexM_ :: MArray s a -> Int -> ST s a
 indexM_ ary _i@(I# i#) =
   CHECK_BOUNDS("index_", lengthM ary, _i)
   ST $ \ s# -> readArray# (unMArray ary) i# s#
-{-# INLINE indexM_ #-}
+{-# inlinable indexM_ #-}
 
 unsafeFreeze :: MArray s a -> ST s (Array a)
 unsafeFreeze mary =
   ST $ \s -> case unsafeFreezeArray# (unMArray mary) s of
     (# s', ary #) -> (# s', array ary (lengthM mary) #)
-{-# INLINE unsafeFreeze #-}
+{-# inlinable unsafeFreeze #-}
 
 run :: (forall s . ST s (MArray s e)) -> Array e
 run act = runST $ act >>= unsafeFreeze
-{-# INLINE run #-}
+{-# inlinable run #-}
 
 run2 :: (forall s. ST s (MArray s e, a)) -> (Array e, a)
 run2 k = runST $ do
@@ -275,7 +275,7 @@ insert ary idx b =
     copy ary idx mary (idx+1) (count-idx)
     return mary
   where !count = length ary
-{-# INLINE insert #-}
+{-# inlinable insert #-}
 
 -- | /O(n)/ Update the element at the given position in this array.
 update :: Array e -> Int -> e -> Array e
@@ -286,21 +286,21 @@ update ary idx b =
     write mary idx b
     return mary
   where !count = length ary
-{-# INLINE update #-}
+{-# inlinable update #-}
 
 foldl' :: (b -> a -> b) -> b -> Array a -> b
 foldl' f = \ z0 ary0 -> go ary0 (length ary0) 0 z0 where
   go ary n i !z
     | i >= n    = z
     | otherwise = go ary n (i+1) (f z (index ary i))
-{-# INLINE foldl' #-}
+{-# inlinable foldl' #-}
 
 foldr :: (a -> b -> b) -> b -> Array a -> b
 foldr f = \ z0 ary0 -> go ary0 (length ary0) 0 z0 where
   go ary n i z
     | i >= n    = z
     | otherwise = f (index ary i) (go ary n (i+1) z)
-{-# INLINE foldr #-}
+{-# inlinable foldr #-}
 
 undefinedElem :: a
 undefinedElem = error "Undefined element"
@@ -318,7 +318,7 @@ thaw !ary !o !n =
      copy ary o mary 0 n
      return mary
 #endif
-{-# INLINE thaw #-}
+{-# inlinable thaw #-}
 
 -- | /O(n)/ Delete an element at the given position in this array,
 -- decreasing its size by one.
@@ -329,7 +329,7 @@ delete ary idx = run $ do
     copy ary (idx+1) mary idx (count-(idx+1))
     return mary
   where !count = length ary
-{-# INLINE delete #-}
+{-# inlinable delete #-}
 
 map :: (a -> b) -> Array a -> Array b
 map f = \ ary ->
@@ -343,7 +343,7 @@ map f = \ ary ->
         | otherwise = do
              write mary i $ f (index ary i)
              go ary mary (i+1) n
-{-# INLINE map #-}
+{-# inlinable map #-}
 
 -- | Strict version of 'map'.
 map' :: (a -> b) -> Array a -> Array b
@@ -358,7 +358,7 @@ map' f = \ ary ->
       | otherwise = do
         write mary i $! f (index ary i)
         go ary mary (i+1) n
-{-# INLINE map' #-}
+{-# inlinable map' #-}
 
 fromList :: Int -> [a] -> Array a
 fromList n xs0 = run $ do
@@ -376,7 +376,7 @@ traverse :: Applicative f => (a -> f b) -> Array a -> f (Array b)
 traverse f = \ ary ->
   fromList (length ary) `fmap`
   Traversable.traverse f (toList ary)
-{-# INLINE traverse #-}
+{-# inlinable traverse #-}
 
 filter :: (a -> Bool) -> Array a -> Array a
 filter p = \ ary ->
@@ -394,4 +394,4 @@ filter p = \ ary ->
       | p el      = write mary j el >> go ary mary (i+1) (j+1) n
       | otherwise = go ary mary (i+1) j n
       where el = index ary i
-{-# INLINE filter #-}
+{-# inlinable filter #-}
