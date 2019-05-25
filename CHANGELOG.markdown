@@ -1,7 +1,9 @@
 2.1 [????.??.??]
 ----------------
 * Support building with `base-4.13` (GHC 8.8).
+* Dropped support for GHC < 7.8.
 * Print line numbers in the gutter.
+* Switched to `prettyprinter` from `ansi-wl-pprint`
 
 2 [2018.07.03]
 --------------
