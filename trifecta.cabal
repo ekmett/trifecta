@@ -55,7 +55,6 @@ library
     Text.Trifecta.Result
     Text.Trifecta.Rope
     Text.Trifecta.Tutorial
-    Text.Trifecta.Util.Array
     Text.Trifecta.Util.IntervalMap
     Text.Trifecta.Util.It
 
