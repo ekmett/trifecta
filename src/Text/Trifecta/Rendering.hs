@@ -24,6 +24,7 @@ module Text.Trifecta.Rendering
   , HasRendering(..)
   , nullRendering
   , emptyRendering
+  , prettyRendering
   , Source(..)
   , rendered
   , Renderable(..)
@@ -60,30 +61,33 @@ import           Control.Applicative
 import           Control.Comonad
 import           Control.Lens
 import           Data.Array
-import           Data.ByteString              as B hiding (any, empty, groupBy)
-import qualified Data.ByteString.UTF8         as UTF8
+import           Data.ByteString                              as B hiding (any, empty, groupBy)
+import qualified Data.ByteString.UTF8                         as UTF8
 import           Data.Data
 import           Data.Foldable
-import           Data.Function                (on)
+import           Data.Function                                (on)
 import           Data.Hashable
-import           Data.Int                     (Int64)
-import           Data.List                    (groupBy)
+import           Data.Int                                     (Int64)
+import           Data.List                                    (groupBy)
 import           Data.Maybe
+import           Data.Text.Prettyprint.Doc                    hiding (column, line')
+import           Data.Text.Prettyprint.Doc                    (annotate)
+import           Data.Text.Prettyprint.Doc.Render.Terminal    (color, bgColor, colorDull, bgColorDull)
+import qualified Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 import           Data.Semigroup
 import           Data.Semigroup.Reducer
 import           GHC.Generics
-import           Prelude                      as P hiding (span)
+import           Prelude                                      as P hiding (span)
 import           System.Console.ANSI
-import           Text.PrettyPrint.ANSI.Leijen hiding (column, (<$>), (<>))
 
 import Text.Trifecta.Delta
-import Text.Trifecta.Instances        ()
 import Text.Trifecta.Util.Combinators
+import Text.Trifecta.Util.Pretty
 
 -- $setup
 --
 -- >>> :set -XOverloadedStrings
--- >>> import Text.PrettyPrint.ANSI.Leijen (pretty, plain)
+-- >>> import Data.Text.Prettyprint.Doc (unAnnotate)
 -- >>> import Data.ByteString (ByteString)
 -- >>> import Data.Monoid (mempty)
 -- >>> import Text.Trifecta.Delta
@@ -92,52 +96,52 @@ import Text.Trifecta.Util.Combinators
 outOfRangeEffects :: [SGR] -> [SGR]
 outOfRangeEffects xs = SetConsoleIntensity BoldIntensity : xs
 
-sgr :: [SGR] -> Doc -> Doc
+sgr :: [SGR] -> Doc AnsiStyle -> Doc AnsiStyle
 sgr xs0 = go (P.reverse xs0) where
   go []                                         = id
-  go (SetConsoleIntensity NormalIntensity : xs) = debold . go xs
-  go (SetConsoleIntensity BoldIntensity   : xs) = bold . go xs
-  go (SetUnderlining NoUnderline          : xs) = deunderline . go xs
-  go (SetUnderlining SingleUnderline      : xs) = underline . go xs
+  go (SetConsoleIntensity NormalIntensity : xs) = annotate debold . go xs
+  go (SetConsoleIntensity BoldIntensity   : xs) = annotate bold . go xs
+  go (SetUnderlining NoUnderline          : xs) = annotate deunderline . go xs
+  go (SetUnderlining SingleUnderline      : xs) = annotate underlined . go xs
   go (SetColor f i c                      : xs) = case f of
     Foreground -> case i of
       Dull -> case c of
-        Black   -> dullblack . go xs
-        Red     -> dullred . go xs
-        Green   -> dullgreen . go xs
-        Yellow  -> dullyellow . go xs
-        Blue    -> dullblue . go xs
-        Magenta -> dullmagenta . go xs
-        Cyan    -> dullcyan . go xs
-        White   -> dullwhite . go xs
+        Black   -> annotate (color Pretty.Black) . go xs
+        Red     -> annotate (color Pretty.Red) . go xs
+        Green   -> annotate (color Pretty.Green) . go xs
+        Yellow  -> annotate (color Pretty.Yellow) . go xs
+        Blue    -> annotate (color Pretty.Blue) . go xs
+        Magenta -> annotate (color Pretty.Magenta) . go xs
+        Cyan    -> annotate (color Pretty.Cyan) . go xs
+        White   -> annotate (color Pretty.White) . go xs
       Vivid -> case c of
-        Black   -> black . go xs
-        Red     -> red . go xs
-        Green   -> green . go xs
-        Yellow  -> yellow . go xs
-        Blue    -> blue . go xs
-        Magenta -> magenta . go xs
-        Cyan    -> cyan . go xs
-        White   -> white . go xs
+        Black   -> annotate (colorDull Pretty.Black) . go xs
+        Red     -> annotate (colorDull Pretty.Red) . go xs
+        Green   -> annotate (colorDull Pretty.Green) . go xs
+        Yellow  -> annotate (colorDull Pretty.Yellow) . go xs
+        Blue    -> annotate (colorDull Pretty.Blue) . go xs
+        Magenta -> annotate (colorDull Pretty.Magenta) . go xs
+        Cyan    -> annotate (colorDull Pretty.Cyan) . go xs
+        White   -> annotate (colorDull Pretty.White) . go xs
     Background -> case i of
       Dull -> case c of
-        Black   -> ondullblack . go xs
-        Red     -> ondullred . go xs
-        Green   -> ondullgreen . go xs
-        Yellow  -> ondullyellow . go xs
-        Blue    -> ondullblue . go xs
-        Magenta -> ondullmagenta . go xs
-        Cyan    -> ondullcyan . go xs
-        White   -> ondullwhite . go xs
+        Black   -> annotate (bgColorDull Pretty.Black) . go xs
+        Red     -> annotate (bgColorDull Pretty.Red) . go xs
+        Green   -> annotate (bgColorDull Pretty.Green) . go xs
+        Yellow  -> annotate (bgColorDull Pretty.Yellow) . go xs
+        Blue    -> annotate (bgColorDull Pretty.Blue) . go xs
+        Magenta -> annotate (bgColorDull Pretty.Magenta) . go xs
+        Cyan    -> annotate (bgColorDull Pretty.Cyan) . go xs
+        White   -> annotate (bgColorDull Pretty.White) . go xs
       Vivid -> case c of
-        Black   -> onblack . go xs
-        Red     -> onred . go xs
-        Green   -> ongreen . go xs
-        Yellow  -> onyellow . go xs
-        Blue    -> onblue . go xs
-        Magenta -> onmagenta . go xs
-        Cyan    -> oncyan . go xs
-        White   -> onwhite . go xs
+        Black   -> annotate (bgColor Pretty.Black) . go xs
+        Red     -> annotate (bgColor Pretty.Red) . go xs
+        Green   -> annotate (bgColor Pretty.Green) . go xs
+        Yellow  -> annotate (bgColor Pretty.Yellow) . go xs
+        Blue    -> annotate (bgColor Pretty.Blue) . go xs
+        Magenta -> annotate (bgColor Pretty.Magenta) . go xs
+        Cyan    -> annotate (bgColor Pretty.Cyan) . go xs
+        White   -> annotate (bgColor Pretty.White) . go xs
   go (_                                   : xs) = go xs
 
 -- | A raw canvas to paint ANSI-styled characters on.
@@ -207,7 +211,7 @@ nullRendering _ = False
 
 -- | The empty 'Rendering', which contains nothing at all.
 --
--- >>> show (pretty emptyRendering)
+-- >>> show (prettyRendering emptyRendering)
 -- ""
 emptyRendering :: Rendering
 emptyRendering = Rendering (Columns 0 0) 0 0 id (const id)
@@ -272,25 +276,25 @@ rendered del s = case source s of
 (.#) :: (Delta -> Lines -> Lines) -> Rendering -> Rendering
 f .# Rendering d ll lb s g = Rendering d ll lb s $ \e l -> f e $ g e l
 
-instance Pretty Rendering where
-  pretty (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
-    go cols = align (vsep (P.map ln [t..b])) where
-      (lo, hi) = window (column d) ll (min (max (cols - 5 - fromIntegral gutterWidth) 30) 200)
-      a = f d $ l $ array ((0,lo),(-1,hi)) []
-      ((t,_),(b,_)) = bounds a
-      n = show $ case d of
-        Lines      n' _ _ _ -> 1 + n'
-        Directed _ n' _ _ _ -> 1 + n'
-        _                   -> 1
-      separator = char '|'
-      gutterWidth = P.length n
-      gutter = pretty n <+> separator
-      margin = fill gutterWidth space <+> separator
-      ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
-           $ hcat
-           $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
-           $ groupBy ((==) `on` fst)
-           [ a ! (y,i) | i <- [lo..hi] ]
+prettyRendering :: Rendering -> Doc AnsiStyle
+prettyRendering (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fromIntegral (fromMaybe 80 mn - k)) where
+  go cols = align (vsep (P.map ln [t..b])) where
+    (lo, hi) = window (column d) ll (min (max (cols - 5 - fromIntegral gutterWidth) 30) 200)
+    a = f d $ l $ array ((0,lo),(-1,hi)) []
+    ((t,_),(b,_)) = bounds a
+    n = show $ case d of
+      Lines      n' _ _ _ -> 1 + n'
+      Directed _ n' _ _ _ -> 1 + n'
+      _                   -> 1
+    separator = char '|'
+    gutterWidth = P.length n
+    gutter = pretty n <+> separator
+    margin = fill gutterWidth space <+> separator
+    ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
+         $ hcat
+         $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
+         $ groupBy ((==) `on` fst)
+         [ a ! (y,i) | i <- [lo..hi] ]
 
 window :: Int64 -> Int64 -> Int64 -> (Int64, Int64)
 window c l w
@@ -334,7 +338,7 @@ instance Renderable (Rendered a) where
 
 -- | A 'Caret' marks a point in the input with a simple @^@ character.
 --
--- >>> plain (pretty (addCaret (Columns 35 35) exampleRendering))
+-- >>> unAnnotate (prettyRendering (addCaret (Columns 35 35) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ^
 data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
@@ -440,7 +444,7 @@ addSpan s e r = drawSpan s e .# r
 -- | A 'Span' marks a range of input characters. If 'Caret' is a point, then
 -- 'Span' is a line.
 --
--- >>> plain (pretty (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
+-- >>> unAnnotate (prettyRendering (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ~~~
 data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
@@ -503,7 +507,7 @@ addFixit s e rpl r = drawFixit s e rpl .# r
 
 -- | A 'Fixit' is a 'Span' with a suggestion.
 --
--- >>> plain (pretty (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
+-- >>> unAnnotate (prettyRendering (addFixit (Columns 35 35) (Columns 38 38) "Fix this!" exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ~~~
 --   |                                    Fix this!
