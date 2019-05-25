@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# language BangPatterns #-}
 
 module RFC2616 where
 
