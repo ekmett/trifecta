@@ -72,18 +72,18 @@ makeClassy ''Err
 instance Semigroup Err where
   Err md mds mes delta1 <> Err nd nds nes delta2
     = Err (nd <|> md) (if isJust nd then nds else if isJust md then mds else nds ++ mds) (mes <> nes) (delta1 <> delta2)
-  {-# INLINE (<>) #-}
+  {-# inlinable (<>) #-}
 
 instance Monoid Err where
   mempty = Err Nothing [] mempty mempty
-  {-# INLINE mempty #-}
+  {-# inlinable mempty #-}
   mappend = (<>)
-  {-# INLINE mappend #-}
+  {-# inlinable mappend #-}
 
 -- | Generate a simple 'Err' word-wrapping the supplied message.
 failed :: String -> Err
 failed m = Err (Just (fillSep (pretty <$> words m))) [] mempty mempty
-{-# INLINE failed #-}
+{-# inlinable failed #-}
 
 -- | Convert a 'Rendering' of auxiliary information and an 'Err' into a 'Doc AnsiStyle',
 -- ready to be prettyprinted to the user.
@@ -130,31 +130,31 @@ class AsResult s t a b | s -> a, t -> b, s b -> t, t a -> s where
 
 instance AsResult (Result a) (Result b) a b where
   _Result = id
-  {-# INLINE _Result #-}
+  {-# inlinable _Result #-}
 
 -- | The 'Prism' for the 'Success' constructor of 'Result'
 _Success :: AsResult s t a b => Prism s t a b
 _Success = _Result . dimap seta (either id id) . right' . rmap (fmap Success) where
   seta (Success a) = Right a
   seta (Failure e) = Left (pure (Failure e))
-{-# INLINE _Success #-}
+{-# inlinable _Success #-}
 
 -- | The 'Prism' for the 'Failure' constructor of 'Result'
 _Failure :: AsResult s s a a => Prism' s ErrInfo
 _Failure = _Result . dimap seta (either id id) . right' . rmap (fmap Failure) where
   seta (Failure e) = Right e
   seta (Success a) = Left (pure (Success a))
-{-# INLINE _Failure #-}
+{-# inlinable _Failure #-}
 
 instance Applicative Result where
   pure = Success
-  {-# INLINE pure #-}
+  {-# inlinable pure #-}
   Success f <*> Success a = Success (f a)
   Success _ <*> Failure y = Failure y
   Failure x <*> Success _ = Failure x
   Failure x <*> Failure y =
     Failure $ ErrInfo (vsep [_errDoc x, _errDoc y]) (_errDeltas x <> _errDeltas y)
-  {-# INLINE (<*>) #-}
+  {-# inlinable (<*>) #-}
 
 instance Alternative Result where
   Failure x <|> Failure y =
@@ -162,9 +162,9 @@ instance Alternative Result where
   Success a <|> Success _ = Success a
   Success a <|> Failure _ = Success a
   Failure _ <|> Success a = Success a
-  {-# INLINE (<|>) #-}
+  {-# inlinable (<|>) #-}
   empty = Failure mempty
-  {-# INLINE empty #-}
+  {-# inlinable empty #-}
 
 instance Monad Result where
   return = pure

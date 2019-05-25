@@ -4,6 +4,8 @@
 * Dropped support for GHC < 7.8.
 * Print line numbers in the gutter.
 * Switched to `prettyprinter` from `ansi-wl-pprint`
+* Switched from `INLINE` to `INLINABLE` to help fight compile time woes
+  while still allowing aggressive inline when you want it.
 
 2 [2018.07.03]
 --------------

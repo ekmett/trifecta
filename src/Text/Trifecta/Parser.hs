@@ -112,40 +112,40 @@ newtype Parser a = Parser
 
 instance Functor Parser where
   fmap f (Parser m) = Parser $ \ eo ee co -> m (eo . f) ee (co . f)
-  {-# INLINE fmap #-}
+  {-# inlinable fmap #-}
   a <$ Parser m = Parser $ \ eo ee co -> m (\_ -> eo a) ee (\_ -> co a)
-  {-# INLINE (<$) #-}
+  {-# inlinable (<$) #-}
 
 instance Applicative Parser where
   pure a = Parser $ \ eo _ _ _ _ _ -> eo a mempty
-  {-# INLINE pure #-}
+  {-# inlinable pure #-}
   (<*>) = ap
-  {-# INLINE (<*>) #-}
+  {-# inlinable (<*>) #-}
 
 instance Alternative Parser where
   empty = Parser $ \_ ee _ _ _ _ -> ee mempty
-  {-# INLINE empty #-}
+  {-# inlinable empty #-}
   Parser m <|> Parser n = Parser $ \ eo ee co ce d bs ->
     m eo (\e -> n (\a e' -> eo a (e <> e')) (\e' -> ee (e <> e')) co ce d bs) co ce d bs
-  {-# INLINE (<|>) #-}
+  {-# inlinable (<|>) #-}
   many p = Prelude.reverse <$> manyAccum (:) p
-  {-# INLINE many #-}
+  {-# inlinable many #-}
   some p = (:) <$> p <*> Alternative.many p
 
 instance Semigroup a => Semigroup (Parser a) where
   (<>) = liftA2 (<>)
-  {-# INLINE (<>) #-}
+  {-# inlinable (<>) #-}
 
 instance (Semigroup a, Monoid a) => Monoid (Parser a) where
   mappend = (<>)
-  {-# INLINE mappend #-}
+  {-# inlinable mappend #-}
 
   mempty = pure mempty
-  {-# INLINE mempty #-}
+  {-# inlinable mempty #-}
 
 instance Monad Parser where
   return = pure
-  {-# INLINE return #-}
+  {-# inlinable return #-}
   Parser m >>= k = Parser $ \ eo ee co ce d bs ->
     m -- epsilon result: feed result to monadic continutaion; committed
       -- continuations as they were given to us; epsilon callbacks merge
@@ -175,23 +175,23 @@ instance Monad Parser where
          d' bs')
       -- committed error, delta, and bytestring: as given
       ce d bs
-  {-# INLINE (>>=) #-}
+  {-# inlinable (>>=) #-}
   (>>) = (*>)
-  {-# INLINE (>>) #-}
+  {-# inlinable (>>) #-}
 #if !(MIN_VERSION_base(4,13,0))
   fail = Fail.fail
-  {-# INLINE fail #-}
+  {-# inlinable fail #-}
 #endif
 
 instance Fail.MonadFail Parser where
   fail s = Parser $ \ _ ee _ _ _ _ -> ee (failed s)
-  {-# INLINE fail #-}
+  {-# inlinable fail #-}
 
 instance MonadPlus Parser where
   mzero = empty
-  {-# INLINE mzero #-}
+  {-# inlinable mzero #-}
   mplus = (<|>)
-  {-# INLINE mplus #-}
+  {-# inlinable mplus #-}
 
 manyAccum :: (a -> [a] -> [a]) -> Parser a -> Parser [a]
 manyAccum f (Parser p) = Parser $ \eo _ co ce d bs ->
@@ -204,31 +204,31 @@ liftIt :: It Rope a -> Parser a
 liftIt m = Parser $ \ eo _ _ _ _ _ -> do
   a <- m
   eo a mempty
-{-# INLINE liftIt #-}
+{-# inlinable liftIt #-}
 
 instance Parsing Parser where
   try (Parser m) = Parser $ \ eo ee co _ -> m eo ee co (\_ -> ee mempty)
-  {-# INLINE try #-}
+  {-# inlinable try #-}
   Parser m <?> nm = Parser $ \ eo ee -> m
      (\a e -> eo a (if isJust (_reason e) then e { _expected = Set.singleton nm } else e))
      (\e -> ee e { _expected = Set.singleton nm })
-  {-# INLINE (<?>) #-}
+  {-# inlinable (<?>) #-}
   skipMany p = () <$ manyAccum (\_ _ -> []) p
-  {-# INLINE skipMany #-}
+  {-# inlinable skipMany #-}
   unexpected s = Parser $ \ _ ee _ _ _ _ -> ee $ failed $ "unexpected " ++ s
-  {-# INLINE unexpected #-}
+  {-# inlinable unexpected #-}
   eof = notFollowedBy anyChar <?> "end of input"
-  {-# INLINE eof #-}
+  {-# inlinable eof #-}
   notFollowedBy p = try (optional p >>= maybe (pure ()) (unexpected . show))
-  {-# INLINE notFollowedBy #-}
+  {-# inlinable notFollowedBy #-}
 
 instance Errable Parser where
   raiseErr e = Parser $ \ _ ee _ _ _ _ -> ee e
-  {-# INLINE raiseErr #-}
+  {-# inlinable raiseErr #-}
 
 instance LookAheadParsing Parser where
   lookAhead (Parser m) = Parser $ \eo ee _ -> m eo ee (\a _ _ _ -> eo a mempty)
-  {-# INLINE lookAhead #-}
+  {-# inlinable lookAhead #-}
 
 instance CharParsing Parser where
   satisfy f = Parser $ \ _ ee co _ d bs ->
@@ -241,27 +241,27 @@ instance CharParsing Parser where
                                               (co c mempty)
                                               ddc
         | otherwise       -> co c mempty (d <> delta c) bs
-  {-# INLINE satisfy #-}
+  {-# inlinable satisfy #-}
 
 instance TokenParsing Parser
 
 instance DeltaParsing Parser where
   line = Parser $ \eo _ _ _ _ bs -> eo bs mempty
-  {-# INLINE line #-}
+  {-# inlinable line #-}
   position = Parser $ \eo _ _ _ d _ -> eo d mempty
-  {-# INLINE position #-}
+  {-# inlinable position #-}
   rend = Parser $ \eo _ _ _ d bs -> eo (rendered d bs) mempty
-  {-# INLINE rend #-}
+  {-# inlinable rend #-}
   slicedWith f p = do
     m <- position
     a <- p
     r <- position
     f a <$> liftIt (sliceIt m r)
-  {-# INLINE slicedWith #-}
+  {-# inlinable slicedWith #-}
 
 instance MarkParsing Delta Parser where
   mark = position
-  {-# INLINE mark #-}
+  {-# inlinable mark #-}
   release d' = Parser $ \_ ee co _ d bs -> do
     mbs <- rewindIt d'
     case mbs of
@@ -310,7 +310,7 @@ feed :: Reducer t Rope => t -> Step r -> Step r
 feed t (StepDone r a)    = StepDone (snoc r t) a
 feed t (StepFail r xs)   = StepFail (snoc r t) xs
 feed t (StepCont r _ k)  = k (snoc r t)
-{-# INLINE feed #-}
+{-# inlinable feed #-}
 
 -- | Assume all possible input has been given to the parser, execute it to yield
 -- a final result.
@@ -318,19 +318,19 @@ starve :: Step a -> Result a
 starve (StepDone _ a)    = Success a
 starve (StepFail _ xs)   = Failure xs
 starve (StepCont _ z _)  = z
-{-# INLINE starve #-}
+{-# inlinable starve #-}
 
 stepResult :: Rope -> Result a -> Step a
 stepResult r (Success a)  = StepDone r a
 stepResult r (Failure xs) = StepFail r xs
-{-# INLINE stepResult #-}
+{-# inlinable stepResult #-}
 
 stepIt :: It Rope a -> Step a
 stepIt = go mempty where
   go r m = case simplifyIt m r of
     Pure a -> StepDone r a
     It a k -> StepCont r (pure a) $ \r' -> go r' (k r')
-{-# INLINE stepIt #-}
+{-# inlinable stepIt #-}
 
 data Stepping a
   = EO a Err
@@ -366,7 +366,7 @@ stepParser (Parser p) d0 = joinStep $ stepIt $ do
   joinStep (StepDone r (Failure e)) = StepFail r e
   joinStep (StepFail r e)           = StepFail r e
   joinStep (StepCont r a k)         = StepCont r (join a) (joinStep <$> k)
-  {-# INLINE joinStep #-}
+  {-# inlinable joinStep #-}
 
 -- | Run a 'Parser' on input that can be reduced to a 'Rope', e.g. 'String', or
 -- 'ByteString'. See also the monomorphic versions 'parseString' and
@@ -378,7 +378,7 @@ runParser
     -> t
     -> Result a
 runParser p d bs = starve $ feed bs $ stepParser p d
-{-# INLINE runParser #-}
+{-# inlinable runParser #-}
 
 -- | @('parseFromFile' p filePath)@ runs a parser @p@ on the input read from
 -- @filePath@ using 'ByteString.readFile'. All diagnostic messages emitted over

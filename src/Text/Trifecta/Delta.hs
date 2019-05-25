@@ -133,7 +133,7 @@ column t = case delta t of
   Tab b a _ -> nextTab b + a
   Lines _ c _ _ -> c
   Directed _ _ c _ _ -> c
-{-# INLINE column #-}
+{-# inlinable column #-}
 
 -- | Retrieve the byte offset within the current line from this 'Delta'.
 columnByte :: Delta -> Int64
@@ -141,7 +141,7 @@ columnByte (Columns _ b) = b
 columnByte (Tab _ _ b) = b
 columnByte (Lines _ _ _ b) = b
 columnByte (Directed _ _ _ _ b) = b
-{-# INLINE columnByte #-}
+{-# inlinable columnByte #-}
 
 instance HasBytes Delta where
   bytes (Columns _ b) = b
@@ -176,14 +176,14 @@ instance Semigroup Delta where
 -- | Increment a column number to the next tabstop.
 nextTab :: Int64 -> Int64
 nextTab x = x + (8 - mod x 8)
-{-# INLINE nextTab #-}
+{-# inlinable nextTab #-}
 
 -- | Rewind a 'Delta' to the beginning of the line.
 rewind :: Delta -> Delta
 rewind (Lines n _ b d)      = Lines n 0 (b - d) 0
 rewind (Directed p n _ b d) = Directed p n 0 (b - d) 0
 rewind _                    = Columns 0 0
-{-# INLINE rewind #-}
+{-# inlinable rewind #-}
 
 -- | Should we show two things with a 'Delta' on the same line?
 --
@@ -194,7 +194,7 @@ rewind _                    = Columns 0 0
 -- False
 near :: (HasDelta s, HasDelta t) => s -> t -> Bool
 near s t = rewind (delta s) == rewind (delta t)
-{-# INLINE near #-}
+{-# inlinable near #-}
 
 class HasDelta t where
   delta :: t -> Delta
