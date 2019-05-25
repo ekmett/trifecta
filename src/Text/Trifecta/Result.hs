@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
--- Copyright   :  (c) Edward Kmett 2011-2015
+-- Copyright   :  (c) Edward Kmett 2011-2019
 -- License     :  BSD3
 --
 -- Maintainer  :  ekmett@gmail.com
