@@ -1,10 +1,10 @@
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# language BangPatterns          #-}
+{-# language CPP                   #-}
+{-# language DeriveDataTypeable    #-}
+{-# language DeriveGeneric         #-}
+{-# language FlexibleInstances     #-}
+{-# language MultiParamTypeClasses #-}
+{-# language TypeFamilies          #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2019 Edward Kmett

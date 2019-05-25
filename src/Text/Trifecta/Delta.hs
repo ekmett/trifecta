@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# language CPP #-}
+{-# language DeriveDataTypeable #-}
+{-# language DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2019 Edward Kmett

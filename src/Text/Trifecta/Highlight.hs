@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# language CPP #-}
+{-# language OverloadedStrings #-}
+{-# language TemplateHaskell #-}
 
 #ifndef MIN_VERSION_lens
 #define MIN_VERSION_lens(x,y,z) 1

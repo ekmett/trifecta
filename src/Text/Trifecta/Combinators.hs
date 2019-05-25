@@ -1,9 +1,9 @@
-{-# LANGUAGE CPP                    #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# language CPP                    #-}
+{-# language FlexibleContexts       #-}
+{-# language FlexibleInstances      #-}
+{-# language FunctionalDependencies #-}
+{-# language MultiParamTypeClasses  #-}
+{-# language UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Trifecta.Combinators

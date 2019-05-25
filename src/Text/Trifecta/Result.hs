@@ -1,14 +1,14 @@
-{-# LANGUAGE CPP                    #-}
-{-# LANGUAGE DeriveFoldable         #-}
-{-# LANGUAGE DeriveFunctor          #-}
-{-# LANGUAGE DeriveTraversable      #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE Rank2Types             #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# language CPP                    #-}
+{-# language DeriveFoldable         #-}
+{-# language DeriveFunctor          #-}
+{-# language DeriveTraversable      #-}
+{-# language FlexibleContexts       #-}
+{-# language FlexibleInstances      #-}
+{-# language FunctionalDependencies #-}
+{-# language MultiParamTypeClasses  #-}
+{-# language Rank2Types             #-}
+{-# language TemplateHaskell        #-}
+{-# language UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (c) Edward Kmett 2011-2019

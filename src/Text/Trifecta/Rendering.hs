@@ -1,9 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
+{-# language DeriveDataTypeable    #-}
+{-# language DeriveGeneric         #-}
+{-# language FlexibleInstances     #-}
+{-# language MultiParamTypeClasses #-}
+{-# language TemplateHaskell       #-}
+{-# language TypeSynonymInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2019 Edward Kmett
