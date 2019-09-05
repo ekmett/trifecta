@@ -72,7 +72,7 @@ library
     Text.Trifecta.Util.Pretty
 
   build-depends:
-    ansi-terminal               >= 0.6     && < 0.10,
+    ansi-terminal               >= 0.6     && < 0.11,
     array                       >= 0.3.0.2 && < 0.6,
     base                        >= 4.7     && < 5,
     blaze-builder               >= 0.3.0.1 && < 0.5,
