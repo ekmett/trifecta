@@ -40,7 +40,6 @@ import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
 import qualified Data.ByteString.UTF8 as UTF8
 import Data.Text.Prettyprint.Doc hiding (column, line')
-import Data.Text.Prettyprint.Doc.Render.Terminal (bold)
 import GHC.Generics
 
 import Text.Trifecta.Util.Pretty

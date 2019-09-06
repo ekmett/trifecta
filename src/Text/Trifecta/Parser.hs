@@ -52,7 +52,6 @@ import Data.Semigroup.Reducer
 -- import Data.Sequence as Seq hiding (empty)
 import Data.Set as Set hiding (empty, toList)
 import Data.Text.Prettyprint.Doc as Pretty hiding (line)
-import Data.Text.Prettyprint.Doc.Render.Terminal (renderIO)
 import System.IO
 import Text.Parser.Combinators
 import Text.Parser.Char

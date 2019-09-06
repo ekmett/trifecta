@@ -71,7 +71,6 @@ import           Data.Int                                     (Int64)
 import           Data.List                                    (groupBy)
 import           Data.Maybe
 import           Data.Text.Prettyprint.Doc                    hiding (column, line')
-import           Data.Text.Prettyprint.Doc                    (annotate)
 import           Data.Text.Prettyprint.Doc.Render.Terminal    (color, bgColor, colorDull, bgColorDull)
 import qualified Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 import           Data.Semigroup
