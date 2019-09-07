@@ -1,4 +1,4 @@
-2.1 [????.??.??]
+2.1 [2019.09.06]
 ----------------
 * Support building with `base-4.13` (GHC 8.8).
 * Dropped support for GHC < 7.8.
