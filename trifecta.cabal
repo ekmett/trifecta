@@ -37,6 +37,7 @@ extra-source-files:
   examples/LICENSE
   examples/rfc2616/*.hs
   examples/RFC2616.txt
+  examples/RFC2616-malformed.txt
   examples/trifecta-examples.cabal
   .travis.yml
   CHANGELOG.markdown
