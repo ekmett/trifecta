@@ -50,8 +50,10 @@ import Text.Trifecta.Util.Combinators as Util
 --
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.Monoid ((<>))
+-- >>> import Data.ByteString (ByteString)
 -- >>> import qualified Data.ByteString.UTF8 as Strict
 -- >>> import qualified Data.ByteString.Lazy.UTF8 as Lazy
+-- >>> import Text.Trifecta.Delta
 
 -- A 'Strand' is a chunk of data; many 'Strand's together make a 'Rope'.
 data Strand

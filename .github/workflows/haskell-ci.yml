@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-18.04
     needs:
       - linux
-    if: ${{ always() }}
+    if: ${{ always() && (github.repository == 'ekmett/trifecta') }}
     strategy:
       fail-fast: false
     steps:
@@ -137,6 +137,15 @@ jobs:
           rm -f cabal-plan.xz
           chmod a+x $HOME/.cabal/bin/cabal-plan
           cabal-plan --version
+      - name: install cabal-docspec
+        run: |
+          mkdir -p $HOME/.cabal/bin
+          curl -sL https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20201230.1/cabal-docspec-0.0.0.20201230.1.xz > cabal-docspec.xz
+          echo '18caf4f361fadd978782f08e78f42d21d4f177567419055ffccae19b8214852d  cabal-docspec.xz' | sha256sum -c -
+          xz -d < cabal-docspec.xz > $HOME/.cabal/bin/cabal-docspec
+          rm -f cabal-docspec.xz
+          chmod a+x $HOME/.cabal/bin/cabal-docspec
+          cabal-docspec --version
       - name: checkout
         uses: actions/checkout@v2
         with:
@@ -188,7 +197,11 @@ jobs:
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
       - name: tests
         run: |
-          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all
+          $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
+      - name: docspec
+        run: |
+          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all
+          cabal-docspec $ARG_COMPILER
       - name: cabal check
         run: |
           cd ${PKGDIR_trifecta} || false
