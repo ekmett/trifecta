@@ -49,6 +49,7 @@ import Text.Trifecta.Util.Combinators as Util
 -- >>> import Control.Comonad (extract)
 -- >>> import Data.ByteString as Strict
 -- >>> import Text.Trifecta.Delta
+-- >>> import Text.Trifecta.Rope
 -- >>> import Text.Trifecta.Util.It
 
 -- | @'It'@ is an <https://wiki.haskell.org/Enumerator_and_iteratee Iteratee>
