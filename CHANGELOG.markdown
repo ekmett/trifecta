@@ -1,5 +1,5 @@
-next [2021.mm.dd]
------------------
+2.1.1 [2021.02.18]
+------------------
 * Allow building with `lens-5.*`.
 * The build-type has been changed from `Custom` to `Simple`.
   To achieve this, the `doctests` test suite has been removed in favor of using [`cabal-docspec`](https://github.com/phadej/cabal-extras/tree/master/cabal-docspec) to run the doctests.
