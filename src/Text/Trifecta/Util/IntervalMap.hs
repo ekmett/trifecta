@@ -56,19 +56,22 @@ module Text.Trifecta.Util.IntervalMap
 import Control.Applicative hiding (empty)
 import Data.Foldable       (Foldable (foldMap))
 #endif
+import qualified Data.Foldable.WithIndex as WithIndex
 #if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
-import Control.Lens hiding ((:<), (<|), (|>))
+import Control.Lens as Lens hiding ((:<), (<|), (|>))
 #else
-import Control.Lens hiding ((<|), (|>))
+import Control.Lens as Lens hiding ((<|), (|>))
 #endif
 import           Data.FingerTree
     (FingerTree, Measured (..), ViewL (..), (<|), (><))
 import qualified Data.FingerTree        as FT
+import qualified Data.Functor.WithIndex as WithIndex
 #if !(MIN_VERSION_base(4,11,0))
 import           Data.Semigroup
 #endif
 import           Data.Semigroup.Reducer
 import           Data.Semigroup.Union
+import qualified Data.Traversable.WithIndex as WithIndex
 
 ----------------------------------
 -- 4.8 Application: interval trees
@@ -111,20 +114,26 @@ data Node v a = Node (Interval v) a
 instance Functor (Node v) where
   fmap f (Node i x) = Node i (f x)
 
-instance FunctorWithIndex (Interval v) (Node v) where
+instance WithIndex.FunctorWithIndex (Interval v) (Node v) where
   imap f (Node i x) = Node i (f i x)
 
 instance Foldable (Node v) where
   foldMap f (Node _ x) = f x
 
-instance FoldableWithIndex (Interval v) (Node v) where
+instance WithIndex.FoldableWithIndex (Interval v) (Node v) where
   ifoldMap f (Node k v) = f k v
 
 instance Traversable (Node v) where
   traverse f (Node i x) = Node i <$> f x
 
-instance TraversableWithIndex (Interval v) (Node v) where
+instance WithIndex.TraversableWithIndex (Interval v) (Node v) where
   itraverse f (Node i x) = Node i <$> f i x
+
+#if !MIN_VERSION_lens(5,0,0)
+instance Lens.FunctorWithIndex     (Interval v) (Node v) where imap      = WithIndex.imap
+instance Lens.FoldableWithIndex    (Interval v) (Node v) where ifoldMap  = WithIndex.ifoldMap
+instance Lens.TraversableWithIndex (Interval v) (Node v) where itraverse = WithIndex.itraverse
+#endif
 
 -- rightmost interval (including largest lower bound) and largest upper bound.
 data IntInterval v = NoInterval | IntInterval (Interval v) v
