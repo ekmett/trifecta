@@ -20,7 +20,7 @@ import Text.Trifecta
 -- definitions, but it’s useful to keep in mind that the documentation of
 -- certain functions might not be directly in the /trifecta/ package.
 importDocumentation :: docDummy
-importDocumentation = error "Auxiliary definition to write Haddock documetation for :-)"
+importDocumentation = error "Auxiliary definition to write Haddock documentation for :-)"
 
 -- | In order to keep things minimal, we define a very simple language for
 -- arithmetic expressions.
