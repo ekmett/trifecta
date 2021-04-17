@@ -96,7 +96,7 @@ instance Applicative (It r) where
   pure = Pure
   Pure f  <*> Pure a  = Pure $ f a
   Pure f  <*> It a ka = It (f a) $ fmap f . ka
-  It f kf <*> Pure a  = It (f a) $ fmap ($a) . kf
+  It f kf <*> Pure a  = It (f a) $ fmap ($ a) . kf
   It f kf <*> It a ka = It (f a) $ \r -> kf r <*> ka r
 
 indexIt :: It r a -> r -> a
