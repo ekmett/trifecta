@@ -340,7 +340,7 @@ instance Renderable (Rendered a) where
 -- >>> unAnnotate (prettyRendering (addCaret (Columns 35 35) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ^
-data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Caret = Caret !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Generic)
 
 class HasCaret t where
   caret :: Lens' t Caret
@@ -379,7 +379,7 @@ instance Semigroup Caret where
 renderingCaret :: Delta -> ByteString -> Rendering
 renderingCaret d bs = addCaret d $ rendered d bs
 
-data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Careted a = a :^ Caret deriving (Eq,Ord,Show,Data,Generic)
 
 instance HasCaret (Careted a) where
   caret f (a :^ c) = (a :^) <$> f c
@@ -446,7 +446,7 @@ addSpan s e r = drawSpan s e .# r
 -- >>> unAnnotate (prettyRendering (addSpan (Columns 35 35) (Columns 38 38) exampleRendering))
 -- 1 | int main(int argc, char ** argv) { int; }<EOF>
 --   |                                    ~~~
-data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Span = Span !Delta !Delta {-# UNPACK #-} !ByteString deriving (Eq,Ord,Show,Data,Generic)
 
 class HasSpan t where
   span :: Lens' t Span
@@ -467,7 +467,7 @@ instance Hashable Span
 
 -- | Annotate an arbitrary piece of data with a 'Span', typically its
 -- corresponding input location.
-data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Typeable,Generic)
+data Spanned a = a :~ Span deriving (Eq,Ord,Show,Data,Generic)
 
 instance HasSpan (Spanned a) where
   span f (a :~ c) = (a :~) <$> f c
@@ -515,7 +515,7 @@ data Fixit = Fixit
     -- ^ 'Span' where the error occurred
   , _fixitReplacement :: !ByteString
     -- ^ Replacement suggestion
-  } deriving (Eq,Ord,Show,Data,Typeable,Generic)
+  } deriving (Eq,Ord,Show,Data,Generic)
 
 makeClassy ''Fixit
 

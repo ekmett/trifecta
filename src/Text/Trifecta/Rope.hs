@@ -59,7 +59,7 @@ import Text.Trifecta.Util.Combinators as Util
 data Strand
   = Strand {-# UNPACK #-} !ByteString !Delta -- ^ Data of a certain length
   | Skipping !Delta                          -- ^ Absence of data of a certain length
-  deriving (Show, Data, Typeable, Generic)
+  deriving (Show, Data, Generic)
 
 -- | Construct a single 'Strand' out of a 'ByteString'.
 strand :: ByteString -> Strand

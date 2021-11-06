@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main
@@ -7,13 +6,7 @@ module Main
 
 import Control.Applicative
 
-#if MIN_VERSION_base(4,7,0)
 import Data.Either
-#endif
-
-#if __GLASGOW_HASKELL__ < 710
-import Data.Monoid
-#endif
 
 import qualified Test.QuickCheck as Q
 
@@ -81,11 +74,3 @@ parse :: Parser a -> String -> Either String a
 parse p s = case parseString p mempty s of
     Failure e -> Left (show e)
     Success a -> Right a
-
-#if !MIN_VERSION_base(4,7,0)
-isLeft :: Either a b -> Bool
-isLeft = either (const True) (const False)
-
-isRight :: Either a b -> Bool
-isRight = either (const False) (const True)
-#endif

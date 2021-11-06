@@ -32,9 +32,6 @@ import Data.Hashable
 import Data.Int
 import Data.Data
 import Data.Word
-#if __GLASGOW_HASKELL__ < 710
-import Data.Foldable
-#endif
 import Data.Function (on)
 import Data.FingerTree hiding (empty)
 import Data.ByteString as Strict hiding (empty)
@@ -95,7 +92,7 @@ data Delta
     -- , number of bytes
     -- , number of bytes since the last newline )
     -- @
-  deriving (Show, Data, Typeable, Generic)
+  deriving (Show, Data, Generic)
 
 instance Eq Delta where
   (==) = (==) `on` bytes
