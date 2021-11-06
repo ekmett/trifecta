@@ -2,9 +2,6 @@
 {-# language OverloadedStrings #-}
 {-# language TemplateHaskell #-}
 
-#ifndef MIN_VERSION_lens
-#define MIN_VERSION_lens(x,y,z) 1
-#endif
 -----------------------------------------------------------------------------
 -- |
 -- Copyright   :  (C) 2011-2019 Edward Kmett
@@ -25,10 +22,7 @@ module Text.Trifecta.Highlight
   , doc
   ) where
 
-import Control.Lens
-#if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
-  hiding (Empty)
-#endif
+import Control.Lens hiding (Empty)
 import Data.Foldable as F
 import Data.Int (Int64)
 import Data.List (sort)
@@ -109,13 +103,8 @@ instance ToMarkup HighlightedRope where
       | otherwise = unsafeLazyByteString om >> go eb nom es
          where (om,nom) = L.splitAt (fromIntegral (eb - b)) cs
 
-#if MIN_VERSION_blaze_markup(0,8,0)
     emptyMarkup = Empty ()
     leafMarkup a b c = Leaf a b c ()
-#else
-    emptyMarkup = Empty
-    leafMarkup a b c = Leaf a b c
-#endif
 
 -- | Represents a source file like an HsColour rendered document
 data HighlightDoc = HighlightDoc

@@ -52,16 +52,8 @@ module Text.Trifecta.Util.IntervalMap
   , fromList
   ) where
 
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative hiding (empty)
-import Data.Foldable       (Foldable (foldMap))
-#endif
 import qualified Data.Foldable.WithIndex as WithIndex
-#if MIN_VERSION_lens(4,13,0) && __GLASGOW_HASKELL__ >= 710
 import Control.Lens as Lens hiding ((:<), (<|), (|>))
-#else
-import Control.Lens as Lens hiding ((<|), (|>))
-#endif
 import           Data.FingerTree
     (FingerTree, Measured (..), ViewL (..), (<|), (><))
 import qualified Data.FingerTree        as FT

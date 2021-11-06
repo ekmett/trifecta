@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE MagicHash             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -28,15 +27,8 @@ module Text.Trifecta.Util.It
   , sliceIt
   ) where
 
-#if __GLASGOW_HASKELL__ < 710
-import Control.Applicative
-#endif
 import Control.Comonad
 import Control.Monad
-
-#if __GLASGOW_HASKELL__ < 710
-import Data.Monoid
-#endif
 
 import Data.ByteString                as Strict
 import Data.ByteString.Lazy           as Lazy
