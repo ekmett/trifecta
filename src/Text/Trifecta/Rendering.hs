@@ -70,13 +70,13 @@ import           Data.Hashable
 import           Data.Int                                     (Int64)
 import           Data.List                                    (groupBy)
 import           Data.Maybe
-import           Data.Text.Prettyprint.Doc                    hiding (column, line')
-import           Data.Text.Prettyprint.Doc.Render.Terminal    (color, bgColor, colorDull, bgColorDull)
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
 import           Data.Semigroup
 import           Data.Semigroup.Reducer
 import           GHC.Generics
 import           Prelude                                      as P hiding (span)
+import           Prettyprinter                                hiding (column, line')
+import           Prettyprinter.Render.Terminal                (color, bgColor, colorDull, bgColorDull)
+import qualified Prettyprinter.Render.Terminal                as Pretty
 import           System.Console.ANSI
 
 import Text.Trifecta.Delta
@@ -86,9 +86,9 @@ import Text.Trifecta.Util.Pretty
 -- $setup
 --
 -- >>> :set -XOverloadedStrings
--- >>> import Data.Text.Prettyprint.Doc (unAnnotate)
 -- >>> import Data.ByteString (ByteString)
 -- >>> import Data.Monoid (mempty)
+-- >>> import Prettyprinter (unAnnotate)
 -- >>> import Text.Trifecta.Delta
 -- >>> let exampleRendering = rendered mempty ("int main(int argc, char ** argv) { int; }" :: ByteString)
 
