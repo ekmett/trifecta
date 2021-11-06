@@ -34,10 +34,10 @@ import Data.Int (Int64)
 import Data.List (sort)
 import Data.Semigroup
 import Data.Semigroup.Union
-import Data.Text.Prettyprint.Doc
-import Data.Text.Prettyprint.Doc.Render.Terminal (color)
-import qualified Data.Text.Prettyprint.Doc.Render.Terminal as Pretty
 import Prelude hiding (head)
+import Prettyprinter
+import Prettyprinter.Render.Terminal (color)
+import qualified Prettyprinter.Render.Terminal as Pretty
 import Text.Blaze
 import Text.Blaze.Html5 hiding (a,b,i)
 import qualified Text.Blaze.Html5 as Html5

@@ -45,8 +45,8 @@ import           Data.Maybe                                   (fromMaybe, isJust
 import           Data.Semigroup
 #endif
 import           Data.Set                                     as Set hiding (empty, toList)
-import           Data.Text.Prettyprint.Doc                    as Pretty
-import           Data.Text.Prettyprint.Doc.Render.Terminal    as Pretty
+import           Prettyprinter                                as Pretty
+import           Prettyprinter.Render.Terminal                as Pretty
 
 import Text.Trifecta.Delta       as Delta
 import Text.Trifecta.Rendering

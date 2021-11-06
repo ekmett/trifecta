@@ -31,9 +31,9 @@ module Text.Trifecta.Util.Pretty
 import Data.Monoid
 #endif
 
-import Data.Text.Prettyprint.Doc
-import Data.Text.Prettyprint.Doc.Render.Terminal
-import Data.Text.Prettyprint.Doc.Render.Terminal.Internal (ansiBold, ansiUnderlining)
+import Prettyprinter
+import Prettyprinter.Render.Terminal
+import Prettyprinter.Render.Terminal.Internal (ansiBold, ansiUnderlining)
 
 char :: Char -> Doc a
 char = pretty
