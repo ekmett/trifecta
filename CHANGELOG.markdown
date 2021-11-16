@@ -1,5 +1,7 @@
 next [????.??.??]
 -----------------
+* Add an `Eq Strand` instance.
+* Allow building with `hashable-1.4.*`.
 * Drop support for pre-8.0 versions of GHC.
 
 2.1.1 [2021.02.18]
