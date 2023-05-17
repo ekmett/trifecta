@@ -4,3 +4,7 @@ unconstrained:          False
 -- irc-channels:           irc.freenode.org#haskell-lens
 irc-if-in-origin-repo:  True
 docspec:                True
+-- trifecta's output often includes trailing spaces due to the way it pads
+-- column length. The simplest way to test trifecta's functionality is to
+-- teach cabal-docspec's diff to ignore trailing whitespace.
+docspec-options:        --ignore-trailing-space
