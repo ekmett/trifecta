@@ -68,7 +68,7 @@ import           Data.Foldable
 import           Data.Function                                (on)
 import           Data.Hashable
 import           Data.Int                                     (Int64)
-import           Data.List                                    (groupBy)
+import qualified Data.List.NonEmpty                           as NE
 import           Data.Maybe
 import           Data.Semigroup
 import           Data.Semigroup.Reducer
@@ -291,8 +291,8 @@ prettyRendering (Rendering d ll _ l f) = nesting $ \k -> columns $ \mn -> go (fr
     margin = fill gutterWidth space <+> separator
     ln y = (sgr gutterEffects (if y == 0 then gutter else margin) <+>)
          $ hcat
-         $ P.map (\g -> sgr (fst (P.head g)) (pretty (P.map snd g)))
-         $ groupBy ((==) `on` fst)
+         $ P.map (\g -> sgr (fst (NE.head g)) (pretty (fmap snd g)))
+         $ NE.groupBy ((==) `on` fst)
          [ a ! (y,i) | i <- [lo..hi] ]
 
 window :: Int64 -> Int64 -> Int64 -> (Int64, Int64)
