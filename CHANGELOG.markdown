@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Allow building with `deepseq-1.5.*`.
+
 2.1.2 [2021.11.16]
 ------------------
 * Add an `Eq Strand` instance.
