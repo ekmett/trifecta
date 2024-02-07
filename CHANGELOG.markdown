@@ -1,3 +1,7 @@
+next [????.??.??]
+-----------------
+* Allow building with `ansi-terminal-1.1.*`.
+
 2.1.3 [2023.08.07]
 ------------------
 * Allow building with `deepseq-1.5.*`.
