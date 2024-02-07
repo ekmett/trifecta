@@ -1,3 +1,4 @@
+{-# language CPP                   #-}
 {-# language DeriveDataTypeable    #-}
 {-# language DeriveGeneric         #-}
 {-# language FlexibleInstances     #-}
@@ -103,6 +104,9 @@ sgr xs0 = go (P.reverse xs0) where
   go (SetUnderlining NoUnderline          : xs) = annotate deunderline . go xs
   go (SetUnderlining SingleUnderline      : xs) = annotate underlined . go xs
   go (SetColor f i c                      : xs) = case f of
+#if MIN_VERSION_ansi_terminal(1,1,0)
+    Underlining -> go xs
+#endif
     Foreground -> case i of
       Dull -> case c of
         Black   -> annotate (color Pretty.Black) . go xs
