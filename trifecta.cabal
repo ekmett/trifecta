@@ -83,7 +83,7 @@ library
     deepseq                     >= 1.4.2.0 && < 1.6,
     fingertree                  >= 0.1     && < 0.2,
     ghc-prim,
-    hashable                    >= 1.2.4   && < 1.5,
+    hashable                    >= 1.2.4   && < 1.6,
     indexed-traversable         >= 0.1.1   && < 0.2,
     lens                        >= 4.14    && < 6,
     mtl                         >= 2.2.1   && < 2.4,
